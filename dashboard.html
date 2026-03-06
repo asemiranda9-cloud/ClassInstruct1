@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <title>ClassInstruct - Dashboard</title>
+    <link rel="stylesheet" href="dashboardglobal.css" />
+    <link rel="stylesheet" href="dashboardstyle.css" />
+    <script>
+        const months = [
+            { name: 'January', days: 31, startDay: 3 },
+            { name: 'February', days: 28, startDay: 6 },
+            { name: 'March', days: 31, startDay: 6 },
+            { name: 'April', days: 30, startDay: 2 },
+            { name: 'May', days: 31, startDay: 4 },
+            { name: 'June', days: 30, startDay: 0 },
+            { name: 'July', days: 31, startDay: 2 },
+            { name: 'August', days: 31, startDay: 5 },
+            { name: 'September', days: 30, startDay: 1 },
+            { name: 'October', days: 31, startDay: 3 },
+            { name: 'November', days: 30, startDay: 6 },
+            { name: 'December', days: 31, startDay: 1 }
+        ];
+        
+        let currentMonthIndex = 0;
+        
+        function renderCalendar() {
+            const month = months[currentMonthIndex];
+            const display = document.getElementById('currentMonthDisplay');
+            const daysContainer = document.getElementById('monthDays');
+            
+            display.textContent = month.name;
+            daysContainer.innerHTML = '';
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < month.startDay; i++) {
+                const emptyDay = document.createElement('span');
+                emptyDay.className = 'day empty';
+                daysContainer.appendChild(emptyDay);
+            }
+            
+            // Add days of the month
+            for (let day = 1; day <= month.days; day++) {
+                const daySpan = document.createElement('span');
+                daySpan.className = 'day';
+                daySpan.textContent = day;
+                daysContainer.appendChild(daySpan);
+            }
+        }
+        
+        function changeMonth(direction) {
+            currentMonthIndex += direction;
+            if (currentMonthIndex < 0) currentMonthIndex = 11;
+            if (currentMonthIndex > 11) currentMonthIndex = 0;
+            renderCalendar();
+        }
+        
+        function showMonth(monthName) {
+            alert('Selected month: ' + monthName);
+        }
+        
+        // Initialize calendar on page load
+        document.addEventListener('DOMContentLoaded', renderCalendar);
+    </script>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar" role="navigation" aria-label="Main navigation">
+            <img class="img" src="img/rectangle-4215.svg" alt="" />
+            <div class="sidebar-header">
+                <img class="ellipse" src="img/ellipse-13.png" alt="Teacher profile picture" />
+                <span class="text-wrapper-6">Teacher</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="active">Dashboard</a>
+                <a href="classinstruct-ai.html">ClassInstruct AI</a>
+                <a href="#calendar">Calendar</a>
+                <a href="#students">Students</a>
+                <a href="#attendance">Attendance</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="header">
+                <h1 class="title">Dashboard</h1>
+                <div class="search-container">
+                    <input type="search" id="search-input" class="search-input" placeholder="Search" aria-label="Search dashboard" />
+                </div>
+                <div class="app-name">ClassInstruct</div>
+            </header>
+            <section class="content-grid">
+                <article class="card enrolled-students">
+                    <div class="enrolled-content">
+                        <div class="enrolled-info">
+                            <h2>Enrolled Students</h2>
+                            <div class="student-count">300</div>
+                        </div>
+                        <img class="icon" src="../image/Student.png" alt="Student icon" class="StudentIcon" />
+                    </div>
+                </article>
+                <article class="card attendance">
+                    <div class="section-header">   
+                        <h2>Student Attendance</h2>
+                        <select class="filter">
+                            <option>Weekly</option>
+                        </select>
+                    </div>
+                    <div class="attendance-chart"></div>
+                </article>
+                <article class="card gender-distribution">
+                    <div class="section-header">
+                        <h2>Student by Gender</h2>
+                        <select class="filter">
+                            <option>Section</option>
+                        </select>
+                    </div>
+                    <div class="gender-chart-container">
+                        <div class="gender-pie-chart" style="--boys: 48%; --girls: 52%;">
+                            <div class="pie-center">
+                                <span class="total-label">Total</span>
+                                <span class="total-count">374</span>
+                            </div>
+                        </div>
+                        <div class="gender-legend">
+                            <div class="legend-item">
+                                <span class="legend-color boys"></span>
+                                <span class="legend-label">Boys</span>
+                                <span class="legend-count">180</span>
+                                <span class="legend-percent">48%</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color girls"></span>
+                                <span class="legend-label">Girls</span>
+                                <span class="legend-count">194</span>
+                                <span class="legend-percent">52%</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                <article class="card performance">
+                    <div class="section-header">
+                        <h2>Student Performance</h2>
+                        <select class="filter">
+                            <option>First Quarter</option>
+                        </select>
+                    </div>
+                    <div class="performance-chart"></div>
+                </article>
+                <article class="card todo-list">
+                    <h2>To Do List</h2>
+                    <div class="todo-content">...</div>
+                </article>
+                <article class="card calendar">
+                    <h2>Calendar 2026</h2>
+                    <div class="single-month-calendar">
+                        <div class="calendar-nav-container">
+                            <button class="calendar-nav-btn" onclick="changeMonth(-1)">&#8249; Prev</button>
+                            <span class="current-month" id="currentMonthDisplay">January</span>
+                            <button class="calendar-nav-btn" onclick="changeMonth(1)">Next &#8250;</button>
+                        </div>
+                        <div class="month-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div class="month-days" id="monthDays">
+                            <!-- Days will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </article>
+                <article class="card events">
+                    <h2>Events</h2>
+                    <div class="events-content">...</div>
+                </article>
+                <article class="card recent-activity">
+                    <h2>Recent Activity</h2>
+                    <div class="activity-content">...</div>
+                </article>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
+</html>
