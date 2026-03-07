@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="globalsss.css" />
+    <link rel="stylesheet" href="styles11.css" />
+    <link rel="stylesheet" href="calendar.css" />
+  </head>
+  <body>
+    <div class="calendar">
+      <img class="rectangle" src="img/rectangle-4215.svg" />
+      <a href="../dashboard.html" class="text-wrapper" style="cursor: pointer; text-decoration: none;">Dashboard</a>
+      <div class="div">ClassInstruct AI</div>
+      <div class="frame"></div>
+      <div class="text-wrapper-2">Calendar</div>
+      <div class="text-wrapper-3">Students</div>
+      <div class="text-wrapper-4">Attendance</div>
+      <img class="ellipse" src="img/ellipse-13.png" /> 
+      <div class="text-wrapper-5">Teacher</div>
+      <div class="rectangle-2"></div>
+      <div class="rectangle-3"></div>
+      <div class="text-wrapper-6">Weekly</div>
+      <div class="rectangle-4"></div>
+      <div class="text-wrapper-7">Monthly</div>
+      <div class="text-wrapper-8">ClassInstruct</div>
+      <div class="text-wrapper-9">Calendar</div>
+      <div class="rectangle-5"></div>
+      <div class="rectangle-6"></div>
+      <div class="text-wrapper-10">Search</div>
+      <img class="search" src="image/Search.png" />
+      <div class="rectangle-7"></div>
+      <img class="img" src="image/Sched.png" />
+      <div class="text-wrapper-11">All Schedules</div>
+      <div class="text-wrapper-12">5</div>
+      <div class="rectangle-8"></div>
+      <div class="text-wrapper-13">Academic</div>
+      <div class="text-wrapper-14">3</div>
+      <div class="rectangle-9"></div>
+      <div class="text-wrapper-15">Events</div>
+      <div class="text-wrapper-16">2</div>
+      <img class="tuden-2" src="image/Academic.png" />
+      <img class="tuden-3" src="image/Events.png" />
+      <div class="text-wrapper-17">Schedule Details</div>
+      <div class="rectangle-10"></div>
+      <div class="rectangle-11"></div>
+      <div class="rectangle-12"></div>
+      <div class="rectangle-13"></div>
+      <div class="text-wrapper-18">Academic</div>
+      <div class="text-wrapper-19">Events</div>
+      <div class="rectangle-14"></div>
+      <div class="text-wrapper-20">Today</div>
+      <div class="rectangle-15"></div>
+      <div class="rectangle-16"></div>
+      <div class="chevron-left"><img class="icon" src="img/image.svg" /></div>
+      <div class="chevron-right"><img class="icon" src="img/icon.svg" /></div>
+      
+      <!-- Big Calendar Grid -->
+      <div class="calendar-grid active" id="calendarGrid">
+        <div class="calendar-header">
+          <div class="calendar-month-year" id="calendarMonthYear">January 2026</div>
+          <div class="calendar-nav-arrows">
+            <button onclick="changeMonth(-1)">&#8249;</button>
+            <button onclick="changeMonth(1)">&#8250;</button>
+          </div>
+        </div>
+        <div class="calendar-weekdays">
+          <span>Sun</span>
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+        </div>
+        <div class="calendar-days" id="calendarDays">
+          <!-- Days will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      const calendarData = {
+        months: [
+          { name: 'January', days: 31, startDay: 3 },
+          { name: 'February', days: 28, startDay: 6 },
+          { name: 'March', days: 31, startDay: 6 },
+          { name: 'April', days: 30, startDay: 2 },
+          { name: 'May', days: 31, startDay: 4 },
+          { name: 'June', days: 30, startDay: 0 },
+          { name: 'July', days: 31, startDay: 2 },
+          { name: 'August', days: 31, startDay: 5 },
+          { name: 'September', days: 30, startDay: 1 },
+          { name: 'October', days: 31, startDay: 3 },
+          { name: 'November', days: 30, startDay: 6 },
+          { name: 'December', days: 31, startDay: 1 }
+        ],
+        currentMonthIndex: 0,
+        currentYear: 2026
+      };
+      
+      const events = {
+        1: ['Math Exam'],
+        5: ['Science Fair'],
+        12: ['Parent Meeting'],
+        15: ['History Test'],
+        20: ['Sports Day'],
+        25: ['Art Exhibition']
+      };
+      
+      function renderCalendar() {
+        const month = calendarData.months[calendarData.currentMonthIndex];
+        const display = document.getElementById('calendarMonthYear');
+        const daysContainer = document.getElementById('calendarDays');
+        
+        display.textContent = month.name + ' ' + calendarData.currentYear;
+        daysContainer.innerHTML = '';
+        
+        const today = new Date();
+        const isCurrentMonth = today.getMonth() === calendarData.currentMonthIndex && 
+                              today.getFullYear() === calendarData.currentYear;
+        const todayDate = today.getDate();
+        
+        // Get previous month's days to fill the first week
+        const prevMonth = calendarData.currentMonthIndex === 0 ? 11 : calendarData.currentMonthIndex - 1;
+        const prevMonthDays = calendarData.months[prevMonth].days;
+        
+        // Add empty cells for days before the first day of the month
+        for (let i = month.startDay - 1; i >= 0; i--) {
+          const daySpan = document.createElement('div');
+          daySpan.className = 'calendar-day other-month';
+          const prevDay = prevMonthDays - i;
+          daySpan.innerHTML = '<span class="day-number">' + prevDay + '</span>';
+          daysContainer.appendChild(daySpan);
+        }
+        
+        // Add days of the month
+        for (let day = 1; day <= month.days; day++) {
+          const daySpan = document.createElement('div');
+          daySpan.className = 'calendar-day';
+          
+          if (isCurrentMonth && day === todayDate) {
+            daySpan.classList.add('today');
+          }
+          
+          if (events[day]) {
+            daySpan.classList.add('has-event');
+          }
+          
+          let dayContent = '<span class="day-number">' + day + '</span>';
+          
+          if (events[day]) {
+            dayContent += '<div class="event-indicator">' + events[day][0] + '</div>';
+          }
+          
+          daySpan.innerHTML = dayContent;
+          daysContainer.appendChild(daySpan);
+        }
+        
+        // Add next month's days to complete the grid (6 weeks)
+        const totalCells = month.startDay + month.days;
+        const remainingCells = totalCells > 35 ? 42 - totalCells : 35 - totalCells;
+        
+        for (let day = 1; day <= remainingCells; day++) {
+          const daySpan = document.createElement('div');
+          daySpan.className = 'calendar-day other-month';
+          daySpan.innerHTML = '<span class="day-number">' + day + '</span>';
+          daysContainer.appendChild(daySpan);
+        }
+      }
+      
+      function changeMonth(direction) {
+        calendarData.currentMonthIndex += direction;
+        if (calendarData.currentMonthIndex < 0) {
+          calendarData.currentMonthIndex = 11;
+          calendarData.currentYear--;
+        }
+        if (calendarData.currentMonthIndex > 11) {
+          calendarData.currentMonthIndex = 0;
+          calendarData.currentYear++;
+        }
+        renderCalendar();
+      }
+      
+      // Initialize calendar on page load
+      document.addEventListener('DOMContentLoaded', renderCalendar);
+    </script>
+  </body>
+</html>
