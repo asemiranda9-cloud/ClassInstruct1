@@ -1,94 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="AddStudent.css" />
-    <link rel="stylesheet" href="style.css" />
+    <title>Add New Student - ClassInstruct</title>
+    <link rel="stylesheet" href="student-modern.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div class="students-add-new">
-      <img class="rectangle" src="img/rectangle-4215.svg" />
-      <div class="text-wrapper">Dashboard</div>
-      <div class="div">ClassInstruct AI</div>
-      <div class="frame"></div>
-      <div class="text-wrapper-2">Calendar</div>
-      <div class="text-wrapper-3">Students</div>
-      <div class="text-wrapper-4">Attendance</div>
-      <img class="ellipse" src="img/ellipse-13.png" />
-      <div class="text-wrapper-5">Teacher</div>
-      <div class="rectangle-2"></div>
-      <div class="rectangle-3"></div>
-      <div class="rectangle-4"></div>
-      <div class="rectangle-5"></div>
-      <div class="rectangle-6"></div>
-      <div class="rectangle-7"></div>
-      <div class="rectangle-8"></div>
-      <div class="text-wrapper-6">Name</div>
-      <div class="text-wrapper-7">Relation</div>
-      <div class="text-wrapper-8">Phone Number</div>
-      <div class="text-wrapper-9">Alternative Guardian (If Any)</div>
-      <div class="rectangle-9"></div>
-      <div class="rectangle-10"></div>
-      <div class="rectangle-11"></div>
-      <div class="text-wrapper-10">Father</div>
-      <div class="text-wrapper-11">Name</div>
-      <div class="text-wrapper-12">Phone Number</div>
-      <div class="rectangle-12"></div>
-      <div class="rectangle-13"></div>
-      <div class="rectangle-14"></div>
-      <div class="text-wrapper-13">Mother</div>
-      <div class="text-wrapper-14">Name</div>
-      <div class="text-wrapper-15">Phone Number</div>
-      <div class="text-wrapper-16">Parent Information</div>
-      <div class="text-wrapper-17">Phone Number</div>
-      <div class="rectangle-15"></div>
-      <div class="rectangle-16"></div>
-      <div class="rectangle-17"></div>
-      <div class="text-wrapper-18">Email Address</div>
-      <div class="text-wrapper-19">Address</div>
-      <div class="text-wrapper-20">Contact Information</div>
-      <div class="rectangle-18"></div>
-      <div class="rectangle-19"></div>
-      <div class="text-wrapper-21">8</div>
-      <div class="rectangle-20"></div>
-      <img class="arrow-drop-down" src="img/arrow-drop-down.svg" />
-      <div class="text-wrapper-22">Love</div>
-      <div class="text-wrapper-23">Grade Level</div>
-      <div class="rectangle-21"></div>
-      <img class="calendar" src="img/calendar.svg" />
-      <div class="text-wrapper-24">Enrollment Date</div>
-      <div class="rectangle-22"></div>
-      <div class="text-wrapper-25">Previous School</div>
-      <div class="text-wrapper-26">Section</div>
-      <div class="text-wrapper-27">Academic Information</div>
-      <div class="rectangle-23"></div>
-      <div class="rectangle-24"></div>
-      <div class="rectangle-25"></div>
-      <div class="rectangle-26"></div>
-      <p class="p">Upload recent passport-size photo (MAX: 2MB, JPG/PNG</p>
-      <p class="text-wrapper-28">Click or Drag to Upload</p>
-      <div class="ellipse-2"></div>
-      <div class="rectangle-27"></div>
-      <div class="text-wrapper-29">Female</div>
-      <div class="rectangle-28"></div>
-      <div class="rectangle-29"></div>
-      <div class="text-wrapper-30">Personal Information</div>
-      <div class="text-wrapper-31">Student ID/LRN</div>
-      <div class="text-wrapper-32">Gender</div>
-      <div class="text-wrapper-33">Profile Photo</div>
-      <div class="text-wrapper-34">Male</div>
-      <div class="text-wrapper-35">Full Name</div>
-      <div class="text-wrapper-36">Date of Birth</div>
-      <div class="text-wrapper-37">ClassInstruct</div>
-      <div class="text-wrapper-38">Add New Student</div>
-      <div class="rectangle-30"></div>
-      <div class="text-wrapper-39">Search</div>
-      <img class="search" src="img/search.svg" />
-      <div class="text-wrapper-40">Students</div>
-      <div class="text-wrapper-41">Student Info</div>
-      <div class="text-wrapper-42">Add New Student</div>
-      <div class="ellipse-3"></div>
+    <div class="students-container">
+      <!-- Sidebar -->
+      <aside class="student-sidebar" role="navigation" aria-label="Main navigation">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="8" fill="#4f46e5"/>
+            <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>ClassInstruct</span>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="user-profile">
+          <img src="img/ellipse-13.png" alt="Teacher profile picture" />
+          <div>
+            <div class="user-name">Teacher</div>
+            <div class="user-role">Instructor</div>
+          </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+          <button type="button" onclick="window.location.href='../dashboard.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+          <button type="button" onclick="window.location.href='../ai/classinstruct-ai.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>ClassInstruct AI</span>
+          </button>
+          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <button type="button" onclick="window.location.href='Student.html'" class="active">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span>Students</span>
+          </button>
+          <button type="button" onclick="window.location.href='../attendance/attendance.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <span>Attendance</span>
+          </button>
+        </nav>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="student-main">
+        <!-- Header -->
+        <header class="student-header">
+          <h1 class="header-title">Add New Student</h1>
+          
+          <div class="search-container">
+            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <label for="search-input" class="visually-hidden">Search</label>
+            <input type="search" id="search-input" placeholder="Search for students..." aria-label="Search students" />
+          </div>
+          
+          <div class="header-actions">
+            <span class="header-brand">ClassInstruct</span>
+          </div>
+        </header>
+        
+        <!-- Content -->
+        <div class="student-content">
+          <!-- Breadcrumb -->
+          <div class="breadcrumb">
+            <a href="../dashboard.html">Dashboard</a>
+            <span>/</span>
+            <a href="Student.html">Students</a>
+            <span>/</span>
+            <span class="current">Add New Student</span>
+          </div>
+          
+          <h2 class="page-title">Add New Student</h2>
+          
+          <!-- Personal Information -->
+          <div class="form-section">
+            <h3 class="form-section-title">Personal Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="student-id">Student ID / LRN</label>
+                <input type="text" id="student-id" class="form-input" placeholder="Enter Student ID or LRN" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="full-name">Full Name</label>
+                <input type="text" id="full-name" class="form-input" placeholder="Enter full name" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="date-of-birth">Date of Birth</label>
+                <input type="date" id="date-of-birth" class="form-input" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Gender</label>
+                <div class="radio-group">
+                  <div class="radio-option">
+                    <input type="radio" id="male" name="gender" value="male" />
+                    <label for="male">Male</label>
+                  </div>
+                  <div class="radio-option">
+                    <input type="radio" id="female" name="gender" value="female" />
+                    <label for="female">Female</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-group full-width">
+                <label class="form-label">Profile Photo</label>
+                <div class="file-upload">
+                  <svg class="file-upload-icon" width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <p>Click or drag to upload</p>
+                  <p class="upload-text">MAX: 2MB, JPG/PNG</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Academic Information -->
+          <div class="form-section">
+            <h3 class="form-section-title">Academic Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="grade-level">Grade Level</label>
+                <select id="grade-level" class="form-select">
+                  <option value="">Select Grade Level</option>
+                  <option value="kinder">Kindergarten</option>
+                  <option value="1">Grade 1</option>
+                  <option value="2">Grade 2</option>
+                  <option value="3">Grade 3</option>
+                  <option value="4">Grade 4</option>
+                  <option value="5">Grade 5</option>
+                  <option value="6">Grade 6</option>
+                  <option value="7">Grade 7</option>
+                  <option value="8">Grade 8</option>
+                  <option value="9">Grade 9</option>
+                  <option value="10">Grade 10</option>
+                  <option value="11">Grade 11</option>
+                  <option value="12">Grade 12</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="section">Section</label>
+                <select id="section" class="form-select">
+                  <option value="">Select Section</option>
+                  <option value="a">Section A</option>
+                  <option value="b">Section B</option>
+                  <option value="c">Section C</option>
+                  <option value="d">Section D</option>
+                  <option value="e">Section E</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="enrollment-date">Enrollment Date</label>
+                <input type="date" id="enrollment-date" class="form-input" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="previous-school">Previous School</label>
+                <input type="text" id="previous-school" class="form-input" placeholder="Enter previous school name" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contact Information -->
+          <div class="form-section">
+            <h3 class="form-section-title">Contact Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" id="email" class="form-input" placeholder="Enter email address" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" id="phone" class="form-input" placeholder="Enter phone number" />
+              </div>
+              
+              <div class="form-group full-width">
+                <label class="form-label" for="address">Address</label>
+                <input type="text" id="address" class="form-input" placeholder="Enter complete address" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Parent Information -->
+          <div class="form-section">
+            <h3 class="form-section-title">Parent / Guardian Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="father-name">Father's Name</label>
+                <input type="text" id="father-name" class="form-input" placeholder="Enter father's name" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="father-phone">Father's Phone Number</label>
+                <input type="tel" id="father-phone" class="form-input" placeholder="Enter phone number" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="mother-name">Mother's Name</label>
+                <input type="text" id="mother-name" class="form-input" placeholder="Enter mother's name" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="mother-phone">Mother's Phone Number</label>
+                <input type="tel" id="mother-phone" class="form-input" placeholder="Enter phone number" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="guardian-name">Guardian's Name (Optional)</label>
+                <input type="text" id="guardian-name" class="form-input" placeholder="Enter guardian's name" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="guardian-relation">Relation</label>
+                <input type="text" id="guardian-relation" class="form-input" placeholder="e.g., Aunt, Uncle, Grandparent" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="guardian-phone">Guardian's Phone Number</label>
+                <input type="tel" id="guardian-phone" class="form-input" placeholder="Enter phone number" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='Student.html'">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add Student</button>
+          </div>
+        </div>
+      </main>
     </div>
   </body>
 </html>
+
