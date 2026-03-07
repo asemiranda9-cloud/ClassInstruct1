@@ -6,6 +6,7 @@
     <title>ClassInstruct - Dashboard</title>
     <link rel="stylesheet" href="dashboardglobal.css" />
     <link rel="stylesheet" href="dashboardstyle.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         const months = [
             { name: 'January', days: 31, startDay: 3 },
@@ -32,14 +33,12 @@
             display.textContent = month.name;
             daysContainer.innerHTML = '';
             
-            // Add empty cells for days before the first day of the month
             for (let i = 0; i < month.startDay; i++) {
                 const emptyDay = document.createElement('span');
                 emptyDay.className = 'day empty';
                 daysContainer.appendChild(emptyDay);
             }
             
-            // Add days of the month
             for (let day = 1; day <= month.days; day++) {
                 const daySpan = document.createElement('span');
                 daySpan.className = 'day';
@@ -59,44 +58,101 @@
             alert('Selected month: ' + monthName);
         }
         
-        // Initialize calendar on page load
         document.addEventListener('DOMContentLoaded', renderCalendar);
     </script>
 </head>
 <body>
     <div class="dashboard">
+        <!-- Sidebar -->
         <aside class="sidebar" role="navigation" aria-label="Main navigation">
-            <img class="img" src="img/rectangle-4215.svg" alt="" />
-            <div class="sidebar-header">
-                <img class="ellipse" src="img/ellipse-13.png" alt="Teacher profile picture" />
-                <span class="text-wrapper-6">Teacher</span>
+            <!-- Logo -->
+            <div class="sidebar-logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#4f46e5"/>
+                    <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>ClassInstruct</span>
             </div>
-            <nav class="sidebar-nav">
-                <a href="#dashboard" class="active">Dashboard</a>
-                <a href="ai/classinstruct-ai.html">ClassInstruct AI</a>
-                <a href="Calendar/calendarPAGE.html">Calendar</a>
-                <a href="#students">Students</a>
-                <a href="#attendance">Attendance</a>
+            
+            <!-- User Profile -->
+            <div class="user-profile">
+                <img src="../image/Student.png" alt="Teacher profile picture" />
+                <div>
+                    <div class="user-name">Teacher</div>
+                    <div class="user-role">Instructor</div>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="nav-menu">
+                <button type="button" onclick="window.location.href='dashboard.html'" class="active">
+                    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </button>
+                <button type="button" onclick="window.location.href='ai/classinstruct-ai.html'">
+                    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span>ClassInstruct AI</span>
+                </button>
+                <button type="button" onclick="window.location.href='Calendar/calendarPAGE.html'">
+                    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Calendar</span>
+                </button>
+                <button type="button" onclick="window.location.href='#students'">
+                    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Students</span>
+                </button>
+                <button type="button" onclick="window.location.href='attendance/attendance.html'">
+                    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <span>Attendance</span>
+                </button>
             </nav>
         </aside>
+        
+        <!-- Main Content -->
         <main class="main-content">
+            <!-- Header -->
             <header class="header">
-                <h1 class="title">Dashboard</h1>
+                <h1 class="header-title">Dashboard</h1>
+                
                 <div class="search-container">
-                    <input type="search" id="search-input" class="search-input" placeholder="Search" aria-label="Search dashboard" />
+                    <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <label for="search-input" class="visually-hidden">Search</label>
+                    <input type="search" id="search-input" placeholder="Search students, lessons, resources..." aria-label="Search" />
                 </div>
-                <div class="app-name">ClassInstruct</div>
+                
+                <div class="header-brand">ClassInstruct</div>
             </header>
+            
+            <!-- Content Grid -->
             <section class="content-grid">
+                <!-- Enrolled Students Card -->
                 <article class="card enrolled-students">
                     <div class="enrolled-content">
                         <div class="enrolled-info">
                             <h2>Enrolled Students</h2>
                             <div class="student-count">300</div>
                         </div>
-                        <img class="icon" src="../image/Student.png" alt="Student icon" class="StudentIcon" />
+                        <div class="icon-container">
+                            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
                     </div>
                 </article>
+                
+                <!-- Attendance Card -->
                 <article class="card attendance">
                     <div class="section-header">   
                         <h2>Student Attendance</h2>
@@ -139,6 +195,8 @@
                         </div>
                     </div>
                 </article>
+                
+                <!-- Gender Distribution Card -->
                 <article class="card gender-distribution">
                     <div class="section-header">
                         <h2>Student by Gender</h2>
@@ -169,6 +227,8 @@
                         </div>
                     </div>
                 </article>
+                
+                <!-- Performance Card -->
                 <article class="card performance">
                     <div class="section-header">
                         <h2>Student Performance</h2>
@@ -237,10 +297,8 @@
                         </div>
                     </div>
                 </article>
-                <article class="card todo-list">
-                    <h2>To Do List</h2>
-                    <div class="todo-content">...</div>
-                </article>
+                
+                <!-- Calendar Card -->
                 <article class="card calendar">
                     <h2>Calendar 2026</h2>
                     <div class="single-month-calendar">
@@ -257,17 +315,28 @@
                         </div>
                     </div>
                 </article>
+                
+                <!-- Events Card -->
                 <article class="card events">
-                    <h2>Events</h2>
-                    <div class="events-content">...</div>
-                </article>
-                <article class="card recent-activity">
-                    <h2>Recent Activity</h2>
-                    <div class="activity-content">...</div>
+                    <h2>Upcoming Events</h2>
+                    <div class="events-content">
+                        <div class="event-item">
+                            <span class="event-date">Mar 15</span>
+                            <span class="event-title">History Test</span>
+                        </div>
+                        <div class="event-item">
+                            <span class="event-date">Mar 20</span>
+                            <span class="event-title">Sports Day</span>
+                        </div>
+                        <div class="event-item">
+                            <span class="event-date">Mar 25</span>
+                            <span class="event-title">Art Exhibition</span>
+                        </div>
+                    </div>
                 </article>
             </section>
         </main>
     </div>
 </body>
 </html>
-</html>
+

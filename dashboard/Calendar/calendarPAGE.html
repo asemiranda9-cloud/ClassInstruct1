@@ -1,82 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
+    <title>ClassInstruct - Calendar</title>
     <link rel="stylesheet" href="globalsss.css" />
     <link rel="stylesheet" href="styles11.css" />
-    <link rel="stylesheet" href="calendar.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div class="calendar">
-      <img class="rectangle" src="img/rectangle-4215.svg" />
-      <a href="../dashboard.html" class="text-wrapper" style="cursor: pointer; text-decoration: none;">Dashboard</a>
-      <div class="div">ClassInstruct AI</div>
-      <div class="frame"></div>
-      <div class="text-wrapper-2">Calendar</div>
-      <div class="text-wrapper-3">Students</div>
-      <div class="text-wrapper-4">Attendance</div>
-      <img class="ellipse" src="img/ellipse-13.png" /> 
-      <div class="text-wrapper-5">Teacher</div>
-      <div class="rectangle-2"></div>
-      <div class="rectangle-3"></div>
-      <div class="text-wrapper-6">Weekly</div>
-      <div class="rectangle-4"></div>
-      <div class="text-wrapper-7">Monthly</div>
-      <div class="text-wrapper-8">ClassInstruct</div>
-      <div class="text-wrapper-9">Calendar</div>
-      <div class="rectangle-5"></div>
-      <div class="rectangle-6"></div>
-      <div class="text-wrapper-10">Search</div>
-      <img class="search" src="image/Search.png" />
-      <div class="rectangle-7"></div>
-      <img class="img" src="image/Sched.png" />
-      <div class="text-wrapper-11">All Schedules</div>
-      <div class="text-wrapper-12">5</div>
-      <div class="rectangle-8"></div>
-      <div class="text-wrapper-13">Academic</div>
-      <div class="text-wrapper-14">3</div>
-      <div class="rectangle-9"></div>
-      <div class="text-wrapper-15">Events</div>
-      <div class="text-wrapper-16">2</div>
-      <img class="tuden-2" src="image/Academic.png" />
-      <img class="tuden-3" src="image/Events.png" />
-      <div class="text-wrapper-17">Schedule Details</div>
-      <div class="rectangle-10"></div>
-      <div class="rectangle-11"></div>
-      <div class="rectangle-12"></div>
-      <div class="rectangle-13"></div>
-      <div class="text-wrapper-18">Academic</div>
-      <div class="text-wrapper-19">Events</div>
-      <div class="rectangle-14"></div>
-      <div class="text-wrapper-20">Today</div>
-      <div class="rectangle-15"></div>
-      <div class="rectangle-16"></div>
-      <div class="chevron-left"><img class="icon" src="img/image.svg" /></div>
-      <div class="chevron-right"><img class="icon" src="img/icon.svg" /></div>
-      
-      <!-- Big Calendar Grid -->
-      <div class="calendar-grid active" id="calendarGrid">
-        <div class="calendar-header">
-          <div class="calendar-month-year" id="calendarMonthYear">January 2026</div>
-          <div class="calendar-nav-arrows">
-            <button onclick="changeMonth(-1)">&#8249;</button>
-            <button onclick="changeMonth(1)">&#8250;</button>
+    <div class="classinstruct-AI">
+      <!-- Sidebar -->
+      <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="8" fill="#4f46e5"/>
+            <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>ClassInstruct</span>
+        </div>
+
+        <!-- User Profile -->
+        <div class="user-profile">
+          <img src="../../image/Student.png" alt="Teacher profile picture" />
+          <div>
+            <div class="user-name">Teacher</div>
+            <div class="user-role">Instructor</div>
           </div>
         </div>
-        <div class="calendar-weekdays">
-          <span>Sun</span>
-          <span>Mon</span>
-          <span>Tue</span>
-          <span>Wed</span>
-          <span>Thu</span>
-          <span>Fri</span>
-          <span>Sat</span>
+
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+          <button type="button" onclick="window.location.href='../dashboard.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+          <button type="button" onclick="window.location.href='../ai/classinstruct-ai.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>ClassInstruct AI</span>
+          </button>
+          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'" class="active">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <button type="button" onclick="window.location.href='../dashboard.html#students'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span>Students</span>
+          </button>
+          <button type="button" onclick="window.location.href='../attendance/attendance.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <span>Attendance</span>
+          </button>
+        </nav>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+          <h1 class="header-title">Calendar</h1>
+          
+          <div class="search-container">
+            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <label for="search-input" class="visually-hidden">Search</label>
+            <input type="search" id="search-input" placeholder="Search events, schedules..." aria-label="Search" />
+          </div>
+          
+          <div class="header-brand">ClassInstruct</div>
+        </header>
+        
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+          <!-- Big Calendar Container -->
+          <div class="calendar-container">
+            <div class="calendar-header">
+              <div class="calendar-month-year" id="calendarMonthYear">January 2026</div>
+              <div class="calendar-nav-arrows">
+                <button onclick="changeMonth(-1)" aria-label="Previous month">&#8249;</button>
+                <button onclick="changeMonth(1)" aria-label="Next month">&#8250;</button>
+              </div>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+            <div class="calendar-days" id="calendarDays">
+              <!-- Days will be populated by JavaScript -->
+            </div>
+          </div>
+          
+          <!-- Schedule Details Sidebar -->
+          <aside class="schedule-sidebar">
+            <h3 class="sidebar-title">Schedule Details</h3>
+            <div class="schedule-list">
+              <article class="schedule-item academic">
+                <div class="schedule-time">9:00 AM</div>
+                <div class="schedule-content">
+                  <span class="schedule-title">Math Exam</span>
+                  <span class="schedule-type">Academic</span>
+                </div>
+              </article>
+              <article class="schedule-item events">
+                <div class="schedule-time">2:00 PM</div>
+                <div class="schedule-content">
+                  <span class="schedule-title">Science Fair</span>
+                  <span class="schedule-type">Events</span>
+                </div>
+              </article>
+              <article class="schedule-item academic">
+                <div class="schedule-time">10:00 AM</div>
+                <div class="schedule-content">
+                  <span class="schedule-title">History Test</span>
+                  <span class="schedule-type">Academic</span>
+                </div>
+              </article>
+              <article class="schedule-item events">
+                <div class="schedule-time">8:00 AM</div>
+                <div class="schedule-content">
+                  <span class="schedule-title">Sports Day</span>
+                  <span class="schedule-type">Events</span>
+                </div>
+              </article>
+            </div>
+          </aside>
         </div>
-        <div class="calendar-days" id="calendarDays">
-          <!-- Days will be populated by JavaScript -->
-        </div>
-      </div>
+      </main>
     </div>
     
     <script>
@@ -100,12 +166,12 @@
       };
       
       const events = {
-        1: ['Math Exam'],
-        5: ['Science Fair'],
-        12: ['Parent Meeting'],
-        15: ['History Test'],
-        20: ['Sports Day'],
-        25: ['Art Exhibition']
+        1: [{ title: 'Math Exam', type: 'academic', time: '9:00 AM' }],
+        5: [{ title: 'Science Fair', type: 'events', time: '2:00 PM' }],
+        12: [{ title: 'Parent Meeting', type: 'events', time: '10:00 AM' }],
+        15: [{ title: 'History Test', type: 'academic', time: '10:00 AM' }],
+        20: [{ title: 'Sports Day', type: 'events', time: '8:00 AM' }],
+        25: [{ title: 'Art Exhibition', type: 'events', time: '3:00 PM' }]
       };
       
       function renderCalendar() {
@@ -121,20 +187,18 @@
                               today.getFullYear() === calendarData.currentYear;
         const todayDate = today.getDate();
         
-        // Get previous month's days to fill the first week
         const prevMonth = calendarData.currentMonthIndex === 0 ? 11 : calendarData.currentMonthIndex - 1;
         const prevMonthDays = calendarData.months[prevMonth].days;
         
-        // Add empty cells for days before the first day of the month
+        // Add days from previous month
         for (let i = month.startDay - 1; i >= 0; i--) {
           const daySpan = document.createElement('div');
           daySpan.className = 'calendar-day other-month';
-          const prevDay = prevMonthDays - i;
-          daySpan.innerHTML = '<span class="day-number">' + prevDay + '</span>';
+          daySpan.innerHTML = '<span class="day-number">' + (prevMonthDays - i) + '</span>';
           daysContainer.appendChild(daySpan);
         }
         
-        // Add days of the month
+        // Add days of current month
         for (let day = 1; day <= month.days; day++) {
           const daySpan = document.createElement('div');
           daySpan.className = 'calendar-day';
@@ -150,14 +214,14 @@
           let dayContent = '<span class="day-number">' + day + '</span>';
           
           if (events[day]) {
-            dayContent += '<div class="event-indicator">' + events[day][0] + '</div>';
+            dayContent += '<div class="event-indicator">' + events[day][0].title + '</div>';
           }
           
           daySpan.innerHTML = dayContent;
           daysContainer.appendChild(daySpan);
         }
         
-        // Add next month's days to complete the grid (6 weeks)
+        // Add days from next month to fill grid
         const totalCells = month.startDay + month.days;
         const remainingCells = totalCells > 35 ? 42 - totalCells : 35 - totalCells;
         
@@ -182,8 +246,9 @@
         renderCalendar();
       }
       
-      // Initialize calendar on page load
+      // Initialize calendar
       document.addEventListener('DOMContentLoaded', renderCalendar);
     </script>
   </body>
 </html>
+
