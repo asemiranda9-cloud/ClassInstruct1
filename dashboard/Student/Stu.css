@@ -1,0 +1,1429 @@
+.students-dashboard {
+  background-color: #ffffff;
+  overflow: hidden;
+  width: 100%;
+  min-width: 1440px;
+  min-height: 1024px;
+  position: relative;
+}
+
+.students-dashboard .rectangle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 242px;
+  height: 1024px;
+}
+
+.students-dashboard .text-wrapper {
+  position: absolute;
+  top: 148px;
+  left: 39px;
+  width: 124px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+}
+
+.students-dashboard .div {
+  position: absolute;
+  top: 204px;
+  left: 39px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .frame {
+  position: absolute;
+  top: 412px;
+  left: 78px;
+  width: 100px;
+  height: 100px;
+}
+
+.students-dashboard .text-wrapper-2 {
+  position: absolute;
+  top: 263px;
+  left: 39px;
+  width: 168px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+}
+
+.students-dashboard .text-wrapper-3 {
+  top: 324px;
+  left: 39px;
+  width: 168px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .text-wrapper-4 {
+  top: 382px;
+  left: 39px;
+  width: 168px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .ellipse {
+  top: 32px;
+  left: 30px;
+  width: 58px;
+  height: 60px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.students-dashboard .text-wrapper-5 {
+  position: absolute;
+  top: 44px;
+  left: 104px;
+  width: 126px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #141313;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+}
+
+.students-dashboard .rectangle-2 {
+  position: absolute;
+  top: -26px;
+  left: 275px;
+  width: 1174px;
+  height: 1143px;
+  background-color: #ebebeb;
+  border-radius: 20px;
+  box-shadow: 0px 4px 4px #00000040;
+}
+
+.students-dashboard .text-wrapper-6 {
+  top: 88px;
+  left: 289px;
+  opacity: 0.5;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: -0.24px;
+  line-height: 14.4px;
+  text-decoration: underline;
+  white-space: nowrap;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .text-wrapper-7 {
+  top: 88px;
+  left: 347px;
+  opacity: 0.5;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: -0.24px;
+  line-height: 14.4px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-8 {
+  position: absolute;
+  top: 88px;
+  left: 423px;
+  opacity: 0.5;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 12px;
+  letter-spacing: -0.24px;
+  line-height: 14.4px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-9 {
+  top: 46px;
+  left: 1239px;
+  width: 256px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .text-wrapper-10 {
+  top: 34px;
+  left: 289px;
+  width: 296px;
+  font-family: "Itim-Regular", Helvetica;
+  font-weight: 400;
+  font-size: 48px;
+  letter-spacing: -0.96px;
+  line-height: 57.6px;
+  white-space: nowrap;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .rectangle-3 {
+  position: absolute;
+  top: 42px;
+  left: 850px;
+  width: 327px;
+  height: 38px;
+  background-color: #ffffff;
+  border-radius: 15px;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.students-dashboard .text-wrapper-11 {
+  position: absolute;
+  top: 50px;
+  left: 877px;
+  font-family: "Instrument Sans-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .search {
+  position: absolute;
+  top: 49px;
+  left: 1135px;
+  width: 24px;
+  height: 24px;
+}
+
+.students-dashboard .rectangle-4 {
+  position: absolute;
+  top: 117px;
+  left: 624px;
+  width: 753px;
+  height: 390px;
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+
+.students-dashboard .rectangle-5 {
+  position: absolute;
+  top: 553px;
+  left: 305px;
+  width: 970px;
+  height: 507px;
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+
+.students-dashboard .tuden {
+  top: 721px;
+  position: absolute;
+  left: 965px;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.students-dashboard .text-wrapper-12 {
+  position: absolute;
+  top: 723px;
+  left: 408px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-13 {
+  top: 723px;
+  left: 591px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-14 {
+  top: 723px;
+  left: 831px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-15 {
+  top: 726px;
+  position: absolute;
+  left: 1003px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-16 {
+  top: 725px;
+  position: absolute;
+  left: 716px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-17 {
+  top: 744px;
+  left: 408px;
+  opacity: 0.5;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .img {
+  top: 720px;
+  left: 350px;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.students-dashboard .rectangle-6 {
+  position: absolute;
+  top: 584px;
+  left: 647px;
+  width: 326px;
+  height: 32px;
+  background-color: #ffffff;
+  border-radius: 15px;
+  border: 1px solid;
+  border-color: #000000;
+}
+
+.students-dashboard .text-wrapper-18 {
+  position: absolute;
+  top: 589px;
+  left: 669px;
+  width: 205px;
+  opacity: 0.5;
+  font-family: "Instrument Sans-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-19 {
+  top: 592px;
+  left: 331px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .rectangle-7 {
+  position: absolute;
+  top: 117px;
+  left: 295px;
+  width: 288px;
+  height: 170px;
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+
+.students-dashboard .rectangle-8 {
+  position: absolute;
+  top: 312px;
+  left: 295px;
+  width: 288px;
+  height: 195px;
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+
+.students-dashboard .text-wrapper-20 {
+  top: 382px;
+  left: 331px;
+  font-size: 64px;
+  letter-spacing: -1.28px;
+  line-height: 76.8px;
+  position: absolute;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-21 {
+  top: 377px;
+  left: 505px;
+  font-size: 40px;
+  letter-spacing: -0.80px;
+  line-height: 48.0px;
+  position: absolute;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-22 {
+  top: 444px;
+  left: 505px;
+  font-size: 40px;
+  letter-spacing: -0.80px;
+  line-height: 48.0px;
+  position: absolute;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-23 {
+  position: absolute;
+  top: 333px;
+  left: 314px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 16px;
+  letter-spacing: -0.32px;
+  line-height: 19.2px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-24 {
+  position: absolute;
+  top: 372px;
+  left: 452px;
+  opacity: 0.7;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-25 {
+  position: absolute;
+  top: 430px;
+  left: 452px;
+  opacity: 0.7;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-26 {
+  top: 178px;
+  left: 314px;
+  font-size: 64px;
+  letter-spacing: -1.28px;
+  line-height: 76.8px;
+  position: absolute;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-27 {
+  position: absolute;
+  top: 137px;
+  left: 314px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 16px;
+  letter-spacing: -0.32px;
+  line-height: 19.2px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-28 {
+  top: 137px;
+  left: 662px;
+  width: 223px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.32px;
+  line-height: 19.2px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .tuden-2 {
+  position: absolute;
+  top: 158px;
+  left: 662px;
+  width: 654px;
+  height: 346px;
+  aspect-ratio: 1.89;
+  object-fit: cover;
+}
+
+.students-dashboard .tuden-3 {
+  position: absolute;
+  top: 145px;
+  left: 448px;
+  width: 114px;
+  height: 114px;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.students-dashboard .rectangle-9 {
+  position: absolute;
+  top: 332px;
+  left: 479px;
+  width: 75px;
+  height: 20px;
+  background-color: #d9d9d9;
+  border-radius: 5px;
+}
+
+.students-dashboard .rectangle-10 {
+  position: absolute;
+  top: 584px;
+  left: 1001px;
+  width: 100px;
+  height: 32px;
+  background-color: #6ce5e8;
+  border-radius: 5px;
+}
+
+.students-dashboard .rectangle-11 {
+  position: absolute;
+  top: 584px;
+  left: 1121px;
+  width: 120px;
+  height: 32px;
+  background-color: #41b8d5;
+  border-radius: 5px;
+}
+
+.students-dashboard .arrow-drop-down {
+  top: 590px;
+  left: 1078px;
+  position: absolute;
+  width: 15px;
+  height: 18px;
+  display: flex;
+}
+
+.students-dashboard .icon {
+  flex: 1;
+  width: 6.25px;
+}
+
+.students-dashboard .text-wrapper-29 {
+  position: absolute;
+  top: 590px;
+  left: 1011px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+}
+
+.students-dashboard .text-wrapper-30 {
+  position: absolute;
+  top: 591px;
+  left: 1147px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .icon-wrapper {
+  top: 332px;
+  left: 528px;
+  position: absolute;
+  width: 15px;
+  height: 18px;
+  display: flex;
+}
+
+.students-dashboard .text-wrapper-31 {
+  position: absolute;
+  top: 335px;
+  left: 490px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 11px;
+  letter-spacing: -0.22px;
+  line-height: 13.2px;
+  white-space: nowrap;
+}
+
+.students-dashboard .rectangle-12 {
+  position: absolute;
+  top: 652px;
+  left: 331px;
+  width: 902px;
+  height: 46px;
+  background-color: #d9d9d9;
+  border-radius: 10px;
+}
+
+.students-dashboard .text-wrapper-32 {
+  top: 666px;
+  left: 356px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-33 {
+  top: 666px;
+  left: 594px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .chevron-down {
+  top: 672px;
+  position: absolute;
+  left: 633px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .chevron-up {
+  top: 662px;
+  position: absolute;
+  left: 633px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .text-wrapper-34 {
+  position: absolute;
+  top: 666px;
+  left: 713px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .chevron-down-2 {
+  left: 744px;
+  position: absolute;
+  top: 672px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .chevron-up-2 {
+  left: 744px;
+  position: absolute;
+  top: 662px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .text-wrapper-35 {
+  position: absolute;
+  top: 666px;
+  left: 815px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .chevron-down-3 {
+  left: 901px;
+  position: absolute;
+  top: 672px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .chevron-up-3 {
+  left: 901px;
+  position: absolute;
+  top: 662px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .text-wrapper-36 {
+  top: 666px;
+  left: 966px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+  position: absolute;
+  color: #000000;
+}
+
+.students-dashboard .chevron-down-4 {
+  left: 1043px;
+  position: absolute;
+  top: 672px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .chevron-up-4 {
+  left: 1043px;
+  position: absolute;
+  top: 662px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .text-wrapper-37 {
+  position: absolute;
+  top: 666px;
+  left: 1121px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .chevron-down-5 {
+  left: 1164px;
+  position: absolute;
+  top: 672px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .chevron-up-5 {
+  left: 1164px;
+  position: absolute;
+  top: 662px;
+  width: 16px;
+  height: 16px;
+}
+
+.students-dashboard .line {
+  top: 778px;
+  left: 331px;
+  height: 3px;
+  position: absolute;
+  width: 902px;
+}
+
+.students-dashboard .rectangle-13 {
+  position: absolute;
+  top: 723px;
+  left: 1094px;
+  width: 110px;
+  height: 32px;
+  background-color: #6fef77;
+  border-radius: 10px;
+}
+
+.students-dashboard .text-wrapper-38 {
+  top: 730px;
+  position: absolute;
+  left: 1127px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 15px;
+  letter-spacing: -0.30px;
+  line-height: 18.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .tuden-4 {
+  top: 804px;
+  position: absolute;
+  left: 965px;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.students-dashboard .text-wrapper-39 {
+  top: 806px;
+  position: absolute;
+  left: 408px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-40 {
+  top: 806px;
+  left: 591px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-41 {
+  top: 806px;
+  left: 831px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-42 {
+  top: 809px;
+  position: absolute;
+  left: 1003px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-43 {
+  top: 808px;
+  position: absolute;
+  left: 716px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-44 {
+  top: 827px;
+  left: 408px;
+  opacity: 0.5;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .ellipse-2 {
+  top: 803px;
+  left: 350px;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.students-dashboard .line-2 {
+  top: 861px;
+  left: 331px;
+  height: 3px;
+  position: absolute;
+  width: 902px;
+}
+
+.students-dashboard .rectangle-14 {
+  position: absolute;
+  top: 806px;
+  left: 1094px;
+  width: 110px;
+  height: 32px;
+  background-color: #6fef77;
+  border-radius: 10px;
+}
+
+.students-dashboard .text-wrapper-45 {
+  top: 813px;
+  position: absolute;
+  left: 1127px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 15px;
+  letter-spacing: -0.30px;
+  line-height: 18.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .tuden-5 {
+  top: 887px;
+  position: absolute;
+  left: 965px;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.students-dashboard .text-wrapper-46 {
+  top: 889px;
+  position: absolute;
+  left: 408px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-47 {
+  top: 889px;
+  left: 591px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-48 {
+  top: 889px;
+  left: 831px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+/* Bar Graph Styles for Student Performance */
+.students-dashboard .bar-graph-container {
+  position: absolute;
+  top: 158px;
+  left: 662px;
+  width: 654px;
+  height: 346px;
+  display: flex;
+  padding: 20px;
+}
+
+.students-dashboard .bar-graph {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  width: 580px;
+  height: 280px;
+  padding-bottom: 35px;
+  border-bottom: 3px solid #000000;
+}
+
+.students-dashboard .bar-category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.students-dashboard .bar-subgroup.stacked {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.students-dashboard .bar {
+  width: 45px;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 6px;
+  transition: height 0.3s ease;
+  min-height: 25px;
+}
+
+/* Boys bars - Blue shades */
+.students-dashboard .bar-boys-excellent {
+  background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 100%);
+}
+.students-dashboard .bar-boys-good {
+  background: linear-gradient(180deg, #64b5f6 0%, #1976d2 100%);
+}
+.students-dashboard .bar-boys-average {
+  background: linear-gradient(180deg, #42a5f5 0%, #1565c0 100%);
+}
+.students-dashboard .bar-boys-needs-improvement {
+  background: linear-gradient(180deg, #1e88e5 0%, #0d47a1 100%);
+}
+.students-dashboard .bar-boys-failing {
+  background: linear-gradient(180deg, #1976d2 0%, #002171 100%);
+}
+
+/* Girls bars - Pink/Purple shades */
+.students-dashboard .bar-girls-excellent {
+  background: linear-gradient(180deg, #f48fb1 0%, #c2185b 100%);
+}
+.students-dashboard .bar-girls-good {
+  background: linear-gradient(180deg, #f06292 0%, #d81b60 100%);
+}
+.students-dashboard .bar-girls-average {
+  background: linear-gradient(180deg, #ec407a 0%, #c2185b 100%);
+}
+.students-dashboard .bar-girls-needs-improvement {
+  background: linear-gradient(180deg, #e91e63 0%, #ad1457 100%);
+}
+.students-dashboard .bar-girls-failing {
+  background: linear-gradient(180deg, #d81b60 0%, #880e4f 100%);
+}
+
+.students-dashboard .bar-value {
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 13px;
+  text-shadow: 0px 0px 2px rgba(255,255,255,0.8);
+}
+
+.students-dashboard .bar-label {
+  margin-top: 12px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 600;
+  color: #000000;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.students-dashboard .bar-graph-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 280px;
+  padding-bottom: 35px;
+  margin-right: 15px;
+  font-family: "Inter-Bold", Helvetica;
+  font-weight: 700;
+  color: #000000;
+  font-size: 14px;
+}
+
+.students-dashboard .bar-legend {
+  position: absolute;
+  top: 165px;
+  left: 1100px;
+  display: flex;
+  gap: 25px;
+}
+
+.students-dashboard .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 600;
+  font-size: 14px;
+  color: #000000;
+}
+
+.students-dashboard .legend-color {
+  width: 20px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.students-dashboard .boys-color {
+  background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 100%);
+}
+
+.students-dashboard .girls-color {
+  background: linear-gradient(180deg, #f48fb1 0%, #c2185b 100%);
+}
+
+/* Pie Chart Styles for Attendance */
+.students-dashboard .pie-chart-container {
+  position: absolute;
+  top: 645px;
+  left: 305px;
+  width: 250px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.students-dashboard .pie-chart {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #4caf50 0deg 306deg,
+    #f44336 306deg 324deg,
+    #ff9800 324deg 349.2deg,
+    #9c27b0 349.2deg 360deg
+  );
+  position: relative;
+}
+
+.students-dashboard .pie-segment {
+  display: none;
+}
+
+.students-dashboard .pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.students-dashboard .pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 11px;
+  color: #000000;
+}
+
+.students-dashboard .pie-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.students-dashboard .present-color {
+  background-color: #4caf50;
+}
+
+.students-dashboard .absent-color {
+  background-color: #f44336;
+}
+
+.students-dashboard .late-color {
+  background-color: #ff9800;
+}
+
+.students-dashboard .excused-color {
+  background-color: #9c27b0;
+}
+
+.students-dashboard .text-wrapper-49 {
+  top: 892px;
+  position: absolute;
+  left: 1003px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-50 {
+  top: 891px;
+  position: absolute;
+  left: 716px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-51 {
+  top: 910px;
+  left: 408px;
+  opacity: 0.5;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .ellipse-3 {
+  top: 886px;
+  left: 350px;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.students-dashboard .line-3 {
+  top: 944px;
+  left: 331px;
+  height: 3px;
+  position: absolute;
+  width: 902px;
+}
+
+.students-dashboard .rectangle-15 {
+  position: absolute;
+  top: 889px;
+  left: 1094px;
+  width: 110px;
+  height: 32px;
+  background-color: #6fef77;
+  border-radius: 10px;
+}
+
+.students-dashboard .text-wrapper-52 {
+  top: 896px;
+  position: absolute;
+  left: 1127px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 15px;
+  letter-spacing: -0.30px;
+  line-height: 18.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .tuden-6 {
+  top: 974px;
+  position: absolute;
+  left: 965px;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.students-dashboard .text-wrapper-53 {
+  top: 976px;
+  position: absolute;
+  left: 408px;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  color: #000000;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-54 {
+  top: 976px;
+  left: 591px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-55 {
+  top: 976px;
+  left: 831px;
+  position: absolute;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-56 {
+  top: 979px;
+  position: absolute;
+  left: 1003px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 20px;
+  letter-spacing: -0.40px;
+  line-height: 24.0px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-57 {
+  top: 978px;
+  position: absolute;
+  left: 716px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 24px;
+  letter-spacing: -0.48px;
+  line-height: 28.8px;
+  white-space: nowrap;
+}
+
+.students-dashboard .text-wrapper-58 {
+  top: 997px;
+  left: 408px;
+  opacity: 0.5;
+  font-family: "Inter-Medium", Helvetica;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 16.8px;
+  position: absolute;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.students-dashboard .ellipse-4 {
+  top: 973px;
+  left: 350px;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  object-fit: cover;
+}
+
+.students-dashboard .line-4 {
+  top: -2473px;
+  left: -2155px;
+  height: 1px;
+  position: absolute;
+  width: 902px;
+}
+
+.students-dashboard .rectangle-16 {
+  position: absolute;
+  top: 976px;
+  left: 1094px;
+  width: 110px;
+  height: 32px;
+  background-color: #6fef77;
+  border-radius: 10px;
+}
+
+.students-dashboard .text-wrapper-59 {
+  top: 983px;
+  position: absolute;
+  left: 1127px;
+  font-family: "Inter-Regular", Helvetica;
+  font-weight: 400;
+  color: #000000;
+  font-size: 15px;
+  letter-spacing: -0.30px;
+  line-height: 18.0px;
+  white-space: nowrap;
+}
