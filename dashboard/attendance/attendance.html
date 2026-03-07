@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <title>ClassInstruct - Attendance</title>
+    <link rel="stylesheet" href="global.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="classinstruct-AI">
+      <!-- Sidebar -->
+      <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="8" fill="#4f46e5"/>
+            <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>ClassInstruct</span>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="user-profile">
+          <img src="../../image/Student.png" alt="Teacher profile picture" />
+          <div>
+            <div class="user-name">Teacher</div>
+            <div class="user-role">Instructor</div>
+          </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+          <button type="button" onclick="window.location.href='../dashboard.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+          <button type="button" onclick="window.location.href='../ai/classinstruct-ai.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>ClassInstruct AI</span>
+          </button>
+          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <button type="button" onclick="window.location.href='../dashboard.html#students'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span>Students</span>
+          </button>
+          <button type="button" onclick="window.location.href='../attendance/attendance.html'" class="active">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <span>Attendance</span>
+          </button>
+        </nav>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+          <h1 class="header-title">Attendance</h1>
+          
+          <div class="search-container">
+            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <label for="search-input" class="visually-hidden">Search</label>
+            <input type="search" id="search-input" placeholder="Search students, sections..." aria-label="Search" />
+          </div>
+          
+          <div class="header-actions">
+            <span class="header-brand">ClassInstruct</span>
+          </div>
+        </header>
+        
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+          <!-- Summary Section -->
+          <section class="summary-section">
+            <h2 class="section-title">Attendance Summary</h2>
+            <div class="summary-cards">
+              <article class="summary-card">
+                <div class="card-header">
+                  <h3>All Students</h3>
+                  <span class="badge present">Present</span>
+                </div>
+                <div class="card-value">275</div>
+                <div class="breakdown">
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">On-Time</span>
+                    <span class="breakdown-value">267</span>
+                    <span class="breakdown-percent">92.7%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Late</span>
+                    <span class="breakdown-value">8</span>
+                    <span class="breakdown-percent">2.8%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Absent</span>
+                    <span class="breakdown-value">13</span>
+                    <span class="breakdown-percent absent">4.5%</span>
+                  </div>
+                </div>
+              </article>
+              
+              <article class="summary-card">
+                <div class="card-header">
+                  <h3>Section 11</h3>
+                  <span class="badge present">Present</span>
+                </div>
+                <div class="card-value">29</div>
+                <div class="breakdown">
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">On-Time</span>
+                    <span class="breakdown-value">29</span>
+                    <span class="breakdown-percent">90.6%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Late</span>
+                    <span class="breakdown-value">2</span>
+                    <span class="breakdown-percent">6.3%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Absent</span>
+                    <span class="breakdown-value">1</span>
+                    <span class="breakdown-percent absent">3.1%</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+          
+          <!-- Table Controls -->
+          <div class="table-controls">
+            <button class="control-button">
+              <span>Section 11</span>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <button class="control-button">
+              <span>Mar 2026</span>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Attendance Table -->
+          <section class="table-section">
+            <div class="table-container">
+              <table class="attendance-table">
+                <thead>
+                  <tr>
+                    <th class="student-col">Student</th>
+                    <th>Mon, Mar 2</th>
+                    <th>Tue, Mar 3</th>
+                    <th>Wed, Mar 4</th>
+                    <th>Thu, Mar 5</th>
+                    <th>Fri, Mar 6</th>
+                    <th>Sat, Mar 7</th>
+                    <th>Sun, Mar 8</th>
+                    <th>Mon, Mar 9</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="student-name">
+<img src="../../image/Student.png" alt="" class="student-avatar" />
+                      Ernani Amores
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Neil Tarusanan
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Kobe Bryant
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Angelica Ramos
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Jasmine Capet
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Cara Sablayan
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Ja Morant
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Cobie Manalo
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-late"></td>
+                    <td class="status-late"></td>
+                    <td class="status-late"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Kai Sotto
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                  <tr>
+                    <td class="student-name">
+                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
+                      Nicole Bonoan
+                    </td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                    <td class="status-present"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
+
