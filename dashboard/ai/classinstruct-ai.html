@@ -1,40 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <title>ClassInstruct - ClassInstruct AI</title>
-    <link rel="stylesheet" href="dashboardglobal.css" />
-    <link rel="stylesheet" href="dashboardstyle.css" />
-</head>
-<body>
-    <div class="dashboard">
-        <aside class="sidebar" role="navigation" aria-label="Main navigation">
-            <img class="img" src="img/rectangle-4215.svg" alt="" />
-            <div class="sidebar-header">
-                <img class="ellipse" src="img/ellipse-13.png" alt="Teacher profile picture" />
-                <span class="text-wrapper-6">Ronen</span>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html">Dashboard</a>
-                <a href="#classinstruct-ai" class="active">ClassInstruct AI</a>
-                <a href="#calendar">Calendar</a>
-                <a href="#students">Students</a>
-                <a href="#attendance">Attendance</a>
-            </nav>
-        </aside>
-        <main class="main-content">
-            <header class="header">
-                <h1 class="title">ClassInstruct</h1>
-            </header>
-            <section class="ai-content" id="classinstruct-ai">
-                <h2>WELCOME, Adrian 👋</h2>
-                <p>How can I help you today?</p>
-                <div class="search-container">
-                    <input type="search" id="search-input" class="search-input" placeholder="Ask or search for anything..." aria-label="Search ClassInstruct AI" />
+    <title>ClassInstruct AI </title>
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="classinstruct-AI">
+      <!-- Sidebar -->
+      <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="8" fill="#4f46e5"/>
+            <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>ClassInstruct</span>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="user-profile">
+          <img src="img/ellipse-13.png" alt="Teacher profile picture" />
+          <div>
+            <div class="user-name">Teacher</div>
+            <div class="user-role">Instructor</div>
+          </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+          <button type="button" onclick="window.location.href='dashboard.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+          <button type="button" onclick="window.location.href='classinstruct-ai.html'" class="active">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>ClassInstruct AI</span>
+          </button>
+          <button type="button" onclick="window.location.href='calendar.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <button type="button" onclick="window.location.href='students.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span>Students</span>
+          </button>
+          <button type="button" onclick="window.location.href='attendance.html'">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <span>Attendance</span>
+          </button>
+        </nav>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+          <h1 class="header-title">ClassInstruct AI</h1>
+          
+          <div class="search-container">
+            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <label for="search-input" class="visually-hidden">Search</label>
+            <input type="search" id="search-input" placeholder="Search for lessons, students, or resources..." aria-label="Search" />
+          </div>
+          
+          <div class="header-actions">
+            <span class="header-brand">ClassInstruct AI</span>
+          </div>
+        </header>
+        
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+          <!-- Chat Area -->
+          <div class="chat-area">
+            <div class="chat-container">
+              <div class="chat-messages">
+                <!-- Welcome Message -->
+                <div class="welcome-message">
+                  <h2>Welcome to ClassInstruct AI</h2>
+                  <p>Ask me anything about your classes, students, or attendance.</p>
                 </div>
-            </section>
-        </main>
+              </div>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input-wrapper">
+              <div class="chat-input-container">
+                <label for="chat-input" class="visually-hidden">Ask or search for anything</label>
+                <input
+                  type="text"
+                  id="chat-input"
+                  placeholder="Ask or search for anything..."
+                  aria-label="Ask or search for anything"
+                />
+                <button type="button" class="action-button" aria-label="Voice input">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                  </svg>
+                </button>
+                <button type="button" class="action-button" aria-label="Attach file">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                  </svg>
+                </button>
+                <button type="submit" class="action-button send-btn" aria-label="Send message">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Sidebar - Quick Actions -->
+          <aside class="right-sidebar">
+            <div class="sidebar-actions">
+              <button type="button" class="icon-button" aria-label="Collapse">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                </svg>
+              </button>
+              <button type="button" class="icon-button" aria-label="New Chat">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
+              <button type="button" class="icon-button" aria-label="Lesson Plan">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2-2-2 0 01V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </button>
+              <button type="button" class="icon-button" aria-label="Interactive Quiz">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+              </button>
+              <button type="button" class="icon-button" aria-label="History">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </button>
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
-</body>
+  </body>
 </html>
+
