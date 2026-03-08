@@ -86,17 +86,18 @@ body {
    ============================================ */
 .sidebar {
   width: var(--sidebar-width);
-  background-color: var(--bg-sidebar);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   color: var(--text-white);
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
   z-index: 100;
   overflow-y: auto;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
 }
 
 /* Logo Section */
@@ -106,20 +107,21 @@ body {
   gap: var(--spacing-md);
   padding-bottom: var(--spacing-xl);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
-.sidebar-logo img {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
+.sidebar-logo svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .sidebar-logo span {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   letter-spacing: -0.025em;
+  background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* User Profile */
@@ -127,35 +129,37 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-xl);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .user-profile img {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-full);
   object-fit: cover;
-  border: 2px solid var(--primary-color);
+  border: 3px solid var(--primary-color);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
 }
 
 .user-profile .user-name {
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .user-profile .user-role {
   font-size: 0.8rem;
-  color: var(--text-light);
+  color: #94a3b8;
 }
 
 /* Navigation Menu */
 .nav-menu {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   flex: 1;
 }
 
@@ -163,19 +167,20 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-md);
-  color: var(--text-light);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: #cbd5e1;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 200ms ease;
   text-align: left;
   width: 100%;
   position: relative;
+<<<<<<< HEAD
 }
 
 .nav-menu button::after {
@@ -183,11 +188,27 @@ body {
   position: absolute;
   inset: 0;
   cursor: pointer;
+=======
+  overflow: hidden;
+}
+
+.nav-menu button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--primary-color);
+  transform: scaleY(0);
+  transition: transform 200ms ease;
+>>>>>>> f4f770621cbaf106deb2f8e95eb034c4cfa7506d
 }
 
 .nav-menu button:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-white);
+  transform: translateX(4px);
 }
 
 .nav-menu button:focus-visible {
@@ -199,15 +220,26 @@ body {
 
 
 .nav-menu button.active {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
   color: var(--text-white);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+.nav-menu button.active::before {
+  transform: scaleY(1);
 }
 
 .nav-menu button .nav-icon {
+<<<<<<< HEAD
   width: 20px;
   height: 20px;
   opacity: 0.8;
   flex-shrink: 0;
+=======
+  width: 22px;
+  height: 22px;
+  opacity: 0.9;
+>>>>>>> f4f770621cbaf106deb2f8e95eb034c4cfa7506d
 }
 
 /* ============================================
