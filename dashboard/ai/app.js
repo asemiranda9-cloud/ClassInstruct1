@@ -5,26 +5,33 @@ const chatMessages = document.querySelector(".chat-messages");
 let isSending = false;
 
 async function sendMessageToGemini(message) {
-  const response = await fetch("http://localhost:3000/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ message }),
-  });
-
-  let data = {};
   try {
-    data = await response.json();
-  } catch {
-    throw new Error("Server returned an invalid response.");
-  }
+    const response = await fetch("http://localhost:3000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+    });
 
-  if (!response.ok) {
-    throw new Error(data.reply || "Server error");
-  }
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("Server returned an invalid response.");
+    }
 
-  return data.reply;
+    if (!response.ok) {
+      throw new Error(data.reply || `Server error (${response.status})`);
+    }
+
+    return data.reply;
+  } catch (error) {
+    if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+      throw new Error("Cannot connect to server. Please ensure the Node.js server is running.");
+    }
+    throw error;
+  }
 }
 
 function addMessage(text, className) {
