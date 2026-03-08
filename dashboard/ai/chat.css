@@ -534,3 +534,22 @@
   color: #000000;
   opacity: 0.5;
 }
+.user-message {
+  align-self: flex-end;
+  background-color: #4f46e5;
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  margin: 5px 0;
+  max-width: 70%;
+}
+
+.ai-message {
+  align-self: flex-start;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  padding: 10px;
+  border-radius: 12px;
+  margin: 5px 0;
+  max-width: 70%;
+}

@@ -175,12 +175,28 @@ body {
   transition: all var(--transition-fast);
   text-align: left;
   width: 100%;
+  position: relative;
+}
+
+.nav-menu button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
 }
 
 .nav-menu button:hover {
   background-color: rgba(255, 255, 255, 0.08);
   color: var(--text-white);
 }
+
+.nav-menu button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-white);
+}
+
 
 .nav-menu button.active {
   background-color: var(--primary-color);
@@ -191,6 +207,7 @@ body {
   width: 20px;
   height: 20px;
   opacity: 0.8;
+  flex-shrink: 0;
 }
 
 /* ============================================

@@ -30,33 +30,33 @@
         </div>
         
         <!-- Navigation Menu -->
-        <nav class="nav-menu">
-          <button type="button" onclick="window.location.href='../dashboard.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <nav class="nav-menu" role="menubar" aria-label="Main navigation">
+          <button type="button" onclick="window.location.href='../dashboard.html'" role="menuitem" tabindex="0">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
             </svg>
             <span>Dashboard</span>
           </button>
-          <button type="button" onclick="window.location.href='classinstruct-ai.html'" class="active">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" onclick="window.location.href='classinstruct-ai.html'" class="active" role="menuitem" tabindex="0" aria-current="page">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
             <span>ClassInstruct AI</span>
           </button>
-          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'" role="menuitem" tabindex="0">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
             <span>Calendar</span>
           </button>
-          <button type="button" onclick="window.location.href='../Student/Student.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" onclick="window.location.href='../Student/Student.html'" role="menuitem" tabindex="0">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
             </svg>
             <span>Students</span>
           </button>
-          <button type="button" onclick="window.location.href='../dashboard.html#attendance'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" onclick="window.location.href='../dashboard.html#attendance'" role="menuitem" tabindex="0">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
             </svg>
             <span>Attendance</span>
@@ -129,27 +129,27 @@
           <!-- Right Sidebar - Quick Actions -->
           <aside class="right-sidebar">
             <div class="sidebar-actions">
-              <button type="button" class="icon-button" aria-label="Collapse">
+<button type="button" class="icon-button" aria-label="Collapse" onclick="toggleSidebar()" title="Collapse Sidebar">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
                 </svg>
               </button>
-              <button type="button" class="icon-button" aria-label="New Chat">
+<button type="button" class="icon-button" aria-label="New Chat" onclick="newChat()" title="New Chat">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
               </button>
-              <button type="button" class="icon-button" aria-label="Lesson Plan">
+<button type="button" class="icon-button" aria-label="Lesson Plan" onclick="openLessonPlan()" title="Lesson Plan">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2-2-2 0 01V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
               </button>
-              <button type="button" class="icon-button" aria-label="Interactive Quiz">
+<button type="button" class="icon-button" aria-label="Interactive Quiz" onclick="openQuiz()" title="Interactive Quiz">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
               </button>
-              <button type="button" class="icon-button" aria-label="History">
+<button type="button" class="icon-button" aria-label="History" onclick="openHistory()" title="History">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -160,5 +160,42 @@
       </main>
     </div>
   </body>
+  <script>
+    // Right sidebar button functions
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.right-sidebar');
+      if (sidebar) {
+        sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+      }
+    }
+    
+    function newChat() {
+      // Clear chat input and messages for new conversation
+      const chatInput = document.getElementById('chat-input');
+      const chatMessages = document.querySelector('.chat-messages');
+      if (chatInput) chatInput.value = '';
+      if (chatMessages) {
+        chatMessages.innerHTML = `
+          <div class="welcome-message">
+            <h2>New Conversation</h2>
+            <p>Start a fresh conversation with ClassInstruct AI.</p>
+          </div>
+        `;
+      }
+    }
+    
+    function openLessonPlan() {
+      alert('Lesson Plan feature - Coming soon!');
+    }
+    
+    function openQuiz() {
+      alert('Interactive Quiz feature - Coming soon!');
+    }
+    
+    function openHistory() {
+      alert('Chat History feature - Coming soon!');
+    }
+  </script>
+  <script src="app.js"></script>
 </html>
 
