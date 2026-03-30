@@ -10,9 +10,9 @@
   </head>
   <body>
     <div class="classinstruct-AI">
-      <!-- Sidebar -->
+
+      <!-- ══════════════════ SIDEBAR ══════════════════ -->
       <aside class="sidebar" role="navigation" aria-label="Main navigation">
-        <!-- Logo -->
         <div class="sidebar-logo">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="40" height="40" rx="8" fill="#4f46e5"/>
@@ -20,17 +20,15 @@
           </svg>
           <span>ClassInstruct</span>
         </div>
-        
-        <!-- User Profile -->
+
         <div class="user-profile">
-          <img src="../../image/Student.png" alt="Teacher profile picture" />
+          <img src="../../image/Student.png" alt="Teacher profile picture" onerror="this.style.display='none'" />
           <div>
             <div class="user-name">Teacher</div>
             <div class="user-role">Instructor</div>
           </div>
         </div>
-        
-        <!-- Navigation Menu -->
+
         <nav class="nav-menu">
           <button type="button" onclick="window.location.href='../dashboard.html'">
             <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +54,7 @@
             </svg>
             <span>Students</span>
           </button>
-          <button type="button" onclick="window.location.href='../attendance/attendance.html'" class="active">
+          <button type="button" class="active">
             <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
             </svg>
@@ -64,265 +62,382 @@
           </button>
         </nav>
       </aside>
-      
-      <!-- Main Content -->
+
+      <!-- ══════════════════ MAIN ══════════════════ -->
       <main class="main-content">
-        <!-- Header -->
         <header class="header">
           <h1 class="header-title">Attendance</h1>
-          
+
           <div class="search-container">
             <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <label for="search-input" class="visually-hidden">Search</label>
-            <input type="search" id="search-input" placeholder="Search students, sections..." aria-label="Search" />
+            <input type="search" id="search-input" placeholder="Search students, sections..." aria-label="Search" oninput="filterTable()" />
           </div>
-          
+
           <div class="header-actions">
             <span class="header-brand">ClassInstruct</span>
           </div>
         </header>
-        
-        <!-- Content Wrapper -->
+
         <div class="content-wrapper">
-          <!-- Summary Section -->
+
+          <!-- ── Summary Section ── -->
           <section class="summary-section">
             <h2 class="section-title">Attendance Summary</h2>
-            <div class="summary-cards">
-              <article class="summary-card">
-                <div class="card-header">
-                  <h3>All Students</h3>
-                  <span class="badge present">Present</span>
-                </div>
-                <div class="card-value">275</div>
-                <div class="breakdown">
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">On-Time</span>
-                    <span class="breakdown-value">267</span>
-                    <span class="breakdown-percent">92.7%</span>
-                  </div>
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">Late</span>
-                    <span class="breakdown-value">8</span>
-                    <span class="breakdown-percent">2.8%</span>
-                  </div>
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">Absent</span>
-                    <span class="breakdown-value">13</span>
-                    <span class="breakdown-percent absent">4.5%</span>
-                  </div>
-                </div>
-              </article>
-              
-              <article class="summary-card">
-                <div class="card-header">
-                  <h3>Section 11</h3>
-                  <span class="badge present">Present</span>
-                </div>
-                <div class="card-value">29</div>
-                <div class="breakdown">
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">On-Time</span>
-                    <span class="breakdown-value">29</span>
-                    <span class="breakdown-percent">90.6%</span>
-                  </div>
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">Late</span>
-                    <span class="breakdown-value">2</span>
-                    <span class="breakdown-percent">6.3%</span>
-                  </div>
-                  <div class="breakdown-item">
-                    <span class="breakdown-label">Absent</span>
-                    <span class="breakdown-value">1</span>
-                    <span class="breakdown-percent absent">3.1%</span>
-                  </div>
-                </div>
-              </article>
+            <div class="summary-cards" id="summaryCards">
+              <!-- Rendered by JS -->
+              <div class="summary-card" style="opacity:.5;text-align:center;padding:40px">Loading summary…</div>
             </div>
           </section>
-          
-          <!-- Table Controls -->
+
+          <!-- ── Table Controls ── -->
           <div class="table-controls">
-            <button class="control-button">
-              <span>Section 11</span>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-            <button class="control-button">
-              <span>Mar 2026</span>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
+            <div style="position:relative">
+              <button class="control-button" id="sectionBtn" onclick="toggleDropdown('sectionDropdown')">
+                <span id="sectionLabel">Loading…</span>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div id="sectionDropdown" class="dropdown-menu" style="display:none"></div>
+            </div>
+
+            <div style="position:relative">
+              <button class="control-button" id="monthBtn" onclick="toggleDropdown('monthDropdown')">
+                <span id="monthLabel">Loading…</span>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div id="monthDropdown" class="dropdown-menu" style="display:none"></div>
+            </div>
           </div>
-          
-          <!-- Attendance Table -->
+
+          <!-- ── Attendance Table ── -->
           <section class="table-section">
             <div class="table-container">
-              <table class="attendance-table">
-                <thead>
-                  <tr>
-                    <th class="student-col">Student</th>
-                    <th>Mon, Mar 2</th>
-                    <th>Tue, Mar 3</th>
-                    <th>Wed, Mar 4</th>
-                    <th>Thu, Mar 5</th>
-                    <th>Fri, Mar 6</th>
-                    <th>Sat, Mar 7</th>
-                    <th>Sun, Mar 8</th>
-                    <th>Mon, Mar 9</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="student-name">
-<img src="../../image/Student.png" alt="" class="student-avatar" />
-                      Ernani Amores
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Neil Tarusanan
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Kobe Bryant
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Angelica Ramos
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Jasmine Capet
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Cara Sablayan
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Ja Morant
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Cobie Manalo
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-late"></td>
-                    <td class="status-late"></td>
-                    <td class="status-late"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Kai Sotto
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                  <tr>
-                    <td class="student-name">
-                      <img src="img/ellipse-13.png" alt="" class="student-avatar" />
-                      Nicole Bonoan
-                    </td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                    <td class="status-present"></td>
-                  </tr>
-                </tbody>
-              </table>
+              <div id="tableWrap" style="overflow-x:auto">
+                <table class="attendance-table" id="attendanceTable">
+                  <thead id="tableHead"></thead>
+                  <tbody id="tableBody">
+                    <tr><td colspan="32" style="text-align:center;padding:40px;opacity:.5">Loading attendance…</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
-        </div>
+
+        </div><!-- /content-wrapper -->
       </main>
-    </div>
+    </div><!-- /classinstruct-AI -->
+
+    <!-- ══════════════════════════════════
+         DROPDOWN STYLES (inline, small)
+    ══════════════════════════════════ -->
+    <style>
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 200;
+        min-width: 160px;
+        overflow: hidden;
+      }
+      .dropdown-menu button {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        text-align: left;
+        font-size: 0.875rem;
+        font-family: inherit;
+        cursor: pointer;
+        color: var(--text-primary);
+        transition: background var(--transition-fast);
+      }
+      .dropdown-menu button:hover { background: var(--bg-input); }
+      .dropdown-menu button.selected { color: var(--primary-color); font-weight: 600; }
+
+      /* Status dots in table */
+      .status-dot {
+        display: inline-block;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+      .status-dot:hover { transform: scale(1.3); }
+      .dot-present { background: var(--status-present); }
+      .dot-late    { background: var(--status-late); }
+      .dot-absent  { background: var(--status-absent); }
+      .dot-none    { background: #e2e8f0; }
+    </style>
+
+    <!-- ══════════════════════════════════
+         JAVASCRIPT — wired to MySQL via attendance_db.php
+    ══════════════════════════════════ -->
+    <script>
+    const API = 'attendance_db.php';
+
+    // ── State ──
+    let state = {
+      sections:    [],
+      sectionId:   1,
+      sectionName: '',
+      year:        new Date().getFullYear(),
+      month:       new Date().getMonth() + 1,
+    };
+
+    const MONTHS = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+
+    // ── Fetch helpers ──
+    async function apiFetch(params) {
+      const qs  = new URLSearchParams(params).toString();
+      const res = await fetch(`${API}?${qs}`);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function apiPost(body) {
+      const res = await fetch(API, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      return res.json();
+    }
+
+    // ── Init ──
+    async function init() {
+      try {
+        state.sections = await apiFetch({ action: 'sections' });
+        if (state.sections.length) {
+          state.sectionId   = state.sections[0].id;
+          state.sectionName = state.sections[0].name;
+        }
+        buildSectionDropdown();
+        buildMonthDropdown();
+        await Promise.all([loadSummary(), loadAttendance()]);
+      } catch (e) {
+        showError('Could not connect to database. Is XAMPP running? — ' + e.message);
+      }
+    }
+
+    // ── Dropdowns ──
+    function toggleDropdown(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.table-controls')) {
+        document.querySelectorAll('.dropdown-menu').forEach(d => d.style.display = 'none');
+      }
+    });
+
+    function buildSectionDropdown() {
+      const dd = document.getElementById('sectionDropdown');
+      dd.innerHTML = state.sections.map(s =>
+        `<button class="${s.id == state.sectionId ? 'selected' : ''}" onclick="selectSection(${s.id},'${escHtml(s.name)}')">${escHtml(s.name)}</button>`
+      ).join('');
+      document.getElementById('sectionLabel').textContent = state.sectionName || 'Select Section';
+    }
+
+    function buildMonthDropdown() {
+      const dd = document.getElementById('monthDropdown');
+      const now = new Date();
+      let html  = '';
+      // Show current year ±1
+      for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
+        for (let m = 1; m <= 12; m++) {
+          const sel = (y === state.year && m === state.month) ? 'selected' : '';
+          html += `<button class="${sel}" onclick="selectMonth(${y},${m})">${MONTHS[m-1]} ${y}</button>`;
+        }
+      }
+      dd.innerHTML = html;
+      updateMonthLabel();
+    }
+
+    function selectSection(id, name) {
+      state.sectionId   = id;
+      state.sectionName = name;
+      document.getElementById('sectionLabel').textContent = name;
+      document.getElementById('sectionDropdown').style.display = 'none';
+      buildSectionDropdown();
+      Promise.all([loadSummary(), loadAttendance()]);
+    }
+
+    function selectMonth(year, month) {
+      state.year  = year;
+      state.month = month;
+      document.getElementById('monthDropdown').style.display = 'none';
+      buildMonthDropdown();
+      Promise.all([loadSummary(), loadAttendance()]);
+    }
+
+    function updateMonthLabel() {
+      document.getElementById('monthLabel').textContent = `${MONTHS[state.month-1]} ${state.year}`;
+    }
+
+    // ── Summary Cards ──
+    async function loadSummary() {
+      const data = await apiFetch({ action: 'summary', year: state.year, month: state.month });
+      const cards = document.getElementById('summaryCards');
+
+      const mkCard = (title, d) => `
+        <article class="summary-card">
+          <div class="card-header">
+            <h3>${escHtml(title)}</h3>
+            <span class="badge present">Present</span>
+          </div>
+          <div class="card-value">${d.present}</div>
+          <div class="breakdown">
+            <div class="breakdown-item">
+              <span class="breakdown-label">On-Time</span>
+              <span class="breakdown-value">${d.present}</span>
+              <span class="breakdown-percent">${d.present_pct}%</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">Late</span>
+              <span class="breakdown-value">${d.late}</span>
+              <span class="breakdown-percent">${d.late_pct}%</span>
+            </div>
+            <div class="breakdown-item">
+              <span class="breakdown-label">Absent</span>
+              <span class="breakdown-value">${d.absent}</span>
+              <span class="breakdown-percent absent">${d.absent_pct}%</span>
+            </div>
+          </div>
+        </article>`;
+
+      let html = mkCard('All Students', data.overall);
+      const sec = data.sections.find(s => s.id == state.sectionId);
+      if (sec) html += mkCard(sec.name, sec);
+      cards.innerHTML = html;
+    }
+
+    // ── Attendance Table ──
+    let tableData = { dates: [], students: [] };
+
+    async function loadAttendance() {
+      tableData = await apiFetch({
+        action:     'attendance',
+        section_id: state.sectionId,
+        year:       state.year,
+        month:      state.month,
+      });
+      renderTable();
+    }
+
+    function renderTable() {
+      const { dates, students } = tableData;
+
+      // Head
+      const thead = document.getElementById('tableHead');
+      thead.innerHTML = `<tr>
+        <th class="student-col">Student</th>
+        ${dates.map(d => {
+          const dt   = new Date(d + 'T00:00:00');
+          const day  = dt.toLocaleDateString('en-US', { weekday: 'short' });
+          const num  = dt.getDate();
+          return `<th title="${d}">${day}<br>${num}</th>`;
+        }).join('')}
+        <th>Summary</th>
+      </tr>`;
+
+      // Body
+      const tbody = document.getElementById('tableBody');
+      if (!students.length) {
+        tbody.innerHTML = `<tr><td colspan="${dates.length + 2}" style="text-align:center;padding:40px;opacity:.5">No students found for this section.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.map(s => {
+        let present = 0, late = 0, absent = 0;
+        const cells = dates.map(d => {
+          const status = s.statuses[d] || 'none';
+          if (status === 'present') present++;
+          else if (status === 'late') late++;
+          else if (status === 'absent') absent++;
+          const cls = status === 'none' ? 'dot-none' : `dot-${status}`;
+          const label = status === 'none' ? 'No record' : status.charAt(0).toUpperCase() + status.slice(1);
+          return `<td><span class="status-dot ${cls}" title="${label} — ${d}" onclick="cycleStatus(${s.id},'${d}',this)"></span></td>`;
+        }).join('');
+
+        return `<tr data-name="${escHtml(s.full_name.toLowerCase())}">
+          <td>
+            <div class="student-name">
+              <img src="${escHtml(s.avatar || '../../image/Student.png')}" alt="" class="student-avatar" onerror="this.style.display='none'"/>
+              ${escHtml(s.full_name)}
+            </div>
+          </td>
+          ${cells}
+          <td style="font-size:0.78rem;white-space:nowrap;color:var(--text-secondary)">
+            <span style="color:var(--status-present)">P:${present}</span>
+            <span style="color:var(--status-late)"> L:${late}</span>
+            <span style="color:var(--status-absent)"> A:${absent}</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Click to cycle status: none → present → late → absent → present ──
+    const CYCLE = { none: 'present', present: 'late', late: 'absent', absent: 'present' };
+
+    async function cycleStatus(studentId, date, dot) {
+      const currentClass = [...dot.classList].find(c => c.startsWith('dot-')) || 'dot-none';
+      const current      = currentClass.replace('dot-', '');
+      const next         = CYCLE[current] || 'present';
+
+      // Optimistic UI update
+      dot.classList.remove(currentClass);
+      dot.classList.add(`dot-${next}`);
+      dot.title = next.charAt(0).toUpperCase() + next.slice(1) + ' — ' + date;
+
+      // Update local data
+      const student = tableData.students.find(s => s.id == studentId);
+      if (student) student.statuses[date] = next;
+
+      // Persist to MySQL
+      try {
+        await apiPost({ student_id: studentId, date, status: next });
+        // Refresh summary quietly
+        loadSummary();
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    }
+
+    // ── Search / Filter ──
+    function filterTable() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      document.querySelectorAll('#tableBody tr[data-name]').forEach(row => {
+        row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+      });
+    }
+
+    // ── Error display ──
+    function showError(msg) {
+      document.getElementById('summaryCards').innerHTML =
+        `<div class="summary-card" style="color:#ef4444;padding:20px">${escHtml(msg)}</div>`;
+      document.getElementById('tableBody').innerHTML =
+        `<tr><td colspan="32" style="text-align:center;padding:30px;color:#ef4444">${escHtml(msg)}</td></tr>`;
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Start ──
+    init();
+    </script>
   </body>
 </html>
-

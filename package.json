@@ -20,8 +20,12 @@
   "keywords": [],
   "dependencies": {
     "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
+    "express-session": "^1.19.0",
     "multer": "^1.4.5-lts.1",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^8.0.4"
   }
 }
