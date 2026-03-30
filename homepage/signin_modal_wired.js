@@ -1,12 +1,4 @@
-/**
- * ClassInstruct — Sign-in modal (real backend wired)
- * Replace the <script> block at the bottom of homepage.php with this.
- *
- * Endpoints used:
- *   POST /send_otp.php    → { email }          → { success }
- *   POST /verify_otp.php  → { otp }            → { success, token, redirect }
- *   GET  /google_oauth.php?action=redirect      → (browser redirect to Google)
- */
+const BASE = '/ClassInstruct1/homepage';
 
 (function () {
   /* ── Elements ── */
@@ -114,7 +106,7 @@
     setLoading(btnSendOtp, true);
 
     try {
-      const res  = await fetch('/send_otp.php', {
+      const res = await fetch('/ClassInstruct1/homepage/send_otp.php', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ email }),
@@ -143,7 +135,7 @@
 
   /* ── Google OAuth — real redirect ── */
   btnGoogle.addEventListener('click', () => {
-    window.location.href = '/google_oauth.php?action=redirect';
+    window.location.href = '/ClassInstruct1/homepage/google_oauth.php?action=redirect';
   });
 
   /* ── OTP digit input handling (unchanged from original) ── */
@@ -213,7 +205,7 @@
     setLoading(btnVerify, true);
 
     try {
-      const res  = await fetch('/verify_otp.php', {
+      const res = await fetch('/ClassInstruct1/homepage/verify_otp.php', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ otp: entered }),
@@ -270,7 +262,7 @@
     clearOtpDigits();
 
     try {
-      const res  = await fetch('/send_otp.php', {
+      const res = await fetch('/ClassInstruct1/homepage/send_otp.php', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ email: currentEmail }),
