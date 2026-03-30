@@ -291,12 +291,12 @@ const BASE = '/ClassInstruct1/homepage';
 
   /* ── Go to Dashboard ── */
   btnDash.addEventListener('click', () => {
-    window.location.href = '/dashboard';
+    window.location.href = '/ClassInstruct1/dashboard/dashboard.html';
   });
 
   /* ── Sign Up link ── */
   document.getElementById('linkSignUp').addEventListener('click', () => {
-    window.location.href = '/signup';
+    window.location.href = '/ClassInstruct1/homepage/homepage.php';
   });
 
   /* ── Loading helper ── */
