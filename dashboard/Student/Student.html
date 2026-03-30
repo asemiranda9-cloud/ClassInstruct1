@@ -1,335 +1,764 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <title>Students - ClassInstruct</title>
-    <link rel="stylesheet" href="student-modern.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div class="students-container">
-      <!-- Sidebar -->
-      <aside class="student-sidebar" role="navigation" aria-label="Main navigation">
-        <!-- Logo -->
-        <div class="sidebar-logo">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="8" fill="#4f46e5"/>
-            <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>ClassInstruct</span>
-        </div>
-        
-        <!-- User Profile -->
-        <div class="user-profile">
-          <img src="img/ellipse-13.png" alt="Teacher profile picture" />
-          <div>
-            <div class="user-name">Teacher</div>
-            <div class="user-role">Instructor</div>
-          </div>
-        </div>
-        
-        <!-- Navigation Menu -->
-        <nav class="nav-menu">
-          <button type="button" onclick="window.location.href='../dashboard.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
-            <span>Dashboard</span>
-          </button>
-          <button type="button" onclick="window.location.href='../ai/classinstruct-ai.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            <span>ClassInstruct AI</span>
-          </button>
-          <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span>Calendar</span>
-          </button>
-          <button type="button" onclick="window.location.href='Student.html'" class="active">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-            <span>Students</span>
-          </button>
-          <button type="button" onclick="window.location.href='../attendance/attendance.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-            </svg>
-            <span>Attendance</span>
-          </button>
-        </nav>
-      </aside>
-      
-      <!-- Main Content -->
-      <main class="student-main">
-        <!-- Header -->
-        <header class="student-header">
-          <h1 class="header-title">Students</h1>
-          
-          <div class="search-container">
-            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <label for="search-input" class="visually-hidden">Search</label>
-            <input type="search" id="search-input" placeholder="Search for students..." aria-label="Search students" />
-          </div>
-          
-          <div class="header-actions">
-            <span class="header-brand">ClassInstruct</span>
-          </div>
-        </header>
-        
-        <!-- Content -->
-        <div class="student-content">
-          <!-- Breadcrumb -->
-          <div class="breadcrumb">
-            <a href="../dashboard.html">Dashboard</a>
-            <span>/</span>
-            <span class="current">Students</span>
-          </div>
-          
-          <!-- Stats Grid -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon primary">
-                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <h3>374</h3>
-                <p>Total Students</p>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon success">
-                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <h3>23</h3>
-                <p>Boys</p>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon info">
-                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <h3>16</h3>
-                <p>Girls</p>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon warning">
-                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <h3>5</h3>
-                <p>Sections</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Data Table -->
-          <div class="table-container">
-            <div class="table-header">
-              <h2 class="table-title">All Students</h2>
-              <div class="table-controls">
-                <div class="filter-dropdown">
-                  <button class="filter-btn">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                    Filter
-                  </button>
-                </div>
-                <a href="AddStudent.html" class="add-btn">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                  </svg>
-                  Add Student
-                </a>
-              </div>
-            </div>
-            
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th class="sortable">Student</th>
-                  <th class="sortable">Class</th>
-                  <th class="sortable">Section</th>
-                  <th class="sortable">GPA</th>
-                  <th class="sortable">Performance</th>
-                  <th class="sortable">Attendance</th>
-                  <th class="sortable">Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <div class="student-row">
-                      <img class="student-avatar" src="img/ellipse-14.png" alt="Student avatar" />
-                      <span class="student-name">Gonzales, Adrian S.</span>
-                    </div>
-                  </td>
-                  <td>Grade 7 - Love</td>
-                  <td>Section A</td>
-                  <td>3.8</td>
-                  <td><span class="status-badge active">Excellent</span></td>
-                  <td>95%</td>
-                  <td><span class="status-badge active">Active</span></td>
-                  <td>
-                    <div class="action-btns">
-                      <button class="action-btn" onclick="window.location.href='StudentInfo.html'" title="View Details">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn" title="Edit">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="student-row">
-                      <img class="student-avatar" src="img/ellipse-15.png" alt="Student avatar" />
-                      <span class="student-name">Santos, Maria C.</span>
-                    </div>
-                  </td>
-                  <td>Grade 7 - Joy</td>
-                  <td>Section B</td>
-                  <td>3.5</td>
-                  <td><span class="status-badge active">Good</span></td>
-                  <td>92%</td>
-                  <td><span class="status-badge active">Active</span></td>
-                  <td>
-                    <div class="action-btns">
-                      <button class="action-btn" onclick="window.location.href='StudentInfo.html'" title="View Details">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn" title="Edit">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="student-row">
-                      <img class="student-avatar" src="img/ellipse-16.png" alt="Student avatar" />
-                      <span class="student-name">Reyes, James L.</span>
-                    </div>
-                  </td>
-                  <td>Grade 8 - Hope</td>
-                  <td>Section A</td>
-                  <td>3.2</td>
-                  <td><span class="status-badge pending">Average</span></td>
-                  <td>88%</td>
-                  <td><span class="status-badge active">Active</span></td>
-                  <td>
-                    <div class="action-btns">
-                      <button class="action-btn" onclick="window.location.href='StudentInfo.html'" title="View Details">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn" title="Edit">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="student-row">
-                      <img class="student-avatar" src="img/ellipse-17.png" alt="Student avatar" />
-                      <span class="student-name">Mendoza, Sarah K.</span>
-                    </div>
-                  </td>
-                  <td>Grade 9 - Faith</td>
-                  <td>Section C</td>
-                  <td>3.9</td>
-                  <td><span class="status-badge active">Excellent</span></td>
-                  <td>97%</td>
-                  <td><span class="status-badge active">Active</span></td>
-                  <td>
-                    <div class="action-btns">
-                      <button class="action-btn" onclick="window.location.href='StudentInfo.html'" title="View Details">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn" title="Edit">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="student-row">
-                      <img class="student-avatar" src="img/tuden-11-1.png" alt="Student avatar" />
-                      <span class="student-name">Torres, Daniel R.</span>
-                    </div>
-                  </td>
-                  <td>Grade 10 - Wisdom</td>
-                  <td>Section B</td>
-                  <td>2.8</td>
-                  <td><span class="status-badge pending">Average</span></td>
-                  <td>85%</td>
-                  <td><span class="status-badge inactive">Inactive</span></td>
-                  <td>
-                    <div class="action-btns">
-                      <button class="action-btn" onclick="window.location.href='StudentInfo.html'" title="View Details">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                      </button>
-                      <button class="action-btn" title="Edit">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-    </div>
-  </body>
-</html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Student Database - ClassInstruct</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="AddStudent.css">
+</head>
+<body>
+<div class="app">
 
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#4f46e5"/><path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>ClassInstruct</span>
+    </div>
+    <div class="user-profile">
+      <div class="user-avatar">T</div>
+      <div><div class="user-name">Teacher</div><div class="user-role">Instructor</div></div>
+    </div>
+    <nav class="nav-menu">
+<button class="nav-btn" onclick="window.location.href='../dashboard.html'">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span>Dashboard</span>
+      </button>
+<button class="nav-btn" onclick="window.location.href='../ai/classinstruct-ai.html'">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <span>ClassInstruct AI</span>
+      </button>
+<button class="nav-btn" onclick="window.location.href='../Calendar/calendarPAGE.html'">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="nav-btn active">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <span>Students</span>
+      </button>
+<button class="nav-btn" onclick="window.location.href='../attendance/attendance.html'">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <span>Attendance</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="top-header">
+      <h1 class="header-title">Students</h1>
+      <div class="search-wrap">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="search" id="globalSearch" placeholder="Search for students…" oninput="applyFilters()">
+      </div>
+      <span class="header-brand">ClassInstruct</span>
+    </header>
+
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="#">Dashboard</a><span>/</span>
+        <span class="current">Students</span>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon blue"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+          <div><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Students</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+          <div><div class="stat-value" id="statActive">0</div><div class="stat-label">Active</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
+          <div><div class="stat-value" id="statMale">0</div><div class="stat-label">Male</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
+          <div><div class="stat-value" id="statFemale">0</div><div class="stat-label">Female</div></div>
+        </div>
+      </div>
+
+      <!-- Table Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Student Records</span>
+          <button class="btn btn-primary" onclick="openAddModal()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add New Student
+          </button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <span class="filter-label">Filter:</span>
+          <select id="filterGrade" onchange="applyFilters()">
+            <option value="">All Grades</option>
+            <option value="Kindergarten">Kindergarten</option>
+            <option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option>
+            <option value="Grade 3">Grade 3</option><option value="Grade 4">Grade 4</option>
+            <option value="Grade 5">Grade 5</option><option value="Grade 6">Grade 6</option>
+            <option value="Grade 7">Grade 7</option><option value="Grade 8">Grade 8</option>
+            <option value="Grade 9">Grade 9</option><option value="Grade 10">Grade 10</option>
+            <option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option>
+          </select>
+          <select id="filterSection" onchange="applyFilters()">
+            <option value="">All Sections</option>
+            <option value="Section A">Section A</option><option value="Section B">Section B</option>
+            <option value="Section C">Section C</option><option value="Section D">Section D</option>
+            <option value="Section E">Section E</option>
+          </select>
+          <select id="filterGender" onchange="applyFilters()">
+            <option value="">All Genders</option>
+            <option value="Male">Male</option><option value="Female">Female</option>
+          </select>
+          <select id="sortBy" onchange="applyFilters()">
+            <option value="name">Sort: Name A–Z</option>
+            <option value="name-desc">Sort: Name Z–A</option>
+            <option value="id">Sort: Student ID</option>
+            <option value="date">Sort: Enrollment Date</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Student ID / LRN</th>
+                <th>Grade & Section</th>
+                <th>Gender</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state" style="display:none">
+            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <p>No students found. Click <strong>Add New Student</strong> to get started.</p>
+          </div>
+        </div>
+
+        <div class="pagination">
+          <span class="page-info" id="pageInfo"></span>
+          <div class="page-btns" id="pageBtns"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADD / EDIT MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">Add New Student</h2>
+      <button class="close-btn" onclick="closeFormModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Personal Information -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Personal Information
+        </h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="f-studentId">Student ID / LRN <span class="req">*</span></label>
+            <input type="text" id="f-studentId" class="form-input" placeholder="Enter Student ID or LRN">
+            <span class="error-msg" id="err-studentId"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-fullName">Full Name <span class="req">*</span></label>
+            <input type="text" id="f-fullName" class="form-input" placeholder="Enter full name">
+            <span class="error-msg" id="err-fullName"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-dob">Date of Birth</label>
+            <input type="date" id="f-dob" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="f-gender" value="Male"> Male</label>
+              <label class="radio-option"><input type="radio" name="f-gender" value="Female"> Female</label>
+            </div>
+            <span class="error-msg" id="err-gender"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Academic Information -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Academic Information
+        </h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="f-grade">Grade Level <span class="req">*</span></label>
+            <select id="f-grade" class="form-select">
+              <option value="">Select Grade Level</option>
+              <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option>
+              <option>Grade 3</option><option>Grade 4</option><option>Grade 5</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+            <span class="error-msg" id="err-grade"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-section">Section <span class="req">*</span></label>
+            <select id="f-section" class="form-select">
+              <option value="">Select Section</option>
+              <option>Section A</option><option>Section B</option><option>Section C</option>
+              <option>Section D</option><option>Section E</option>
+            </select>
+            <span class="error-msg" id="err-section"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-enrollDate">Enrollment Date</label>
+            <input type="date" id="f-enrollDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-prevSchool">Previous School</label>
+            <input type="text" id="f-prevSchool" class="form-input" placeholder="Enter previous school name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Contact Information
+        </h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="f-email">Email Address</label>
+            <input type="email" id="f-email" class="form-input" placeholder="Enter email address">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-phone">Phone Number</label>
+            <input type="tel" id="f-phone" class="form-input" placeholder="Enter phone number">
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="f-address">Address</label>
+            <input type="text" id="f-address" class="form-input" placeholder="Enter complete address">
+          </div>
+        </div>
+      </div>
+
+      <!-- Parent / Guardian Information -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Parent / Guardian Information
+        </h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="f-fatherName">Father's Name</label>
+            <input type="text" id="f-fatherName" class="form-input" placeholder="Enter father's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-fatherPhone">Father's Phone Number</label>
+            <input type="tel" id="f-fatherPhone" class="form-input" placeholder="Enter phone number">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-motherName">Mother's Name</label>
+            <input type="text" id="f-motherName" class="form-input" placeholder="Enter mother's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-motherPhone">Mother's Phone Number</label>
+            <input type="tel" id="f-motherPhone" class="form-input" placeholder="Enter phone number">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-guardianName">Guardian's Name <span style="color:var(--text-light);font-weight:400">(Optional)</span></label>
+            <input type="text" id="f-guardianName" class="form-input" placeholder="Enter guardian's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-guardianRelation">Relation</label>
+            <input type="text" id="f-guardianRelation" class="form-input" placeholder="e.g., Aunt, Uncle, Grandparent">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="f-guardianPhone">Guardian's Phone Number</label>
+            <input type="tel" id="f-guardianPhone" class="form-input" placeholder="Enter phone number">
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeFormModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="saveBtnText">Add Student</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     VIEW MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="viewOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Student Details</h2>
+      <button class="close-btn" onclick="closeViewModal()">✕</button>
+    </div>
+    <div class="modal-body" id="viewBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
+      <button class="btn btn-primary" id="editFromViewBtn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Edit Student
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <div class="confirm-title">Delete Student?</div>
+    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ═══════════════════════════════════
+//  DATABASE — PHP/MySQL via fetch()
+//  All data is stored in XAMPP MySQL.
+//  Endpoint: db.php (same folder)
+// ═══════════════════════════════════
+const API = '../api/db.php';
+
+async function apiGet() {
+  const res = await fetch(API);
+  if (!res.ok) throw new Error('Failed to load students');
+  return res.json();
+}
+async function apiPost(data) {
+  const res = await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to add student');
+  return json;
+}
+async function apiPut(id, data) {
+  const res = await fetch(`${API}?id=${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to update student');
+  return json;
+}
+async function apiDelete(id) {
+  const res = await fetch(`${API}?id=${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to delete student');
+  return json;
+}
+
+// ═══════════════════════════════════
+//  STATE
+// ═══════════════════════════════════
+let students   = [];
+let filtered   = [];
+let editingId  = null;
+let viewingId  = null;
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
+// Load from MySQL on start
+async function init() {
+  try {
+    students = await apiGet();
+    applyFilters();
+  } catch (e) {
+    toast('Could not connect to database. Is XAMPP running?', 'danger');
+  }
+}
+
+// ═══════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════
+function applyFilters() {
+  const q       = document.getElementById('globalSearch').value.toLowerCase();
+  const grade   = document.getElementById('filterGrade').value;
+  const section = document.getElementById('filterSection').value;
+  const gender  = document.getElementById('filterGender').value;
+  const sort    = document.getElementById('sortBy').value;
+
+  filtered = students.filter(s => {
+    const matchQ       = !q || s.fullName.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q);
+    const matchGrade   = !grade   || s.grade   === grade;
+    const matchSection = !section || s.section === section;
+    const matchGender  = !gender  || s.gender  === gender;
+    return matchQ && matchGrade && matchSection && matchGender;
+  });
+
+  filtered.sort((a,b) => {
+    if (sort === 'name')      return a.fullName.localeCompare(b.fullName);
+    if (sort === 'name-desc') return b.fullName.localeCompare(a.fullName);
+    if (sort === 'id')        return a.studentId.localeCompare(b.studentId);
+    if (sort === 'date')      return (a.enrollDate||'').localeCompare(b.enrollDate||'');
+    return 0;
+  });
+
+  currentPage = 1;
+  renderTable();
+  renderStats();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('pageInfo').textContent = '';
+    document.getElementById('pageBtns').innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = page.map((s, i) => {
+    const initials   = s.fullName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const colorClass = ['#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'][s.fullName.charCodeAt(0)%6];
+    return `<tr>
+      <td>${start + i + 1}</td>
+      <td>
+        <div class="student-name-cell">
+          <div class="student-avatar" style="background:${colorClass}20;color:${colorClass}">${initials}</div>
+          <div>
+            <div style="font-weight:600">${esc(s.fullName)}</div>
+            <div style="font-size:0.78rem;color:var(--text-secondary)">${esc(s.dob||'—')}</div>
+          </div>
+        </div>
+      </td>
+      <td><code style="background:var(--bg-input);padding:2px 8px;border-radius:6px;font-size:0.82rem">${esc(s.studentId)}</code></td>
+      <td>${esc(s.grade||'—')} · ${esc(s.section||'—')}</td>
+      <td>${esc(s.gender||'—')}</td>
+      <td style="color:var(--text-secondary);font-size:0.875rem">${esc(s.email||'—')}</td>
+      <td style="font-size:0.875rem">${esc(s.phone||'—')}</td>
+      <td><span class="badge badge-active">Active</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="btn btn-secondary btn-sm" title="View" onclick="viewStudent(${s.id})">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </button>
+          <button class="btn btn-secondary btn-sm" title="Edit" onclick="openEditModal(${s.id})">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button class="btn btn-danger btn-sm" title="Delete" onclick="confirmDelete(${s.id})">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('pageInfo').textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} of ${filtered.length} students`;
+
+  const btns = document.getElementById('pageBtns');
+  btns.innerHTML = '';
+  const prev = document.createElement('button');
+  prev.className = 'page-btn'; prev.textContent = '‹'; prev.disabled = currentPage === 1;
+  prev.onclick = () => { currentPage--; renderTable(); };
+  btns.appendChild(prev);
+  for (let p = 1; p <= totalPages; p++) {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (p === currentPage ? ' active' : '');
+    b.textContent = p;
+    b.onclick = (pp => () => { currentPage = pp; renderTable(); })(p);
+    btns.appendChild(b);
+  }
+  const next = document.createElement('button');
+  next.className = 'page-btn'; next.textContent = '›'; next.disabled = currentPage === totalPages;
+  next.onclick = () => { currentPage++; renderTable(); };
+  btns.appendChild(next);
+}
+
+function renderStats() {
+  document.getElementById('statTotal').textContent  = students.length;
+  document.getElementById('statActive').textContent = students.length;
+  document.getElementById('statMale').textContent   = students.filter(s=>s.gender==='Male').length;
+  document.getElementById('statFemale').textContent = students.filter(s=>s.gender==='Female').length;
+}
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════
+//  FORM MODAL
+// ═══════════════════════════════════
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Student';
+  document.getElementById('saveBtnText').textContent = 'Add Student';
+  clearForm();
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const s = students.find(x=>x.id===id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Student';
+  document.getElementById('saveBtnText').textContent = 'Save Changes';
+  fillForm(s);
+  document.getElementById('formOverlay').classList.add('open');
+  document.getElementById('viewOverlay').classList.remove('open');
+}
+
+function closeFormModal() {
+  document.getElementById('formOverlay').classList.remove('open');
+  clearErrors();
+}
+
+function clearForm() {
+  ['f-studentId','f-fullName','f-dob','f-email','f-phone','f-address',
+   'f-prevSchool','f-enrollDate','f-fatherName','f-fatherPhone',
+   'f-motherName','f-motherPhone','f-guardianName','f-guardianRelation','f-guardianPhone']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-grade').value = '';
+  document.getElementById('f-section').value = '';
+  document.querySelectorAll('input[name="f-gender"]').forEach(r => r.checked = false);
+  clearErrors();
+}
+
+function fillForm(s) {
+  document.getElementById('f-studentId').value        = s.studentId||'';
+  document.getElementById('f-fullName').value         = s.fullName||'';
+  document.getElementById('f-dob').value              = s.dob||'';
+  document.getElementById('f-email').value            = s.email||'';
+  document.getElementById('f-phone').value            = s.phone||'';
+  document.getElementById('f-address').value          = s.address||'';
+  document.getElementById('f-grade').value            = s.grade||'';
+  document.getElementById('f-section').value          = s.section||'';
+  document.getElementById('f-enrollDate').value       = s.enrollDate||'';
+  document.getElementById('f-prevSchool').value       = s.prevSchool||'';
+  document.getElementById('f-fatherName').value       = s.fatherName||'';
+  document.getElementById('f-fatherPhone').value      = s.fatherPhone||'';
+  document.getElementById('f-motherName').value       = s.motherName||'';
+  document.getElementById('f-motherPhone').value      = s.motherPhone||'';
+  document.getElementById('f-guardianName').value     = s.guardianName||'';
+  document.getElementById('f-guardianRelation').value = s.guardianRelation||'';
+  document.getElementById('f-guardianPhone').value    = s.guardianPhone||'';
+  document.querySelectorAll('input[name="f-gender"]').forEach(r => r.checked = r.value === s.gender);
+  clearErrors();
+}
+
+function clearErrors() {
+  document.querySelectorAll('.error-msg').forEach(e => e.textContent = '');
+  document.querySelectorAll('.form-input.error, .form-select.error').forEach(e => e.classList.remove('error'));
+}
+
+function getFormData() {
+  const gender = document.querySelector('input[name="f-gender"]:checked');
+  return {
+    studentId:        document.getElementById('f-studentId').value.trim(),
+    fullName:         document.getElementById('f-fullName').value.trim(),
+    dob:              document.getElementById('f-dob').value,
+    gender:           gender ? gender.value : '',
+    grade:            document.getElementById('f-grade').value,
+    section:          document.getElementById('f-section').value,
+    enrollDate:       document.getElementById('f-enrollDate').value,
+    prevSchool:       document.getElementById('f-prevSchool').value.trim(),
+    email:            document.getElementById('f-email').value.trim(),
+    phone:            document.getElementById('f-phone').value.trim(),
+    address:          document.getElementById('f-address').value.trim(),
+    fatherName:       document.getElementById('f-fatherName').value.trim(),
+    fatherPhone:      document.getElementById('f-fatherPhone').value.trim(),
+    motherName:       document.getElementById('f-motherName').value.trim(),
+    motherPhone:      document.getElementById('f-motherPhone').value.trim(),
+    guardianName:     document.getElementById('f-guardianName').value.trim(),
+    guardianRelation: document.getElementById('f-guardianRelation').value.trim(),
+    guardianPhone:    document.getElementById('f-guardianPhone').value.trim(),
+  };
+}
+
+function validate(data) {
+  let ok = true;
+  clearErrors();
+  if (!data.studentId) { setErr('studentId','Student ID / LRN is required'); ok=false; }
+  if (!data.fullName)  { setErr('fullName','Full name is required'); ok=false; }
+  if (!data.gender)    { setErr('gender','Please select a gender'); ok=false; }
+  if (!data.grade)     { setErr('grade','Please select a grade level'); ok=false; }
+  if (!data.section)   { setErr('section','Please select a section'); ok=false; }
+  return ok;
+}
+
+function setErr(field, msg) {
+  const el  = document.getElementById('err-'+field);
+  if (el) el.textContent = msg;
+  const inp = document.getElementById('f-'+field);
+  if (inp) inp.classList.add('error');
+}
+
+async function saveStudent() {
+  const data = getFormData();
+  if (!validate(data)) return;
+
+  try {
+    if (editingId) {
+      const updated = await apiPut(editingId, data);
+      const idx = students.findIndex(s=>s.id===editingId);
+      students[idx] = updated;
+      toast('Student updated successfully!', 'success');
+    } else {
+      const created = await apiPost(data);
+      students.push(created);
+      toast('Student added successfully!', 'success');
+    }
+    closeFormModal();
+    applyFilters();
+  } catch (e) {
+    // Show server-side duplicate ID error in the form
+    if (e.message.includes('already exists')) {
+      setErr('studentId', e.message);
+    } else {
+      toast(e.message, 'danger');
+    }
+  }
+}
+
+// ═══════════════════════════════════
+//  VIEW MODAL
+// ═══════════════════════════════════
+function viewStudent(id) {
+  const s = students.find(x=>x.id===id);
+  if (!s) return;
+  viewingId = id;
+
+  const v = (val) => val ? `<span class="view-value">${esc(val)}</span>` : `<span class="view-value empty">Not provided</span>`;
+
+  document.getElementById('viewBody').innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Personal Information</div>
+      <div class="view-grid">
+        <div class="view-item"><div class="view-label">Student ID / LRN</div>${v(s.studentId)}</div>
+        <div class="view-item"><div class="view-label">Full Name</div>${v(s.fullName)}</div>
+        <div class="view-item"><div class="view-label">Date of Birth</div>${v(s.dob)}</div>
+        <div class="view-item"><div class="view-label">Gender</div>${v(s.gender)}</div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Academic Information</div>
+      <div class="view-grid">
+        <div class="view-item"><div class="view-label">Grade Level</div>${v(s.grade)}</div>
+        <div class="view-item"><div class="view-label">Section</div>${v(s.section)}</div>
+        <div class="view-item"><div class="view-label">Enrollment Date</div>${v(s.enrollDate)}</div>
+        <div class="view-item"><div class="view-label">Previous School</div>${v(s.prevSchool)}</div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Contact Information</div>
+      <div class="view-grid">
+        <div class="view-item"><div class="view-label">Email Address</div>${v(s.email)}</div>
+        <div class="view-item"><div class="view-label">Phone Number</div>${v(s.phone)}</div>
+        <div class="view-item" style="grid-column:1/-1"><div class="view-label">Address</div>${v(s.address)}</div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Parent / Guardian Information</div>
+      <div class="view-grid">
+        <div class="view-item"><div class="view-label">Father's Name</div>${v(s.fatherName)}</div>
+        <div class="view-item"><div class="view-label">Father's Phone</div>${v(s.fatherPhone)}</div>
+        <div class="view-item"><div class="view-label">Mother's Name</div>${v(s.motherName)}</div>
+        <div class="view-item"><div class="view-label">Mother's Phone</div>${v(s.motherPhone)}</div>
+        <div class="view-item"><div class="view-label">Guardian's Name</div>${v(s.guardianName)}</div>
+        <div class="view-item"><div class="view-label">Relation</div>${v(s.guardianRelation)}</div>
+        <div class="view-item"><div class="view-label">Guardian's Phone</div>${v(s.guardianPhone)}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('editFromViewBtn').onclick = () => openEditModal(id);
+  document.getElementById('viewOverlay').classList.add('open');
+}
+
+function closeViewModal() {
+  document.getElementById('viewOverlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════
+//  DELETE
+// ═══════════════════════════════════
+let deleteTargetId = null;
+
+function confirmDelete(id) {
+  const s = students.find(x=>x.id===id);
+  if (!s) return;
+  deleteTargetId = id;
+  document.getElementById('confirmMsg').textContent = `Are you sure you want to delete "${s.fullName}"? This cannot be undone.`;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  deleteTargetId = null;
+}
+
+document.getElementById('confirmDeleteBtn').onclick = async function() {
+  if (!deleteTargetId) return;
+  try {
+    await apiDelete(deleteTargetId);
+    students = students.filter(s=>s.id !== deleteTargetId);
+    toast('Student deleted.', 'danger');
+    closeConfirm();
+    applyFilters();
+  } catch (e) {
+    toast(e.message, 'danger');
+  }
+};
+
+// ═══════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════
+function toast(msg, type='') {
+  const wrap = document.getElementById('toastWrap');
+  const el   = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${type==='danger'?'M6 18L18 6M6 6l12 12':'M5 13l4 4L19 7'}"/></svg>${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(30px)'; el.style.transition='all 300ms'; setTimeout(()=>el.remove(), 300); }, 3000);
+}
+
+// ═══════════════════════════════════
+//  CLOSE ON BACKDROP CLICK
+// ═══════════════════════════════════
+document.getElementById('formOverlay').addEventListener('click',   function(e){ if(e.target===this) closeFormModal(); });
+document.getElementById('viewOverlay').addEventListener('click',   function(e){ if(e.target===this) closeViewModal(); });
+document.getElementById('confirmOverlay').addEventListener('click',function(e){ if(e.target===this) closeConfirm(); });
+
+// ═══════════════════════════════════
+//  INIT — load from MySQL
+// ═══════════════════════════════════
+init();
+</script>
+</body>
+</html>
