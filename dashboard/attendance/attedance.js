@@ -202,11 +202,6 @@ function renderCalendar() {
 
   dd.innerHTML = `
     <div class="cal-header">
-      <button class="cal-nav-btn" onclick="calShiftMonth(-1);event.stopPropagation()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-        </svg>
-      </button>
       <span class="cal-header-title" onclick="event.stopPropagation()">${title}</span>
     </div>
     <div class="cal-weekdays">${dayLabels.map(l => `<div class="cal-weekday">${l}</div>`).join('')}</div>
