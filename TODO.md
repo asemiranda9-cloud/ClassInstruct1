@@ -1,15 +1,14 @@
-# Nav Bar Update: Add Student Info & Grades
+# Dynamic Dashboard from Student DB
 
-## Plan Breakdown
-1. [x] Create `dashboard/Student/Grades.html` - New grades page with student grades table/charts from API.
-2. [x] Update CSS files - Add `.student-info` and `.grades` styles in dashboardglobal.css, dashboardstyle.css, student-modern.css.
-3. [x] Update `dashboard/dashboard.html` - Insert 2 new nav buttons after Students.
-4. [x] Update `dashboard/Student/Student.html` - Insert 2 new nav buttons (sub-paths).
-5. [x] Update `dashboard/Student/StudentInfo.html` - Insert 2 new buttons, active on student-info.
-6. [ ] Update other pages: Calendar/calendarPAGE.html, attendance/attendance.html, ai/classinstruct-ai.html.
-7. [ ] Add JS for dynamic active nav states (if needed).
-8. [ ] Test: Verify links, active states, consistency across pages.
-9. [ ] Complete task.
+Status: In progress - Reset dashboard.html to use Student.html CSS/DB
 
-**Progress**: Steps 1-5 complete. Starting step 6 (remaining pages).
-
+## Steps
+1. [x] Analyze dashboard.html (static), Student.html (dynamic db.php CSS)
+2. [ ] Update dashboard.html: 
+   - Link student-modern.css
+   - Fetch db.php stats (total students, gender, attendance avg)
+   - Dynamic cards: Enrolled count, gender pie, performance/attendance bars
+3. [ ] Create dashboard.js: API fetches, charts update
+4. [ ] Migrate styles from dashboardstyle.css → student-modern.css extensions
+5. [ ] Test: Add student → dashboard auto-updates
+6. [x] ✅ Original nav task complete

@@ -8,6 +8,212 @@
     <link rel="stylesheet" href="dashboardstyle.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
+        // ── Attendance Chart ─────────────────────────────────────
+        const ATTENDANCE_API = 'attendance/attendance_db.php';
+        const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        async function loadAttendanceChart() {
+            const chart  = document.getElementById('attendanceBarChart');
+            const filter = document.getElementById('attendanceFilter').value;
+            const now    = new Date();
+            const year   = now.getFullYear();
+            const month  = now.getMonth() + 1;
+
+            try {
+                const res = await fetch(
+                    `${ATTENDANCE_API}?action=attendance&grade=&section=&year=${year}&month=${month}`
+                );
+                if (!res.ok) throw new Error('API error');
+                const data = await res.json();
+
+                if (!data.students || data.students.length === 0) {
+                    renderPlaceholderBars(chart);
+                    return;
+                }
+
+                const totalStudents = data.students.length;
+
+                // Build map: date → present+late count
+                const presentMap = {};
+                data.students.forEach(s => {
+                    Object.entries(s.statuses || {}).forEach(([date, status]) => {
+                        if (!presentMap[date]) presentMap[date] = 0;
+                        if (status === 'present' || status === 'late') presentMap[date]++;
+                    });
+                });
+
+                // Only weekday dates that have actual data
+                const datesWithData = Object.keys(presentMap).filter(d => {
+                    const dow = new Date(d + 'T00:00:00').getDay();
+                    return dow >= 1 && dow <= 5;
+                }).sort();
+
+                let days = [];
+
+                if (filter === 'week') {
+                    // Try current week Mon-Fri first
+                    const dayOfWeek = now.getDay();
+                    const monday    = new Date(now);
+                    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+                    const weekDates = [];
+                    for (let i = 0; i < 5; i++) {
+                        const d = new Date(monday);
+                        d.setDate(monday.getDate() + i);
+                        weekDates.push(d.toISOString().slice(0, 10));
+                    }
+
+                    const currentWeekHasData = weekDates.some(d => presentMap[d] !== undefined);
+
+                    if (!currentWeekHasData && datesWithData.length > 0) {
+                        // Fall back to the most recent week that has data
+                        const lastDate  = new Date(datesWithData[datesWithData.length - 1] + 'T00:00:00');
+                        const lastDow   = lastDate.getDay();
+                        const lastMon   = new Date(lastDate);
+                        lastMon.setDate(lastDate.getDate() - (lastDow === 0 ? 6 : lastDow - 1));
+
+                        for (let i = 0; i < 5; i++) {
+                            const d    = new Date(lastMon);
+                            d.setDate(lastMon.getDate() + i);
+                            const key  = d.toISOString().slice(0, 10);
+                            const pct  = presentMap[key] !== undefined
+                                ? Math.round((presentMap[key] / totalStudents) * 100)
+                                : null;
+                            days.push({ label: DAY_NAMES[d.getDay()], pct, key });
+                        }
+                    } else {
+                        weekDates.forEach(key => {
+                            const d   = new Date(key + 'T00:00:00');
+                            const pct = presentMap[key] !== undefined
+                                ? Math.round((presentMap[key] / totalStudents) * 100)
+                                : null;
+                            days.push({ label: DAY_NAMES[d.getDay()], pct, key });
+                        });
+                    }
+                } else {
+                    // Month view — weekly averages
+                    const weeks = {};
+                    data.dates.forEach(date => {
+                        const d   = new Date(date + 'T00:00:00');
+                        const dow = d.getDay();
+                        if (dow === 0 || dow === 6) return;
+                        const weekNum = Math.ceil(d.getDate() / 7);
+                        if (!weeks[weekNum]) weeks[weekNum] = { total: 0, count: 0 };
+                        if (presentMap[date] !== undefined) {
+                            weeks[weekNum].total += Math.round((presentMap[date] / totalStudents) * 100);
+                            weeks[weekNum].count++;
+                        }
+                    });
+                    const weekLabels = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+                    Object.entries(weeks).forEach(([wk, v], i) => {
+                        days.push({
+                            label: weekLabels[i] || `Wk ${wk}`,
+                            pct:   v.count > 0 ? Math.round(v.total / v.count) : null
+                        });
+                    });
+                    if (!days.length) days = weekLabels.map(l => ({ label: l, pct: null }));
+                }
+
+                chart.innerHTML = days.map(({ label, pct }) => {
+                    const display  = pct !== null ? pct + '%' : '—';
+                    const height   = pct !== null ? Math.max(pct, 5) : 20;
+                    const belowCls = (pct !== null && pct < 75) ? ' below' : '';
+                    return `<div class="bar-item">
+                        <div class="bar${belowCls}" style="height:${height}%">
+                            <span class="bar-value">${display}</span>
+                        </div>
+                        <span class="bar-label">${label}</span>
+                    </div>`;
+                }).join('');
+
+            } catch (err) {
+                renderPlaceholderBars(chart);
+                console.warn('Attendance chart: could not load data.', err.message);
+            }
+        }
+
+        function renderPlaceholderBars(chart) {
+            const days = ['Mon','Tue','Wed','Thu','Fri'];
+            chart.innerHTML = days.map(d => `
+                <div class="bar-item">
+                    <div class="bar" style="height:20%"><span class="bar-value">—</span></div>
+                    <span class="bar-label">${d}</span>
+                </div>`).join('');
+        }
+
+
+        const API = 'api/db.php';
+
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch(API);
+                if (!res.ok) throw new Error('API error');
+                const students = await res.json();
+
+                const total   = students.length;
+                const males   = students.filter(s => s.gender === 'Male').length;
+                const females = students.filter(s => s.gender === 'Female').length;
+                const malePct   = total > 0 ? Math.round((males / total) * 100) : 0;
+                const femalePct = total > 0 ? 100 - malePct : 0;
+
+                // Enrolled Students card
+                const countEl = document.getElementById('enrolledCount');
+                if (countEl) countEl.textContent = total;
+
+                // Gender Distribution card
+                const pieChart = document.querySelector('.gender-pie-chart');
+                if (pieChart) {
+                    pieChart.style.setProperty('--boys', malePct + '%');
+                    pieChart.style.setProperty('--girls', femalePct + '%');
+                }
+                const totalCountEl = document.querySelector('.total-count') || document.getElementById('genderTotal');
+                if (totalCountEl) totalCountEl.textContent = total;
+
+                const boysCountEl = document.getElementById('boysCount');
+                const girlsCountEl = document.getElementById('girlsCount');
+                const boysPctEl = document.getElementById('boysPct');
+                const girlsPctEl = document.getElementById('girlsPct');
+                if (boysCountEl)  boysCountEl.textContent  = males;
+                if (girlsCountEl) girlsCountEl.textContent = females;
+                if (boysPctEl)    boysPctEl.textContent    = malePct + '%';
+                if (girlsPctEl)   girlsPctEl.textContent   = femalePct + '%';
+
+                // Grade distribution from Grades.js logic (WW30 PT50 QE20)
+                // We don't have grades data on the dashboard, so show grade-level breakdown
+                // Count students per grade level for performance bars
+                const gradeCounts = {};
+                students.forEach(s => {
+                    gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
+                });
+
+                // Recent students list
+                renderRecentStudents(students.slice(-5).reverse());
+
+            } catch (err) {
+                console.warn('Dashboard: Could not load student data from DB.', err.message);
+                // Graceful fallback — keep static numbers
+            }
+        }
+
+        function renderRecentStudents(students) {
+            const container = document.getElementById('recentStudents');
+            if (!container || students.length === 0) return;
+            const colors = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#ec4899'];
+            container.innerHTML = students.map((s, i) => {
+                const initials = s.fullName.split(' ').map(p => p[0]).slice(0,2).join('');
+                const color = colors[i % colors.length];
+                return `<div class="recent-student-item">
+                    <div class="recent-avatar" style="background:${color}22;color:${color};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">${initials}</div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.fullName}</div>
+                        <div style="font-size:11px;color:#64748b">${s.grade} · ${s.section}</div>
+                    </div>
+                    <span style="font-size:11px;color:#94a3b8;white-space:nowrap">${s.gender}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Calendar ──────────────────────────────────────────────
         const months = [
             { name: 'January', days: 31, startDay: 3 },
             { name: 'February', days: 28, startDay: 6 },
@@ -58,7 +264,11 @@
             alert('Selected month: ' + monthName);
         }
         
-        document.addEventListener('DOMContentLoaded', renderCalendar);
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCalendar();
+            loadDashboardStats();
+            loadAttendanceChart();
+        });
     </script>
 </head>
 <body>
@@ -154,7 +364,7 @@
                     <div class="enrolled-content">
                         <div class="enrolled-info">
                             <h2>Enrolled Students</h2>
-                            <div class="student-count">300</div>
+                            <div class="student-count" id="enrolledCount">—</div>
                         </div>
                         <div class="icon-container">
                             <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,42 +378,19 @@
                 <article class="card attendance">
                     <div class="section-header">   
                         <h2>Student Attendance</h2>
-                        <select class="filter">
-                            <option>Weekly</option>
+                        <select class="filter" id="attendanceFilter" onchange="loadAttendanceChart()">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
                         </select>
                     </div>
                     <div class="attendance-chart bar-chart-container">
-                        <div class="bar-chart">
-                            <div class="bar-item">
-                                <div class="bar" style="height: 85%;">
-                                    <span class="bar-value">85%</span>
-                                </div>
-                                <span class="bar-label">Mon</span>
-                            </div>
-                            <div class="bar-item">
-                                <div class="bar" style="height: 92%;">
-                                    <span class="bar-value">92%</span>
-                                </div>
-                                <span class="bar-label">Tue</span>
-                            </div>
-                            <div class="bar-item">
-                                <div class="bar" style="height: 78%;">
-                                    <span class="bar-value">78%</span>
-                                </div>
-                                <span class="bar-label">Wed</span>
-                            </div>
-                            <div class="bar-item">
-                                <div class="bar" style="height: 88%;">
-                                    <span class="bar-value">88%</span>
-                                </div>
-                                <span class="bar-label">Thu</span>
-                            </div>
-                            <div class="bar-item">
-                                <div class="bar below" style="height: 65%;">
-                                    <span class="bar-value">65%</span>
-                                </div>
-                                <span class="bar-label">Fri</span>
-                            </div>
+                        <div class="bar-chart" id="attendanceBarChart">
+                            <!-- Populated by JS -->
+                            <div class="bar-item"><div class="bar" style="height:60%"><span class="bar-value">—</span></div><span class="bar-label">Mon</span></div>
+                            <div class="bar-item"><div class="bar" style="height:60%"><span class="bar-value">—</span></div><span class="bar-label">Tue</span></div>
+                            <div class="bar-item"><div class="bar" style="height:60%"><span class="bar-value">—</span></div><span class="bar-label">Wed</span></div>
+                            <div class="bar-item"><div class="bar" style="height:60%"><span class="bar-value">—</span></div><span class="bar-label">Thu</span></div>
+                            <div class="bar-item"><div class="bar" style="height:60%"><span class="bar-value">—</span></div><span class="bar-label">Fri</span></div>
                         </div>
                     </div>
                 </article>
@@ -220,21 +407,21 @@
                         <div class="gender-pie-chart" style="--boys: 48%; --girls: 52%;">
                             <div class="pie-center">
                                 <span class="total-label">Total</span>
-                                <span class="total-count">374</span>
+                                <span class="total-count" id="genderTotal">—</span>
                             </div>
                         </div>
                         <div class="gender-legend">
                             <div class="legend-item">
                                 <span class="legend-color boys"></span>
                                 <span class="legend-label">Boys</span>
-                                <span class="legend-count">180</span>
-                                <span class="legend-percent">48%</span>
+                                <span class="legend-count" id="boysCount">—</span>
+                                <span class="legend-percent" id="boysPct">—</span>
                             </div>
                             <div class="legend-item">
                                 <span class="legend-color girls"></span>
                                 <span class="legend-label">Girls</span>
-                                <span class="legend-count">194</span>
-                                <span class="legend-percent">52%</span>
+                                <span class="legend-count" id="girlsCount">—</span>
+                                <span class="legend-percent" id="girlsPct">—</span>
                             </div>
                         </div>
                     </div>
@@ -346,9 +533,19 @@
                         </div>
                     </div>
                 </article>
+
+                <!-- Recent Students Card -->
+                <article class="card" style="grid-column: span 2;">
+                    <div class="section-header" style="margin-bottom:16px">
+                        <h2>Recently Added Students</h2>
+                        <a href="student/Student.html" style="font-size:13px;color:#4f46e5;font-weight:500;text-decoration:none">View all →</a>
+                    </div>
+                    <div id="recentStudents" style="display:flex;flex-direction:column;gap:10px">
+                        <div style="color:#94a3b8;font-size:13px;text-align:center;padding:20px 0">Loading student data...</div>
+                    </div>
+                </article>
             </section>
         </main>
     </div>
 </body>
 </html>
-
