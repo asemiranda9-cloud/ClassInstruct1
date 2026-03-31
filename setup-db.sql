@@ -1,5 +1,14 @@
 USE classinstruct;
 
+CREATE TABLE IF NOT EXISTS attendance (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  date DATE NOT NULL,
+  status ENUM('present', 'late', 'absent') NOT NULL,
+  UNIQUE KEY unique_record (student_id, date),
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS students (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id VARCHAR(50) UNIQUE NOT NULL,
