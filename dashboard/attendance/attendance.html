@@ -5,7 +5,8 @@
     <meta charset="utf-8" />
     <title>ClassInstruct - Attendance</title>
     <link rel="stylesheet" href="global.css" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="attedance.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
@@ -54,13 +55,13 @@
             </svg>
             <span>Students</span>
           </button>
-          <button type="button" onclick="window.location.href='../Student/StudentInfo.html'" class="student-info">
+          <button type="button" onclick="window.location.href='../Student/StudentInfo.html'">
             <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <span>Student Info</span>
           </button>
-          <button type="button" onclick="window.location.href='../Student/Grades.html'" class="grades">
+          <button type="button" onclick="window.location.href='../Student/Grades.html'">
             <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
@@ -99,7 +100,6 @@
           <section class="summary-section">
             <h2 class="section-title">Attendance Summary</h2>
             <div class="summary-cards" id="summaryCards">
-              <!-- Rendered by JS -->
               <div class="summary-card" style="opacity:.5;text-align:center;padding:40px">Loading summary…</div>
             </div>
           </section>
@@ -116,14 +116,31 @@
               <div id="sectionDropdown" class="dropdown-menu" style="display:none"></div>
             </div>
 
-            <div style="position:relative">
-              <button class="control-button" id="monthBtn" onclick="toggleDropdown('monthDropdown')">
-                <span id="monthLabel">Loading…</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="control-button" id="prevWeekBtn" onclick="shiftWeek(-1)" title="Previous week" style="padding:8px 10px">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
-              <div id="monthDropdown" class="dropdown-menu" style="display:none"></div>
+              <div style="position:relative">
+                <button class="control-button" id="weekBtn" onclick="toggleDropdown('weekDropdown')">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span id="weekLabel">Loading…</span>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                <div id="weekDropdown" class="dropdown-menu cal-popup" style="display:none;overflow:visible">
+                  <!-- Calendar rendered by attendance.js -->
+                </div>
+              </div>
+              <button class="control-button" id="nextWeekBtn" onclick="shiftWeek(1)" title="Next week" style="padding:8px 10px">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -134,7 +151,7 @@
                 <table class="attendance-table" id="attendanceTable">
                   <thead id="tableHead"></thead>
                   <tbody id="tableBody">
-                    <tr><td colspan="32" style="text-align:center;padding:40px;opacity:.5">Loading attendance…</td></tr>
+                    <tr><td colspan="9" style="text-align:center;padding:40px;opacity:.5">Loading attendance…</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -145,311 +162,6 @@
       </main>
     </div><!-- /classinstruct-AI -->
 
-    <!-- ══════════════════════════════════
-         DROPDOWN STYLES (inline, small)
-    ══════════════════════════════════ -->
-    <style>
-      .dropdown-menu {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-lg);
-        z-index: 200;
-        min-width: 160px;
-        overflow: hidden;
-      }
-      .dropdown-menu button {
-        display: block;
-        width: 100%;
-        padding: 10px 16px;
-        background: none;
-        border: none;
-        text-align: left;
-        font-size: 0.875rem;
-        font-family: inherit;
-        cursor: pointer;
-        color: var(--text-primary);
-        transition: background var(--transition-fast);
-      }
-      .dropdown-menu button:hover { background: var(--bg-input); }
-      .dropdown-menu button.selected { color: var(--primary-color); font-weight: 600; }
-
-      /* Status dots in table */
-      .status-dot {
-        display: inline-block;
-        width: 13px;
-        height: 13px;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: transform 0.15s;
-      }
-      .status-dot:hover { transform: scale(1.3); }
-      .dot-present { background: var(--status-present); }
-      .dot-late    { background: var(--status-late); }
-      .dot-absent  { background: var(--status-absent); }
-      .dot-none    { background: #e2e8f0; }
-    </style>
-
-    <!-- ══════════════════════════════════
-         JAVASCRIPT — wired to MySQL via attendance_db.php
-    ══════════════════════════════════ -->
-    <script>
-    const API = 'attendance_db.php';
-
-    // ── State ──
-    let state = {
-      sections:    [],
-      sectionId:   1,
-      sectionName: '',
-      year:        new Date().getFullYear(),
-      month:       new Date().getMonth() + 1,
-    };
-
-    const MONTHS = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
-
-    // ── Fetch helpers ──
-    async function apiFetch(params) {
-      const qs  = new URLSearchParams(params).toString();
-      const res = await fetch(`${API}?${qs}`);
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    }
-
-    async function apiPost(body) {
-      const res = await fetch(API, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
-      });
-      return res.json();
-    }
-
-    // ── Init ──
-    async function init() {
-      try {
-        state.sections = await apiFetch({ action: 'sections' });
-        if (state.sections.length) {
-          state.sectionId   = state.sections[0].id;
-          state.sectionName = state.sections[0].name;
-        }
-        buildSectionDropdown();
-        buildMonthDropdown();
-        await Promise.all([loadSummary(), loadAttendance()]);
-      } catch (e) {
-        showError('Could not connect to database. Is XAMPP running? — ' + e.message);
-      }
-    }
-
-    // ── Dropdowns ──
-    function toggleDropdown(id) {
-      const el = document.getElementById(id);
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.table-controls')) {
-        document.querySelectorAll('.dropdown-menu').forEach(d => d.style.display = 'none');
-      }
-    });
-
-    function buildSectionDropdown() {
-      const dd = document.getElementById('sectionDropdown');
-      dd.innerHTML = state.sections.map(s =>
-        `<button class="${s.id == state.sectionId ? 'selected' : ''}" onclick="selectSection(${s.id},'${escHtml(s.name)}')">${escHtml(s.name)}</button>`
-      ).join('');
-      document.getElementById('sectionLabel').textContent = state.sectionName || 'Select Section';
-    }
-
-    function buildMonthDropdown() {
-      const dd = document.getElementById('monthDropdown');
-      const now = new Date();
-      let html  = '';
-      // Show current year ±1
-      for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
-        for (let m = 1; m <= 12; m++) {
-          const sel = (y === state.year && m === state.month) ? 'selected' : '';
-          html += `<button class="${sel}" onclick="selectMonth(${y},${m})">${MONTHS[m-1]} ${y}</button>`;
-        }
-      }
-      dd.innerHTML = html;
-      updateMonthLabel();
-    }
-
-    function selectSection(id, name) {
-      state.sectionId   = id;
-      state.sectionName = name;
-      document.getElementById('sectionLabel').textContent = name;
-      document.getElementById('sectionDropdown').style.display = 'none';
-      buildSectionDropdown();
-      Promise.all([loadSummary(), loadAttendance()]);
-    }
-
-    function selectMonth(year, month) {
-      state.year  = year;
-      state.month = month;
-      document.getElementById('monthDropdown').style.display = 'none';
-      buildMonthDropdown();
-      Promise.all([loadSummary(), loadAttendance()]);
-    }
-
-    function updateMonthLabel() {
-      document.getElementById('monthLabel').textContent = `${MONTHS[state.month-1]} ${state.year}`;
-    }
-
-    // ── Summary Cards ──
-    async function loadSummary() {
-      const data = await apiFetch({ action: 'summary', year: state.year, month: state.month });
-      const cards = document.getElementById('summaryCards');
-
-      const mkCard = (title, d) => `
-        <article class="summary-card">
-          <div class="card-header">
-            <h3>${escHtml(title)}</h3>
-            <span class="badge present">Present</span>
-          </div>
-          <div class="card-value">${d.present}</div>
-          <div class="breakdown">
-            <div class="breakdown-item">
-              <span class="breakdown-label">On-Time</span>
-              <span class="breakdown-value">${d.present}</span>
-              <span class="breakdown-percent">${d.present_pct}%</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Late</span>
-              <span class="breakdown-value">${d.late}</span>
-              <span class="breakdown-percent">${d.late_pct}%</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Absent</span>
-              <span class="breakdown-value">${d.absent}</span>
-              <span class="breakdown-percent absent">${d.absent_pct}%</span>
-            </div>
-          </div>
-        </article>`;
-
-      let html = mkCard('All Students', data.overall);
-      const sec = data.sections.find(s => s.id == state.sectionId);
-      if (sec) html += mkCard(sec.name, sec);
-      cards.innerHTML = html;
-    }
-
-    // ── Attendance Table ──
-    let tableData = { dates: [], students: [] };
-
-    async function loadAttendance() {
-      tableData = await apiFetch({
-        action:     'attendance',
-        section_id: state.sectionId,
-        year:       state.year,
-        month:      state.month,
-      });
-      renderTable();
-    }
-
-    function renderTable() {
-      const { dates, students } = tableData;
-
-      // Head
-      const thead = document.getElementById('tableHead');
-      thead.innerHTML = `<tr>
-        <th class="student-col">Student</th>
-        ${dates.map(d => {
-          const dt   = new Date(d + 'T00:00:00');
-          const day  = dt.toLocaleDateString('en-US', { weekday: 'short' });
-          const num  = dt.getDate();
-          return `<th title="${d}">${day}<br>${num}</th>`;
-        }).join('')}
-        <th>Summary</th>
-      </tr>`;
-
-      // Body
-      const tbody = document.getElementById('tableBody');
-      if (!students.length) {
-        tbody.innerHTML = `<tr><td colspan="${dates.length + 2}" style="text-align:center;padding:40px;opacity:.5">No students found for this section.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = students.map(s => {
-        let present = 0, late = 0, absent = 0;
-        const cells = dates.map(d => {
-          const status = s.statuses[d] || 'none';
-          if (status === 'present') present++;
-          else if (status === 'late') late++;
-          else if (status === 'absent') absent++;
-          const cls = status === 'none' ? 'dot-none' : `dot-${status}`;
-          const label = status === 'none' ? 'No record' : status.charAt(0).toUpperCase() + status.slice(1);
-          return `<td><span class="status-dot ${cls}" title="${label} — ${d}" onclick="cycleStatus(${s.id},'${d}',this)"></span></td>`;
-        }).join('');
-
-        return `<tr data-name="${escHtml(s.full_name.toLowerCase())}">
-          <td>
-            <div class="student-name">
-              <img src="${escHtml(s.avatar || '../../image/Student.png')}" alt="" class="student-avatar" onerror="this.style.display='none'"/>
-              ${escHtml(s.full_name)}
-            </div>
-          </td>
-          ${cells}
-          <td style="font-size:0.78rem;white-space:nowrap;color:var(--text-secondary)">
-            <span style="color:var(--status-present)">P:${present}</span>
-            <span style="color:var(--status-late)"> L:${late}</span>
-            <span style="color:var(--status-absent)"> A:${absent}</span>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    // ── Click to cycle status: none → present → late → absent → present ──
-    const CYCLE = { none: 'present', present: 'late', late: 'absent', absent: 'present' };
-
-    async function cycleStatus(studentId, date, dot) {
-      const currentClass = [...dot.classList].find(c => c.startsWith('dot-')) || 'dot-none';
-      const current      = currentClass.replace('dot-', '');
-      const next         = CYCLE[current] || 'present';
-
-      // Optimistic UI update
-      dot.classList.remove(currentClass);
-      dot.classList.add(`dot-${next}`);
-      dot.title = next.charAt(0).toUpperCase() + next.slice(1) + ' — ' + date;
-
-      // Update local data
-      const student = tableData.students.find(s => s.id == studentId);
-      if (student) student.statuses[date] = next;
-
-      // Persist to MySQL
-      try {
-        await apiPost({ student_id: studentId, date, status: next });
-        // Refresh summary quietly
-        loadSummary();
-      } catch (e) {
-        console.error('Save failed:', e);
-      }
-    }
-
-    // ── Search / Filter ──
-    function filterTable() {
-      const q = document.getElementById('search-input').value.toLowerCase();
-      document.querySelectorAll('#tableBody tr[data-name]').forEach(row => {
-        row.style.display = row.dataset.name.includes(q) ? '' : 'none';
-      });
-    }
-
-    // ── Error display ──
-    function showError(msg) {
-      document.getElementById('summaryCards').innerHTML =
-        `<div class="summary-card" style="color:#ef4444;padding:20px">${escHtml(msg)}</div>`;
-      document.getElementById('tableBody').innerHTML =
-        `<tr><td colspan="32" style="text-align:center;padding:30px;color:#ef4444">${escHtml(msg)}</td></tr>`;
-    }
-
-    function escHtml(str) {
-      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // ── Start ──
-    init();
-    </script>
+    <script src="attedance.js"></script>
   </body>
 </html>
