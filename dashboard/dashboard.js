@@ -4,8 +4,8 @@
 // ════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════
-const ATT_API  = 'attendance/attedance_db.php';
-const STUD_API = 'api/db.php';
+const ATT_API  = '/ClassInstruct1/dashboard/attendance/attedance_db.php';
+const STUD_API = '/ClassInstruct1/dashboard/api/db.php';
 const CAL_KEY  = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -291,7 +291,7 @@ function loadEntries() {
 
 function renderMiniCalendar() {
   const entries   = loadEntries();
-  const container = document.getElementById('monthDays');
+  const container = document.getElementById('miniCalDays');
   const isThisM   = _todayObj.getMonth()===calMon && _todayObj.getFullYear()===calYear;
 
   setEl('currentMonthDisplay', MONTHS[calMon]);
