@@ -166,26 +166,10 @@ body {
 }
 .filter:focus { border-color: var(--primary); }
 
-/* ── Enrolled ── */
-.enrolled-students { background: linear-gradient(135deg,var(--primary) 0%,#6366f1 100%); }
-.enrolled-students h2 { color: rgba(255,255,255,.8); }
-.enrolled-content { display: flex; justify-content: space-between; align-items: center; height: 100%; }
-.enrolled-info { display: flex; flex-direction: column; gap: 4px; }
-.student-count { font-size: clamp(1.5rem, 3vw, 2.5rem); /* scales with viewport */
-  font-weight: 800; color: var(--white); line-height: 1; }
-.enrolled-sub { font-size: .78rem; color: rgba(255,255,255,.65); margin-top: 4px; }
-.icon-container {
-  width: clamp(40px, 6vw, 60px);
-  height: clamp(40px, 6vw, 60px);
-  border-radius: var(--r-lg);
-  background: rgba(255,255,255,.18);
-  display: flex; align-items: center; justify-content: center; color: white;;
-}
-
 /* ══════════════════════════════════════
    ATTENDANCE CALENDAR CARD
 ══════════════════════════════════════ */
-.attendance-card { grid-column: span 2; }
+.attendance-card { }
 .att-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .att-summary-row {
@@ -312,24 +296,24 @@ body {
 .cal-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .cal-card-header h2 { margin-bottom: 0; }
 .cal-year-badge { font-size: .73rem; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 3px 9px; border-radius: var(--r-full); }
-.single-month-calendar { background: var(--bg-input); border-radius: var(--r-lg); padding: 12px; }
-.calendar-nav-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.single-month-calendar { background: var(--bg-input); border-radius: var(--r-lg); padding: 20px 24px; max-width: 100%; }
+.calendar-nav-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .calendar-nav-btn {
-  padding: 4px 10px; border: none;
+  padding: 6px 14px; border: none;
   background: var(--bg-card); border-radius: var(--r-sm);
-  color: var(--text-2); font-size: .75rem;
+  color: var(--text-2); font-size: .8rem;
   cursor: pointer; transition: all 150ms ease; font-family: inherit;
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 5px;
 }
 .calendar-nav-btn:hover { background: var(--primary); color: white; }
-.calendar-nav-btn svg { width: 13px; height: 13px; }
-.current-month { font-size: .9rem; font-weight: 700; color: var(--text); }
-.month-weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
-.month-weekdays span { text-align: center; font-size: .62rem; font-weight: 600; color: var(--text-3); padding: 3px 0; }
-.month-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.calendar-nav-btn svg { width: 14px; height: 14px; }
+.current-month { font-size: 1rem; font-weight: 700; color: var(--text); }
+.month-weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin-bottom: 8px; }
+.month-weekdays span { text-align: center; font-size: .82rem; font-weight: 600; color: var(--text-3); padding: 5px 0; }
+.month-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
 .month-days .day {
-  text-align: center; padding: 5px 2px;
-  font-size: .75rem; color: var(--text);
+  text-align: center; padding: 10px 4px;
+  font-size: .9rem; color: var(--text);
   border-radius: var(--r-sm);
   transition: all 150ms ease; cursor: default;
   position: relative; line-height: 1.2;
@@ -483,166 +467,191 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); o
       <div class="header-brand">ClassInstruct</div>
     </header>
 
-    <section class="content-grid">
+    <section class="content-grid" style="grid-template-columns: 1fr 1fr;">
 
-      <!-- Enrolled -->
-      <article class="card enrolled-students">
-        <div class="enrolled-content">
-          <div class="enrolled-info">
-            <h2>Enrolled Students</h2>
-            <div class="student-count" id="enrolledCount">—</div>
-            <div class="enrolled-sub" id="enrolledSub">Loading…</div>
-          </div>
-          <div class="icon-container">
-            <svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-          </div>
-        </div>
-      </article>
+      <!-- LEFT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:20px">
 
-      <!-- Gender (with section filter) -->
-      <article class="card gender-distribution">
-        <div class="section-header">
-          <h2>Student by Gender</h2>
-          <select class="filter" id="genderSectionFilter" onchange="updateGenderBySection()">
-            <option value="">All Sections</option>
-          </select>
-        </div>
-        <div class="gender-chart-container">
-          <div class="gender-pie-chart" id="genderPie">
-            <div class="pie-center">
-              <span class="total-label">Total</span>
-              <span class="total-count" id="genderTotal">—</span>
-            </div>
-          </div>
-          <div class="gender-legend">
-            <div class="legend-item">
-              <span class="legend-color boys"></span>
-              <span class="legend-label">Boys</span>
-              <span class="legend-count" id="boysCount">—</span>
-              <span class="legend-percent" id="boysPct">—</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color girls"></span>
-              <span class="legend-label">Girls</span>
-              <span class="legend-count" id="girlsCount">—</span>
-              <span class="legend-percent" id="girlsPct">—</span>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <!-- ══ ATTENDANCE CALENDAR ══ -->
-      <article class="card attendance-card">
-        <div class="section-header">
-          <h2>Student Attendance</h2>
-          <div class="att-controls">
-            <select class="filter" id="attSectionFilter" onchange="loadAttendanceCal()">
+        <!-- Students by Gender -->
+        <article class="card">
+          <div class="section-header">
+            <h2>Students by Gender</h2>
+            <select class="filter" id="genderSectionFilter" onchange="updateGenderBySection()">
               <option value="">All Sections</option>
             </select>
-            <select class="filter" id="attMonthFilter" onchange="loadAttendanceCal()"></select>
           </div>
-        </div>
-
-        <!-- Summary pills -->
-        <div class="att-summary-row">
-          <div class="att-stat-pill"><span class="att-stat-label">Present</span><span class="att-stat-val green"  id="attPresent">—</span></div>
-          <div class="att-stat-pill"><span class="att-stat-label">Late</span>   <span class="att-stat-val orange" id="attLate">—</span></div>
-          <div class="att-stat-pill"><span class="att-stat-label">Absent</span> <span class="att-stat-val red"    id="attAbsent">—</span></div>
-          <div class="att-stat-pill"><span class="att-stat-label">Avg Rate</span><span class="att-stat-val"      id="attAvg">—</span></div>
-        </div>
-
-        <!-- Calendar grid wrapped in bg panel -->
-        <div class="att-cal-wrap">
-          <div class="att-cal-grid" id="attCalGrid">
-            <div class="att-cal-weekday">Sun</div>
-            <div class="att-cal-weekday">Mon</div>
-            <div class="att-cal-weekday">Tue</div>
-            <div class="att-cal-weekday">Wed</div>
-            <div class="att-cal-weekday">Thu</div>
-            <div class="att-cal-weekday">Fri</div>
-            <div class="att-cal-weekday">Sat</div>
+          <div class="gender-chart-container">
+            <div class="gender-pie-chart" id="genderPie" style="width:110px;height:110px">
+              <div class="pie-center">
+                <span class="total-label">Total</span>
+                <span class="total-count" id="genderTotal">—</span>
+              </div>
+            </div>
+            <div class="gender-legend">
+              <div class="legend-item">
+                <span class="legend-color boys"></span>
+                <span class="legend-label">Boys</span>
+                <span class="legend-count" id="boysCount">—</span>
+                <span class="legend-percent" id="boysPct">—</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color girls"></span>
+                <span class="legend-label">Girls</span>
+                <span class="legend-count" id="girlsCount">—</span>
+                <span class="legend-percent" id="girlsPct">—</span>
+              </div>
+            </div>
           </div>
-        </div>
+        </article>
 
-        <!-- Legend + link -->
-        <div class="att-legend">
-          <div class="att-legend-item"><div class="att-legend-dot" style="background:#10b981"></div>High ≥80%</div>
-          <div class="att-legend-item"><div class="att-legend-dot" style="background:#f59e0b"></div>Mid 60–79%</div>
-          <div class="att-legend-item"><div class="att-legend-dot" style="background:#ef4444"></div>Low &lt;60%</div>
-          <div class="att-legend-item"><div class="att-legend-dot" style="background:#e2e8f0;border:1px solid #cbd5e1"></div>No data</div>
-          <a href="attendance/attendance.html" style="margin-left:auto;font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View full →</a>
-        </div>
-      </article>
-
-      <!-- Performance -->
-      <article class="card performance">
-        <div class="section-header">
-          <h2>Student Performance</h2>
-          <select class="filter"><option>First Quarter</option></select>
-        </div>
-        <div class="performance-chart bar-chart-container">
-          <div class="bar-chart">
-            <div class="bar-item"><div class="bar" style="height:75%"><span class="bar-value">A</span></div><span class="bar-label">A</span></div>
-            <div class="bar-item"><div class="bar" style="height:90%"><span class="bar-value">B</span></div><span class="bar-label">B</span></div>
-            <div class="bar-item"><div class="bar average" style="height:60%"><span class="bar-value">C</span></div><span class="bar-label">C</span></div>
-            <div class="bar-item"><div class="bar needs-improvement" style="height:30%"><span class="bar-value">D</span></div><span class="bar-label">D</span></div>
-            <div class="bar-item"><div class="bar needs-improvement" style="height:15%"><span class="bar-value">F</span></div><span class="bar-label">F</span></div>
+        <!-- Student Attendance -->
+        <article class="card">
+          <div class="section-header">
+            <h2>Student Attendance</h2>
+            <div class="att-controls">
+              <select class="filter" id="attSectionFilter" onchange="loadAttendanceCal()">
+                <option value="">All Sections</option>
+              </select>
+              <select class="filter" id="attMonthFilter" onchange="loadAttendanceCal()"></select>
+            </div>
           </div>
-          <div class="grade-distribution">
-            <div class="grade-row"><span class="grade-label">Excellent</span><div class="grade-bar-container"><div class="grade-bar excellent" style="width:75%">75%</div></div></div>
-            <div class="grade-row"><span class="grade-label">Good</span><div class="grade-bar-container"><div class="grade-bar good" style="width:90%">90%</div></div></div>
-            <div class="grade-row"><span class="grade-label">Average</span><div class="grade-bar-container"><div class="grade-bar average" style="width:60%">60%</div></div></div>
-            <div class="grade-row"><span class="grade-label">Poor</span><div class="grade-bar-container"><div class="grade-bar poor" style="width:30%">30%</div></div></div>
-          </div>
-        </div>
-      </article>
 
-      <!-- Mini Calendar -->
-      <article class="card calendar">
-        <div class="cal-card-header">
-          <h2>Calendar</h2>
-          <span class="cal-year-badge" id="calYearBadge">2026</span>
-        </div>
-        <div class="single-month-calendar">
-          <div class="calendar-nav-container">
-            <button class="calendar-nav-btn" onclick="changeMonth(-1)">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>Prev
-            </button>
-            <span class="current-month" id="currentMonthDisplay">—</span>
-            <button class="calendar-nav-btn" onclick="changeMonth(1)">
-              Next<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-            </button>
+          <!-- Summary pills -->
+          <div class="att-summary-row">
+            <div class="att-stat-pill"><span class="att-stat-label">Present</span><span class="att-stat-val green"  id="attPresent">—</span></div>
+            <div class="att-stat-pill"><span class="att-stat-label">Late</span>   <span class="att-stat-val orange" id="attLate">—</span></div>
+            <div class="att-stat-pill"><span class="att-stat-label">Absent</span> <span class="att-stat-val red"    id="attAbsent">—</span></div>
+            <div class="att-stat-pill"><span class="att-stat-label">Avg Rate</span><span class="att-stat-val"      id="attAvg">—</span></div>
           </div>
-          <div class="month-weekdays">
-            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+
+          <!-- Calendar grid wrapped in bg panel -->
+          <div class="att-cal-wrap">
+            <div class="att-cal-grid" id="attCalGrid">
+              <div class="att-cal-weekday">Sun</div>
+              <div class="att-cal-weekday">Mon</div>
+              <div class="att-cal-weekday">Tue</div>
+              <div class="att-cal-weekday">Wed</div>
+              <div class="att-cal-weekday">Thu</div>
+              <div class="att-cal-weekday">Fri</div>
+              <div class="att-cal-weekday">Sat</div>
+            </div>
           </div>
-          <div class="month-days" id="monthDays"></div>
-        </div>
-      </article>
 
-      <!-- Upcoming Events -->
-      <article class="card events">
-        <div class="section-header">
-          <h2>Upcoming Events</h2>
-          <span id="eventsMonthLabel" style="font-size:.75rem;color:var(--text-3);font-weight:600"></span>
-        </div>
-        <div class="events-content" id="eventsContent">
-          <div class="no-events-msg"><span>🗓️</span>No upcoming events.<br>Add some in the Calendar!</div>
-        </div>
-      </article>
+          <!-- Legend + link -->
+          <div class="att-legend">
+            <div class="att-legend-item"><div class="att-legend-dot" style="background:#10b981"></div>High ≥80%</div>
+            <div class="att-legend-item"><div class="att-legend-dot" style="background:#f59e0b"></div>Mid 60–79%</div>
+            <div class="att-legend-item"><div class="att-legend-dot" style="background:#ef4444"></div>Low &lt;60%</div>
+            <div class="att-legend-item"><div class="att-legend-dot" style="background:#e2e8f0;border:1px solid #cbd5e1"></div>No data</div>
+            <a href="attendance/attendance.html" style="margin-left:auto;font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View full →</a>
+          </div>
+        </article>
 
-      <!-- Recent Students -->
-      <article class="card" style="grid-column:span 2;">
-        <div class="section-header" style="margin-bottom:14px">
-          <h2>Recently Added Students</h2>
-          <a href="student/Student.html" style="font-size:.8rem;color:var(--primary);font-weight:600;text-decoration:none">View all →</a>
-        </div>
-        <div id="recentStudents" style="display:flex;flex-direction:column;gap:6px">
-          <div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">Loading student data…</div>
-        </div>
-      </article>
+        <!-- Student Performance -->
+        <article class="card performance">
+          <div class="section-header">
+            <h2>Student Performance</h2>
+            <select class="filter"><option>First Quarter</option></select>
+          </div>
+          <div class="performance-chart bar-chart-container">
+            <div class="bar-chart">
+              <div class="bar-item"><div class="bar" style="height:75%"><span class="bar-value">A</span></div><span class="bar-label">A</span></div>
+              <div class="bar-item"><div class="bar" style="height:90%"><span class="bar-value">B</span></div><span class="bar-label">B</span></div>
+              <div class="bar-item"><div class="bar average" style="height:60%"><span class="bar-value">C</span></div><span class="bar-label">C</span></div>
+              <div class="bar-item"><div class="bar needs-improvement" style="height:30%"><span class="bar-value">D</span></div><span class="bar-label">D</span></div>
+              <div class="bar-item"><div class="bar needs-improvement" style="height:15%"><span class="bar-value">F</span></div><span class="bar-label">F</span></div>
+            </div>
+            <div class="grade-distribution">
+              <div class="grade-row"><span class="grade-label">Excellent</span><div class="grade-bar-container"><div class="grade-bar excellent" style="width:75%">75%</div></div></div>
+              <div class="grade-row"><span class="grade-label">Good</span><div class="grade-bar-container"><div class="grade-bar good" style="width:90%">90%</div></div></div>
+              <div class="grade-row"><span class="grade-label">Average</span><div class="grade-bar-container"><div class="grade-bar average" style="width:60%">60%</div></div></div>
+              <div class="grade-row"><span class="grade-label">Poor</span><div class="grade-bar-container"><div class="grade-bar poor" style="width:30%">30%</div></div></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Recently Added Students -->
+        <article class="card">
+          <div class="section-header" style="margin-bottom:10px">
+            <h2>Recently Added Students</h2>
+            <a href="student/Student.html" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View all →</a>
+          </div>
+          <div id="recentStudents" style="display:flex;flex-direction:column;gap:6px">
+            <div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">Loading student data…</div>
+          </div>
+        </article>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:20px">
+
+        <!-- Mini Calendar -->
+        <article class="card calendar" style="grid-column: span 2;">
+          <div class="cal-card-header">
+            <h2>Calendar</h2>
+            <span class="cal-year-badge" id="calYearBadge">2026</span>
+          </div>
+          <div class="single-month-calendar">
+            <div class="calendar-nav-container">
+              <button class="calendar-nav-btn" onclick="changeMonth(-1)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>Prev
+              </button>
+              <span class="current-month" id="currentMonthDisplay">—</span>
+              <button class="calendar-nav-btn" onclick="changeMonth(1)">
+                Next<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+            <div class="month-weekdays">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div class="month-days" id="miniCalDays"></div>
+          </div>
+        </article>
+
+        <!-- Upcoming Events -->
+        <article class="card events">
+          <div class="section-header">
+            <h2>Upcoming Events</h2>
+            <span id="eventsMonthLabel" style="font-size:.75rem;color:var(--text-3);font-weight:600"></span>
+          </div>
+          <div class="events-content" id="eventsContent">
+            <div class="no-events-msg"><span>🗓️</span>No upcoming events.<br>Add some in the Calendar!</div>
+          </div>
+        </article>
+
+        <!-- Recent Activity -->
+        <article class="card">
+          <div class="section-header">
+            <h2>Recent Activity</h2>
+          </div>
+          <div id="recentActivity" style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
+              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">👤</div>
+              <div style="flex:1">
+                <div style="font-size:.85rem;font-weight:500">New student enrolled</div>
+                <div style="font-size:.72rem;color:var(--text-3)">Grade 7 - Section A</div>
+              </div>
+              <span style="font-size:.68rem;color:var(--text-3)">2m ago</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
+              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">✓</div>
+              <div style="flex:1">
+                <div style="font-size:.85rem;font-weight:500">Attendance marked</div>
+                <div style="font-size:.72rem;color:var(--text-3)">Grade 8 - Section B</div>
+              </div>
+              <span style="font-size:.68rem;color:var(--text-3)">1h ago</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
+              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">📋</div>
+              <div style="flex:1">
+                <div style="font-size:.85rem;font-weight:500">Quiz created</div>
+                <div style="font-size:.72rem;color:var(--text-3)">Mathematics - Grade 10</div>
+              </div>
+              <span style="font-size:.68rem;color:var(--text-3)">3h ago</span>
+            </div>
+          </div>
+        </article>
+      </div>
 
     </section>
   </main>
@@ -654,8 +663,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); o
 // ════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════
-const ATT_API  = 'attendance/attedance_db.php';
-const STUD_API = 'api/db.php';
+const ATT_API  = '/ClassInstruct1/dashboard/attendance/attedance_db.php';
+const STUD_API = '/ClassInstruct1/dashboard/api/db.php';
 const CAL_KEY  = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -683,10 +692,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadStudents() {
   try {
     const res = await fetch(STUD_API);
+    console.log('API Response status:', res.status);
+    console.log('API URL:', STUD_API);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    _allStudents = await res.json();
+    const data = await res.json();
+    console.log('API Data:', data);
+    _allStudents = data;
   } catch (e) {
-    console.warn('Students API error:', e.message);
+    console.error('Students API error:', e.message);
     _allStudents = [];
   }
 
@@ -941,7 +954,7 @@ function loadEntries() {
 
 function renderMiniCalendar() {
   const entries   = loadEntries();
-  const container = document.getElementById('monthDays');
+  const container = document.getElementById('miniCalDays');
   const isThisM   = _todayObj.getMonth()===calMon && _todayObj.getFullYear()===calYear;
 
   setEl('currentMonthDisplay', MONTHS[calMon]);

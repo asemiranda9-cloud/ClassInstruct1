@@ -361,7 +361,7 @@
 //  All data is stored in XAMPP MySQL.
 //  Endpoint: db.php (same folder)
 // ═══════════════════════════════════
-const API = '../api/db.php';
+const API = '/ClassInstruct1/dashboard/api/db.php';
 
 async function apiGet() {
   const res = await fetch(API);
@@ -400,9 +400,15 @@ const PAGE_SIZE = 10;
 // Load from MySQL on start
 async function init() {
   try {
-    students = await apiGet();
+    console.log('Fetching from:', API);
+    const response = await fetch(API);
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Student data:', data);
+    students = data;
     applyFilters();
   } catch (e) {
+    console.error('Init error:', e);
     toast('Could not connect to database. Is XAMPP running?', 'danger');
   }
 }
