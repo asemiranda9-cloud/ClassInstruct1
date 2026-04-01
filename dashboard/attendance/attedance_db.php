@@ -1,4 +1,8 @@
 <?php
+// ═══════════════════════════════════════════════════════
+//  attendance_db.php — ClassInstruct Attendance Backend
+//  Works with existing students table (grade + section cols)
+// ═══════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -7,10 +11,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-// ── DB Config (XAMPP defaults) ──
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');   // XAMPP default
-define('DB_PASS', '');       // XAMPP default (empty)
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_NAME', 'classinstruct');
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
@@ -21,70 +24,82 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
-// ── Router ──
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
 switch ($method) {
     case 'GET':
         switch ($action) {
-            case 'sections':        getSections($conn);       break;
-            case 'students':        getStudents($conn);       break;
-            case 'attendance':      getAttendance($conn);     break;
-            case 'summary':         getSummary($conn);        break;
+            case 'sections':   getSections($conn);   break;
+            case 'students':   getStudents($conn);   break;
+            case 'attendance': getAttendance($conn); break;
+            case 'summary':    getSummary($conn);    break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Unknown action. Use: sections | students | attendance | summary']);
         }
         break;
-
-    case 'POST':
-        saveAttendance($conn);
-        break;
-
-    case 'PUT':
-        updateAttendance($conn);
-        break;
-
-    case 'DELETE':
-        deleteAttendance($conn);
-        break;
-
+    case 'POST':   saveAttendance($conn);   break;
+    case 'PUT':    updateAttendance($conn); break;
+    case 'DELETE': deleteAttendance($conn); break;
     default:
         http_response_code(405);
         echo json_encode(['error' => 'Method not allowed']);
 }
-
 $conn->close();
 
 
 // ═══════════════════════════════════════════════
-//  GET sections — list all sections
-//  Usage: attendance_db.php?action=sections
+//  GET sections
+//  Returns distinct grade+section combos from students table
+//  Each combo gets a stable virtual ID using DENSE_RANK
 // ═══════════════════════════════════════════════
 function getSections($conn) {
-    $result = $conn->query("SELECT * FROM sections ORDER BY name ASC");
+    $result = $conn->query(
+        "SELECT DISTINCT grade, section,
+                CONCAT(grade, ' - ', section) AS name
+         FROM students
+         ORDER BY grade ASC, section ASC"
+    );
+    if (!$result) {
+        http_response_code(500);
+        echo json_encode(['error' => $conn->error]);
+        return;
+    }
     $rows = [];
-    while ($r = $result->fetch_assoc()) $rows[] = $r;
+    $id   = 1;
+    while ($r = $result->fetch_assoc()) {
+        $rows[] = [
+            'id'      => $id++,
+            'grade'   => $r['grade'],
+            'section' => $r['section'],
+            'name'    => $r['name'],
+        ];
+    }
     echo json_encode($rows);
 }
 
 
 // ═══════════════════════════════════════════════
-//  GET students — list students, optionally filtered by section
-//  Usage: attendance_db.php?action=students[&section_id=1]
+//  GET students
+//  ?action=students[&grade=Grade+5&section=Section+A]
 // ═══════════════════════════════════════════════
 function getStudents($conn) {
-    $sectionId = isset($_GET['section_id']) ? (int)$_GET['section_id'] : null;
+    $grade   = $_GET['grade']   ?? '';
+    $section = $_GET['section'] ?? '';
 
-    $sql = "SELECT s.id, s.student_id, s.full_name, s.avatar, sec.name AS section_name
-            FROM students s
-            LEFT JOIN sections sec ON s.section_id = sec.id";
+    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE 1=1";
+    $args = [];
 
-    if ($sectionId) {
-        $sql .= " WHERE s.section_id = $sectionId";
+    if ($grade !== '') {
+        $g = $conn->real_escape_string($grade);
+        $sql .= " AND grade = '$g'";
     }
-    $sql .= " ORDER BY s.full_name ASC";
+    if ($section !== '') {
+        $s = $conn->real_escape_string($section);
+        $sql .= " AND section = '$s'";
+    }
+    $sql .= " ORDER BY full_name ASC";
 
     $result = $conn->query($sql);
     if (!$result) {
@@ -99,55 +114,64 @@ function getStudents($conn) {
 
 
 // ═══════════════════════════════════════════════
-//  GET attendance — grid of statuses for a section + month
-//  Usage: attendance_db.php?action=attendance&section_id=1&year=2026&month=3
-//  Returns: { dates: [...], students: [{id, name, statuses: {date: status}}] }
+//  GET attendance grid
+//  ?action=attendance&grade=Grade+5&section=Section+A&year=2026&month=3
 // ═══════════════════════════════════════════════
 function getAttendance($conn) {
-    $sectionId = isset($_GET['section_id']) ? (int)$_GET['section_id'] : 1;
-    $year      = isset($_GET['year'])       ? (int)$_GET['year']       : (int)date('Y');
-    $month     = isset($_GET['month'])      ? (int)$_GET['month']      : (int)date('m');
+    $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
+    $section = $conn->real_escape_string($_GET['section'] ?? '');
+    $year    = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
+    $month   = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
 
-    // Build all dates in the requested month
     $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
     $dates = [];
     for ($d = 1; $d <= $daysInMonth; $d++) {
         $dates[] = sprintf('%04d-%02d-%02d', $year, $month, $d);
     }
 
-    // Get students in section
+    $where = "WHERE 1=1";
+    if ($grade)   $where .= " AND s.grade = '$grade'";
+    if ($section) $where .= " AND s.section = '$section'";
+
     $result = $conn->query(
-        "SELECT s.id, s.full_name, s.avatar
-         FROM students s
-         WHERE s.section_id = $sectionId
+        "SELECT s.id, s.full_name, s.gender
+         FROM students s $where
          ORDER BY s.full_name ASC"
     );
-    $students = [];
-    $studentIds = [];
-    while ($r = $result->fetch_assoc()) {
-        $students[$r['id']] = ['id' => $r['id'], 'full_name' => $r['full_name'], 'avatar' => $r['avatar'], 'statuses' => []];
-        $studentIds[] = (int)$r['id'];
-    }
-
-    if (empty($studentIds)) {
-        echo json_encode(['dates' => $dates, 'students' => []]);
+    if (!$result) {
+        http_response_code(500);
+        echo json_encode(['error' => $conn->error]);
         return;
     }
 
-    // Get attendance records for those students in the month
-    $idList   = implode(',', $studentIds);
-    $fromDate = sprintf('%04d-%02d-01', $year, $month);
-    $toDate   = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+    $students   = [];
+    $studentIds = [];
+    while ($r = $result->fetch_assoc()) {
+        $students[$r['id']] = [
+            'id'        => (int)$r['id'],
+            'full_name' => $r['full_name'],
+            'gender'    => $r['gender'],
+            'avatar'    => '',
+            'statuses'  => [],
+        ];
+        $studentIds[] = (int)$r['id'];
+    }
 
-    $atResult = $conn->query(
-        "SELECT student_id, DATE_FORMAT(date,'%Y-%m-%d') AS date, status
-         FROM attendance
-         WHERE student_id IN ($idList)
-           AND date BETWEEN '$fromDate' AND '$toDate'"
-    );
-    while ($r = $atResult->fetch_assoc()) {
-        if (isset($students[$r['student_id']])) {
-            $students[$r['student_id']]['statuses'][$r['date']] = $r['status'];
+    if (!empty($studentIds)) {
+        $idList   = implode(',', $studentIds);
+        $fromDate = sprintf('%04d-%02d-01', $year, $month);
+        $toDate   = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+
+        $atResult = $conn->query(
+            "SELECT student_id, DATE_FORMAT(date,'%Y-%m-%d') AS date, status
+             FROM attendance
+             WHERE student_id IN ($idList)
+               AND date BETWEEN '$fromDate' AND '$toDate'"
+        );
+        while ($r = $atResult->fetch_assoc()) {
+            if (isset($students[$r['student_id']])) {
+                $students[$r['student_id']]['statuses'][$r['date']] = $r['status'];
+            }
         }
     }
 
@@ -155,7 +179,10 @@ function getAttendance($conn) {
 }
 
 
-
+// ═══════════════════════════════════════════════
+//  GET summary
+//  ?action=summary&year=2026&month=3
+// ═══════════════════════════════════════════════
 function getSummary($conn) {
     $year  = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
     $month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
@@ -164,10 +191,9 @@ function getSummary($conn) {
     $fromDate    = sprintf('%04d-%02d-01', $year, $month);
     $toDate      = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
 
-    // Overall counts
+    // Overall totals
     $overall = $conn->query(
-        "SELECT status, COUNT(*) AS cnt
-         FROM attendance
+        "SELECT status, COUNT(*) AS cnt FROM attendance
          WHERE date BETWEEN '$fromDate' AND '$toDate'
          GROUP BY status"
     );
@@ -175,24 +201,27 @@ function getSummary($conn) {
     while ($r = $overall->fetch_assoc()) $totals[$r['status']] = (int)$r['cnt'];
     $totalAll = array_sum($totals);
 
-
+    // Per grade+section breakdown
     $secResult = $conn->query(
-        "SELECT sec.id, sec.name,
+        "SELECT s.grade, s.section,
+                CONCAT(s.grade, ' - ', s.section) AS name,
                 SUM(a.status='present') AS present_cnt,
                 SUM(a.status='late')    AS late_cnt,
                 SUM(a.status='absent')  AS absent_cnt
-         FROM sections sec
-         LEFT JOIN students s   ON s.section_id = sec.id
-         LEFT JOIN attendance a ON a.student_id  = s.id
+         FROM students s
+         LEFT JOIN attendance a ON a.student_id = s.id
                                AND a.date BETWEEN '$fromDate' AND '$toDate'
-         GROUP BY sec.id, sec.name
-         ORDER BY sec.name ASC"
+         GROUP BY s.grade, s.section
+         ORDER BY s.grade ASC, s.section ASC"
     );
     $sections = [];
+    $id = 1;
     while ($r = $secResult->fetch_assoc()) {
         $tot = (int)$r['present_cnt'] + (int)$r['late_cnt'] + (int)$r['absent_cnt'];
         $sections[] = [
-            'id'          => (int)$r['id'],
+            'id'          => $id++,
+            'grade'       => $r['grade'],
+            'section'     => $r['section'],
             'name'        => $r['name'],
             'present'     => (int)$r['present_cnt'],
             'late'        => (int)$r['late_cnt'],
@@ -205,7 +234,7 @@ function getSummary($conn) {
     }
 
     echo json_encode([
-        'overall'  => [
+        'overall' => [
             'present'     => $totals['present'],
             'late'        => $totals['late'],
             'absent'      => $totals['absent'],
@@ -220,7 +249,7 @@ function getSummary($conn) {
 
 
 // ═══════════════════════════════════════════════
-//  POST — Save / upsert attendance record
+//  POST — upsert single attendance record
 //  Body: { student_id, date, status }
 // ═══════════════════════════════════════════════
 function saveAttendance($conn) {
@@ -233,11 +262,10 @@ function saveAttendance($conn) {
 
     if (!$studentId || !$date || !in_array($status, ['present','late','absent'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'student_id, date, and valid status (present|late|absent) are required']);
+        echo json_encode(['error' => 'student_id, date, and valid status (present|late|absent) required']);
         return;
     }
 
-    // INSERT … ON DUPLICATE KEY UPDATE (upsert)
     $stmt = $conn->prepare(
         "INSERT INTO attendance (student_id, date, status)
          VALUES (?, ?, ?)
@@ -256,8 +284,8 @@ function saveAttendance($conn) {
 
 
 // ═══════════════════════════════════════════════
-//  PUT — Bulk upsert attendance for a whole day/section
-//  Body: { records: [{student_id, date, status}, ...] }
+//  PUT — bulk upsert for a whole day
+//  Body: { records: [{student_id, date, status}] }
 // ═══════════════════════════════════════════════
 function updateAttendance($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -266,7 +294,6 @@ function updateAttendance($conn) {
         echo json_encode(['error' => 'Body must have a records array']);
         return;
     }
-
     $saved  = 0;
     $errors = [];
     $stmt   = $conn->prepare(
@@ -274,27 +301,25 @@ function updateAttendance($conn) {
          VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE status = VALUES(status)"
     );
-
     foreach ($data['records'] as $rec) {
         $sid    = (int)($rec['student_id'] ?? 0);
         $date   = $rec['date']   ?? '';
         $status = $rec['status'] ?? '';
         if (!$sid || !$date || !in_array($status, ['present','late','absent'])) {
-            $errors[] = "Skipped invalid record: " . json_encode($rec);
+            $errors[] = "Skipped: " . json_encode($rec);
             continue;
         }
         $stmt->bind_param('iss', $sid, $date, $status);
         $stmt->execute() ? $saved++ : ($errors[] = $stmt->error);
     }
     $stmt->close();
-
     echo json_encode(['saved' => $saved, 'errors' => $errors]);
 }
 
 
 // ═══════════════════════════════════════════════
-//  DELETE — Remove a single attendance record
-//  Usage: attendance_db.php?student_id=1&date=2026-03-02
+//  DELETE — remove a single record
+//  ?student_id=1&date=2026-03-02
 // ═══════════════════════════════════════════════
 function deleteAttendance($conn) {
     $studentId = isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0;
@@ -305,7 +330,6 @@ function deleteAttendance($conn) {
         echo json_encode(['error' => 'student_id and date query params required']);
         return;
     }
-
     $stmt = $conn->prepare("DELETE FROM attendance WHERE student_id = ? AND date = ?");
     $stmt->bind_param('is', $studentId, $date);
 
