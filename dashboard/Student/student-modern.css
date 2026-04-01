@@ -85,21 +85,7 @@ body {
 /* ============================================
    SIDEBAR - Matching classinstruct-ai
    ============================================ */
-.student-sidebar {
-  width: var(--sidebar-width);
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  color: var(--text-white);
-  display: flex;
-  flex-direction: column;
-  padding: var(--spacing-xl);
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: 100;
-  overflow-y: auto;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-}
+
 
 .sidebar-logo {
   display: flex;
@@ -234,7 +220,7 @@ body {
    ============================================ */
 .student-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: 0;
   display: flex;
   flex-direction: column;
   min-height: 100vh;

@@ -41,100 +41,12 @@
       /* ── App Shell ── */
       .app { display: flex; min-height: 100vh; }
 
-      /* ── Sidebar ── */
-      .sidebar {
-        width: var(--sidebar-w);
-        background: var(--sidebar-bg);
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        padding: 28px 20px;
-        position: fixed;
-        top: 0; left: 0;
-        height: 100vh;
-        z-index: 100;
-        overflow-y: auto;
-        box-shadow: 4px 0 24px rgba(0,0,0,.15);
-      }
 
-      .sidebar-logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-bottom: 24px;
-        border-bottom: 1px solid var(--sidebar-border);
-        margin-bottom: 24px;
-      }
-
-      .sidebar-logo svg { flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(79,70,229,.4)); }
-
-      .sidebar-logo span {
-        font-family: 'DM Serif Display', serif;
-        font-size: 1.2rem;
-        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .user-profile {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 16px;
-        background: rgba(255,255,255,.05);
-        border-radius: var(--r-lg);
-        margin-bottom: 28px;
-        border: 1px solid var(--sidebar-border);
-      }
-
-      .user-avatar {
-        width: 44px; height: 44px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #4f46e5, #06b6d4);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.2rem; font-weight: 700; color: #fff;
-        flex-shrink: 0;
-        border: 2px solid rgba(255,255,255,.15);
-      }
-
-      .user-name { font-weight: 600; font-size: .95rem; }
-      .user-role { font-size: .75rem; color: var(--text-3); margin-top: 1px; }
-
-      .nav-menu { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-
-      .nav-btn {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 11px 14px;
-        color: #94a3b8;
-        background: transparent;
-        border: none;
-        border-radius: var(--r-md);
-        font-size: .9rem;
-        font-weight: 500;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 180ms ease;
-        text-align: left;
-        width: 100%;
-      }
-
-      .nav-btn:hover { background: rgba(255,255,255,.07); color: #fff; transform: translateX(3px); }
-
-      .nav-btn.active {
-        background: linear-gradient(135deg, #4f46e5, #6366f1);
-        color: #fff;
-        box-shadow: 0 4px 16px rgba(79,70,229,.35);
-      }
-
-      .nav-btn svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .9; }
 
       /* ── Main ── */
-      .main-content {
+.main-content {
         flex: 1;
-        margin-left: var(--sidebar-w);
+        margin-left: 0;
         display: flex;
         flex-direction: column;
         min-height: 100vh;

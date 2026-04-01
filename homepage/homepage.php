@@ -1,4 +1,7 @@
-<?php session_start(); ?>
+<?php 
+session_start(); 
+include 'sidebar.html';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

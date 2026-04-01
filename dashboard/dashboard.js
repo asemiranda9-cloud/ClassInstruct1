@@ -384,3 +384,5 @@ function setEl(id, val) { const e=document.getElementById(id); if(e) e.textConte
 function div(cls) { const e=document.createElement('div'); e.className=cls; return e; }
 function span(cls) { const e=document.createElement('span'); e.className=cls; return e; }
 function toYMD(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+
