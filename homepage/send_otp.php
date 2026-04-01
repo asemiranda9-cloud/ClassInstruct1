@@ -133,7 +133,7 @@ function buildHtmlEmail(string $otp, string $email): string
             <tr><td style="padding:40px 40px 32px;">
               <!-- Logo -->
               <div style="margin-bottom:28px;">
-                <span style="font-size:18px;font-weight:700;color:#111827;">📚 ClassInstruct</span>
+                <span style="font-size:18px;font-weight:700;color:#111827;">ClassInstruct</span>
               </div>
               <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 8px;">Your sign-in code</h1>
               <p style="font-size:14px;color:#6b7280;margin:0 0 28px;line-height:1.6;">
