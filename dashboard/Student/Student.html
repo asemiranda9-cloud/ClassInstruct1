@@ -1,5 +1,3 @@
-STUDENT 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -316,13 +314,19 @@ STUDENT
 <!-- ══════════════════════════════════════════
      VIEW MODAL
 ══════════════════════════════════════════ -->
-<div class="overlay" id="viewOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 class="modal-title">Student Details</h2>
+<div class="overlay" id="viewOverlay" style="align-items:flex-start;padding:20px;overflow-y:auto">
+  <div class="modal" style="max-width:780px;width:100%;margin:auto">
+    <div class="modal-header" style="position:sticky;top:0;z-index:10;background:#fff;border-radius:16px 16px 0 0">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="viewAvatarBadge" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
+        <div>
+          <h2 class="modal-title" id="viewModalName" style="margin:0;font-size:1.15rem">Student Details</h2>
+          <div id="viewModalSub" style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px"></div>
+        </div>
+      </div>
       <button class="close-btn" onclick="closeViewModal()">✕</button>
     </div>
-    <div class="modal-body" id="viewBody"></div>
+    <div class="modal-body" id="viewBody" style="padding-top:4px"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
       <button class="btn btn-primary" id="editFromViewBtn">
@@ -461,7 +465,7 @@ function renderTable() {
         <div class="student-name-cell">
           <div class="student-avatar" style="background:${colorClass}20;color:${colorClass}">${initials}</div>
           <div>
-            <div style="font-weight:600"><a href="StudentInfo.html?id=${s.id}" style="color:inherit;text-decoration:none;cursor:pointer" onmouseover="this.style.color='#4f46e5'" onmouseout="this.style.color='inherit'">${esc(s.fullName)}</a></div>
+            <div style="font-weight:600"><span onclick="viewStudent(${s.id})" style="color:inherit;cursor:pointer" onmouseover="this.style.color='#4f46e5';this.style.textDecoration='underline'" onmouseout="this.style.color='inherit';this.style.textDecoration='none'">${esc(s.fullName)}</span></div>
             <div style="font-size:0.78rem;color:var(--text-secondary)">${esc(s.dob||'—')}</div>
           </div>
         </div>
@@ -659,49 +663,60 @@ function viewStudent(id) {
   if (!s) return;
   viewingId = id;
 
-  const v = (val) => val ? `<span class="view-value">${esc(val)}</span>` : `<span class="view-value empty">Not provided</span>`;
+  // Populate header
+  const initials = s.fullName.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+  const colors   = ['#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+  const color    = colors[s.fullName.charCodeAt(0) % colors.length];
+  const avatarEl = document.getElementById('viewAvatarBadge');
+  if (avatarEl) { avatarEl.textContent = initials; avatarEl.style.background = 'linear-gradient(135deg,' + color + ',#7c3aed)'; }
+  const nameEl = document.getElementById('viewModalName');
+  if (nameEl) nameEl.textContent = s.fullName || 'Student Details';
+  const subEl = document.getElementById('viewModalSub');
+  if (subEl) subEl.textContent = (s.studentId || '') + (s.grade ? '  •  ' + s.grade : '') + (s.section ? ' - ' + s.section : '');
 
-  document.getElementById('viewBody').innerHTML = `
-    <div class="view-section">
-      <div class="view-section-title">Personal Information</div>
-      <div class="view-grid">
-        <div class="view-item"><div class="view-label">Student ID / LRN</div>${v(s.studentId)}</div>
-        <div class="view-item"><div class="view-label">Full Name</div>${v(s.fullName)}</div>
-        <div class="view-item"><div class="view-label">Date of Birth</div>${v(s.dob)}</div>
-        <div class="view-item"><div class="view-label">Gender</div>${v(s.gender)}</div>
-      </div>
-    </div>
-    <div class="view-section">
-      <div class="view-section-title">Academic Information</div>
-      <div class="view-grid">
-        <div class="view-item"><div class="view-label">Grade Level</div>${v(s.grade)}</div>
-        <div class="view-item"><div class="view-label">Section</div>${v(s.section)}</div>
-        <div class="view-item"><div class="view-label">Enrollment Date</div>${v(s.enrollDate)}</div>
-        <div class="view-item"><div class="view-label">Previous School</div>${v(s.prevSchool)}</div>
-      </div>
-    </div>
-    <div class="view-section">
-      <div class="view-section-title">Contact Information</div>
-      <div class="view-grid">
-        <div class="view-item"><div class="view-label">Email Address</div>${v(s.email)}</div>
-        <div class="view-item"><div class="view-label">Phone Number</div>${v(s.phone)}</div>
-        <div class="view-item" style="grid-column:1/-1"><div class="view-label">Address</div>${v(s.address)}</div>
-      </div>
-    </div>
-    <div class="view-section">
-      <div class="view-section-title">Parent / Guardian Information</div>
-      <div class="view-grid">
-        <div class="view-item"><div class="view-label">Father's Name</div>${v(s.fatherName)}</div>
-        <div class="view-item"><div class="view-label">Father's Phone</div>${v(s.fatherPhone)}</div>
-        <div class="view-item"><div class="view-label">Mother's Name</div>${v(s.motherName)}</div>
-        <div class="view-item"><div class="view-label">Mother's Phone</div>${v(s.motherPhone)}</div>
-        <div class="view-item"><div class="view-label">Guardian's Name</div>${v(s.guardianName)}</div>
-        <div class="view-item"><div class="view-label">Relation</div>${v(s.guardianRelation)}</div>
-        <div class="view-item"><div class="view-label">Guardian's Phone</div>${v(s.guardianPhone)}</div>
-      </div>
-    </div>`;
+  const v = function(val) { return val ? '<span class="view-value">' + esc(val) + '</span>' : '<span class="view-value empty">Not provided</span>'; };
 
-  document.getElementById('editFromViewBtn').onclick = () => openEditModal(id);
+  document.getElementById('viewBody').innerHTML =
+    '<div class="view-section">' +
+      '<div class="view-section-title">Personal Information</div>' +
+      '<div class="view-grid">' +
+        '<div class="view-item"><div class="view-label">Student ID / LRN</div>' + v(s.studentId) + '</div>' +
+        '<div class="view-item"><div class="view-label">Full Name</div>' + v(s.fullName) + '</div>' +
+        '<div class="view-item"><div class="view-label">Date of Birth</div>' + v(s.dob) + '</div>' +
+        '<div class="view-item"><div class="view-label">Gender</div>' + v(s.gender) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="view-section">' +
+      '<div class="view-section-title">Academic Information</div>' +
+      '<div class="view-grid">' +
+        '<div class="view-item"><div class="view-label">Grade Level</div>' + v(s.grade) + '</div>' +
+        '<div class="view-item"><div class="view-label">Section</div>' + v(s.section) + '</div>' +
+        '<div class="view-item"><div class="view-label">Enrollment Date</div>' + v(s.enrollDate) + '</div>' +
+        '<div class="view-item"><div class="view-label">Previous School</div>' + v(s.prevSchool) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="view-section">' +
+      '<div class="view-section-title">Contact Information</div>' +
+      '<div class="view-grid">' +
+        '<div class="view-item"><div class="view-label">Email Address</div>' + v(s.email) + '</div>' +
+        '<div class="view-item"><div class="view-label">Phone Number</div>' + v(s.phone) + '</div>' +
+        '<div class="view-item" style="grid-column:1/-1"><div class="view-label">Address</div>' + v(s.address) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="view-section">' +
+      '<div class="view-section-title">Parent / Guardian Information</div>' +
+      '<div class="view-grid">' +
+        '<div class="view-item"><div class="view-label">Father\'s Name</div>' + v(s.fatherName) + '</div>' +
+        '<div class="view-item"><div class="view-label">Father\'s Phone</div>' + v(s.fatherPhone) + '</div>' +
+        '<div class="view-item"><div class="view-label">Mother\'s Name</div>' + v(s.motherName) + '</div>' +
+        '<div class="view-item"><div class="view-label">Mother\'s Phone</div>' + v(s.motherPhone) + '</div>' +
+        '<div class="view-item"><div class="view-label">Guardian\'s Name</div>' + v(s.guardianName) + '</div>' +
+        '<div class="view-item"><div class="view-label">Relation</div>' + v(s.guardianRelation) + '</div>' +
+        '<div class="view-item"><div class="view-label">Guardian\'s Phone</div>' + v(s.guardianPhone) + '</div>' +
+      '</div>' +
+    '</div>';
+
+    document.getElementById('editFromViewBtn').onclick = () => openEditModal(id);
   document.getElementById('viewOverlay').classList.add('open');
 }
 

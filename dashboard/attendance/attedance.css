@@ -250,3 +250,285 @@
 }
 
 .cal-today-btn:hover { background: #c7d2fe; }
+/* ══════════════════════════════════════════════════
+   VIEW TOGGLE BUTTONS
+   ══════════════════════════════════════════════════ */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+  background: #fff;
+  color: var(--text-primary);
+}
+
+.view-toggle-btn.active {
+  background: #fff;
+  color: var(--primary-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.view-toggle-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   CALENDAR HEATMAP VIEW
+   ══════════════════════════════════════════════════ */
+.cal-heatmap-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.cal-heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--bg-input);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cal-heatmap-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.cal-heatmap-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heat-nav-btn {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--bg-input);
+  background: var(--bg-card);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 150ms;
+}
+
+.heat-nav-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+.heat-today-btn {
+  padding: 0 12px;
+  height: 32px;
+  border: 1.5px solid var(--bg-input);
+  background: var(--bg-card);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-secondary);
+  transition: all 150ms;
+}
+
+.heat-today-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+.cal-heatmap-meta {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+/* Weekday headers */
+.heat-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 12px 20px 4px;
+  gap: 6px;
+}
+
+.heat-weekday {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+}
+
+/* Calendar grid */
+.heat-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 4px 20px 20px;
+}
+
+.heat-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  cursor: default;
+  min-height: 52px;
+}
+
+.heat-cell.heat-has-data {
+  cursor: pointer;
+}
+
+.heat-cell.heat-has-data:hover {
+  transform: scale(1.07);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.heat-cell.heat-empty {
+  background: transparent;
+}
+
+.heat-cell.heat-weekend {
+  background: #fafbfd;
+  border: 1.5px dashed #e8ecf4;
+}
+
+.heat-cell.heat-no-data {
+  background: var(--bg-input);
+  border: 1.5px solid #e8ecf4;
+}
+
+.heat-cell.heat-today {
+  outline: 2.5px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.heat-day-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.heat-cell.heat-has-data .heat-day-num {
+  color: #1e293b;
+}
+
+.heat-cell.heat-light-text .heat-day-num {
+  color: #fff;
+}
+
+.heat-pct {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.heat-cell.heat-light-text .heat-pct {
+  color: rgba(255,255,255,0.9);
+}
+
+.heat-cell.heat-no-data .heat-day-num {
+  color: var(--text-light);
+}
+
+/* Legend */
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--bg-input);
+  flex-wrap: wrap;
+}
+
+.heat-legend-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.heat-legend-items {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.heat-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.heat-legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.heat-legend-empty {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1.5px solid #e8ecf4;
+  flex-shrink: 0;
+}
+
+.heat-legend-weekend {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: #fafbfd;
+  border: 1.5px dashed #e8ecf4;
+  flex-shrink: 0;
+}

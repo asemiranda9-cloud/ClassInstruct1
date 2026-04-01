@@ -1,303 +1,386 @@
+
+'use strict';
+
 // ════════════════════════════════════════════════
-//  SHARED localStorage KEY — same as calendarPAGE
+//  CONFIG
 // ════════════════════════════════════════════════
-const STORAGE_KEY = 'ci_dayEntries';
+const ATT_API  = 'attendance/attedance_db.php';
+const STUD_API = 'api/db.php';
+const CAL_KEY  = 'ci_dayEntries';
 
-function loadEntries() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-  catch { return {}; }
-}
+const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TYPE_ICONS = { holiday:'🌿', event:'📅', meeting:'🤝', note:'📝', exam:'📋', activity:'🎯', quiz:'❓' };
 
-const typeIcons = {
-  holiday:'🌿', event:'📅', meeting:'🤝',
-  note:'📝', exam:'📋', activity:'🎯', quiz:'❓'
-};
+// Shared student cache
+let _allStudents = [];
+let _sections    = [];
 
-const MONTH_DATA = [
-  { name:'January',   days:31, startDay:3 },
-  { name:'February',  days:28, startDay:6 },
-  { name:'March',     days:31, startDay:6 },
-  { name:'April',     days:30, startDay:2 },
-  { name:'May',       days:31, startDay:4 },
-  { name:'June',      days:30, startDay:0 },
-  { name:'July',      days:31, startDay:2 },
-  { name:'August',    days:31, startDay:5 },
-  { name:'September', days:30, startDay:1 },
-  { name:'October',   days:31, startDay:3 },
-  { name:'November',  days:30, startDay:6 },
-  { name:'December',  days:31, startDay:1 }
-];
+// ════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  initAttMonthFilter();
+  renderMiniCalendar();
+  renderUpcomingEvents();
+  await loadStudents();
+  loadAttendanceCal();
+});
 
-// Start on current real month
-const _now = new Date();
-let calYear     = _now.getFullYear();
-let calMonthIdx = _now.getMonth();
-
-// ── Render mini calendar ──────────────────────
-function renderCalendar() {
-  const month   = MONTH_DATA[calMonthIdx];
-  const entries = loadEntries();
-  const today   = new Date();
-  const isThisM = today.getMonth() === calMonthIdx && today.getFullYear() === calYear;
-
-  document.getElementById('currentMonthDisplay').textContent = month.name;
-  document.getElementById('calYearBadge').textContent = calYear;
-
-  const container = document.getElementById('monthDays');
-  container.innerHTML = '';
-
-  // prev month filler
-  for (let i = 0; i < month.startDay; i++) {
-    const s = document.createElement('span');
-    s.className = 'day empty'; container.appendChild(s);
+// ════════════════════════════════════════════════
+//  STUDENTS — loads all, drives enrolled + gender + recent
+// ════════════════════════════════════════════════
+async function loadStudents() {
+  try {
+    const res = await fetch(STUD_API);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    _allStudents = await res.json();
+  } catch (e) {
+    console.warn('Students API error:', e.message);
+    _allStudents = [];
   }
 
-  // days
-  for (let day = 1; day <= month.days; day++) {
-    const key = `${calYear}-${String(calMonthIdx+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const dayEntries = entries[key] || [];
+  // Build sections list
+  const seen = new Set();
+  _sections = [];
+  _allStudents.forEach(s => {
+    const k = `${s.grade}||${s.section}`;
+    if (!seen.has(k)) { seen.add(k); _sections.push({ grade: s.grade, section: s.section, name: `${s.grade} – ${s.section}` }); }
+  });
+  _sections.sort((a,b) => a.name.localeCompare(b.name));
 
-    const s = document.createElement('span');
-    s.className = 'day';
-    if (isThisM && day === today.getDate()) s.classList.add('today');
+  // Populate dropdowns
+  populateDropdown('genderSectionFilter');
+  populateDropdown('attSectionFilter');
 
-    if (dayEntries.length > 0) {
+  // Enrolled card
+  setEl('enrolledCount', _allStudents.length);
+  setEl('enrolledSub',   `${_sections.length} section${_sections.length !== 1 ? 's' : ''}`);
+
+  // Charts
+  renderGenderChart(_allStudents);
+  renderRecentStudents([..._allStudents].slice(-5).reverse());
+}
+
+function populateDropdown(id) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  while (sel.options.length > 1) sel.remove(1);
+  _sections.forEach(s => {
+    const o = document.createElement('option');
+    o.value = `${s.grade}||${s.section}`;
+    o.textContent = s.name;
+    sel.appendChild(o);
+  });
+}
+
+// ── 2. Gender by section ──
+function updateGenderBySection() {
+  const val = document.getElementById('genderSectionFilter').value;
+  const sub = val
+    ? (() => { const [g,s] = val.split('||'); return _allStudents.filter(x => x.grade===g && x.section===s); })()
+    : _allStudents;
+  renderGenderChart(sub);
+}
+
+function renderGenderChart(students) {
+  const total   = students.length;
+  const males   = students.filter(s => s.gender === 'Male').length;
+  const females = total - males;
+  const mp = total > 0 ? Math.round((males/total)*100) : 0;
+  const fp = total > 0 ? 100 - mp : 0;
+
+  const pie = document.getElementById('genderPie');
+  if (pie) pie.style.background = `conic-gradient(#4f46e5 0% ${mp}%, #ec4899 ${mp}% 100%)`;
+
+  setEl('genderTotal', total);
+  setEl('boysCount',   males);
+  setEl('girlsCount',  females);
+  setEl('boysPct',     mp + '%');
+  setEl('girlsPct',    fp + '%');
+}
+
+function renderRecentStudents(students) {
+  const c = document.getElementById('recentStudents');
+  if (!c) return;
+  if (!students.length) {
+    c.innerHTML = '<div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">No students found.</div>';
+    return;
+  }
+  const colors = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#ec4899'];
+  c.innerHTML = students.map((s, i) => {
+    const name = s.full_name || s.fullName || '?';
+    const ini  = name.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+    const col  = colors[i % colors.length];
+    return `<div class="recent-student-item">
+      <div style="width:34px;height:34px;border-radius:50%;background:${col}22;color:${col};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">${ini}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
+        <div style="font-size:11px;color:#64748b">${esc(s.grade||'')} · ${esc(s.section||'')}</div>
+      </div>
+      <span style="font-size:11px;color:#94a3b8;white-space:nowrap">${esc(s.gender||'')}</span>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+//  1. ATTENDANCE CALENDAR
+// ════════════════════════════════════════════════
+function initAttMonthFilter() {
+  const sel = document.getElementById('attMonthFilter');
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const o = document.createElement('option');
+    o.value = `${d.getFullYear()}-${d.getMonth()+1}`;
+    o.textContent = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    if (i === 0) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+
+async function loadAttendanceCal() {
+  const grid     = document.getElementById('attCalGrid');
+  const monthVal = document.getElementById('attMonthFilter').value;
+  const secVal   = document.getElementById('attSectionFilter').value;
+  const [year, month] = monthVal.split('-').map(Number);
+  let grade = '', section = '';
+  if (secVal) [grade, section] = secVal.split('||');
+
+  // Clear day cells (keep weekday headers)
+  const headers = Array.from(grid.querySelectorAll('.att-cal-weekday'));
+  grid.innerHTML = '';
+  headers.forEach(h => grid.appendChild(h));
+
+  try {
+    const url = `${ATT_API}?action=attendance&grade=${encodeURIComponent(grade)}&section=${encodeURIComponent(section)}&year=${year}&month=${month}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    buildAttCalGrid(data, year, month, grid);
+  } catch(e) {
+    console.warn('Attendance API error:', e.message);
+    buildAttCalGridEmpty(year, month, grid);
+  }
+}
+
+function buildAttCalGrid(data, year, month, grid) {
+  const students      = data.students || [];
+  const totalStudents = students.length;
+
+  if (!totalStudents) {
+    appendGridMsg(grid, 'No students found for this selection.');
+    setAttStats(0,0,0,0);
+    return;
+  }
+
+  // Build per-date tallies
+  const dayMap = {};
+  let totP=0, totL=0, totA=0;
+  students.forEach(s => {
+    Object.entries(s.statuses || {}).forEach(([date, status]) => {
+      if (!dayMap[date]) dayMap[date] = { present:0, late:0, absent:0 };
+      dayMap[date][status]++;
+      if (status==='present') totP++;
+      else if (status==='late') totL++;
+      else totA++;
+    });
+  });
+
+  const totalRec = totP + totL + totA;
+  const avg = totalRec > 0 ? Math.round(((totP+totL)/totalRec)*100) : 0;
+  setAttStats(totP, totL, totA, avg);
+
+  appendDayCells(grid, year, month, (day, dateStr, dow) => {
+    const rec = dayMap[dateStr];
+    if (dow === 0 || dow === 6) {
+      return { cls: 'weekend', html: `<span class="day-num">${day}</span>` };
+    }
+    if (!rec) {
+      return { cls: 'no-data', html: `<span class="day-num">${day}</span>` };
+    }
+    const attended = rec.present + rec.late;
+    const pct = Math.round((attended / totalStudents) * 100);
+    const bg  = pctToColor(pct);
+    const fg  = pct >= 45 ? '#fff' : '#1e293b';
+    const tip = `${dateStr}\nPresent: ${rec.present}  Late: ${rec.late}  Absent: ${rec.absent}\nRate: ${pct}%`;
+    return {
+      style: `background:${bg};color:${fg}`,
+      html:  `<span class="day-num">${day}</span><span class="day-pct">${pct}%</span>`,
+      title: tip
+    };
+  });
+}
+
+function buildAttCalGridEmpty(year, month, grid) {
+  appendDayCells(grid, year, month, (day, dateStr, dow) => {
+    if (dow===0||dow===6) return { cls:'weekend', html:`<span class="day-num">${day}</span>` };
+    return { cls:'no-data', html:`<span class="day-num">${day}</span>` };
+  });
+  setAttStats(0,0,0,0);
+}
+
+// Generic: renders empty + day cells into grid using a callback per day
+function appendDayCells(grid, year, month, cb) {
+  const firstDow    = new Date(year, month-1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today       = new Date();
+  const isThisMonth = today.getFullYear()===year && today.getMonth()+1===month;
+
+  // Leading empty cells
+  for (let i=0; i<firstDow; i++) { const e=div('att-cal-day empty'); grid.appendChild(e); }
+
+  // Day cells
+  for (let day=1; day<=daysInMonth; day++) {
+    const dow     = new Date(year, month-1, day).getDay();
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const info    = cb(day, dateStr, dow);
+
+    const cell = div('att-cal-day ' + (info.cls||''));
+    if (info.style) cell.style.cssText = info.style;
+    if (info.title) cell.title = info.title;
+    cell.innerHTML = info.html || `<span class="day-num">${day}</span>`;
+    if (isThisMonth && day===today.getDate()) cell.classList.add('today-ring');
+    grid.appendChild(cell);
+  }
+
+  // Trailing empty cells
+  const total = firstDow + daysInMonth;
+  const rem   = total%7===0 ? 0 : 7-(total%7);
+  for (let i=0; i<rem; i++) { const e=div('att-cal-day empty'); grid.appendChild(e); }
+}
+
+function appendGridMsg(grid, msg) {
+  const m = document.createElement('div');
+  m.style.cssText = 'grid-column:span 7;text-align:center;padding:24px;color:var(--text-3);font-size:.85rem';
+  m.textContent = msg;
+  grid.appendChild(m);
+}
+
+// Color scale: red → orange → green
+function pctToColor(pct) {
+  if (pct >= 80) return lerp('#34d399','#10b981',(pct-80)/20);
+  if (pct >= 60) return lerp('#f59e0b','#34d399',(pct-60)/20);
+  return lerp('#ef4444','#f59e0b', pct/60);
+}
+function lerp(a, b, t) {
+  const ah=parseInt(a.slice(1),16), bh=parseInt(b.slice(1),16);
+  const r=Math.round(((ah>>16)&255)+(((bh>>16)&255)-((ah>>16)&255))*t);
+  const g=Math.round(((ah>>8)&255)+(((bh>>8)&255)-((ah>>8)&255))*t);
+  const bl=Math.round((ah&255)+((bh&255)-(ah&255))*t);
+  return '#'+[r,g,bl].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function setAttStats(p, l, a, avg) {
+  setEl('attPresent', p);
+  setEl('attLate',    l);
+  setEl('attAbsent',  a);
+  setEl('attAvg',     avg ? avg + '%' : '—');
+}
+
+// ════════════════════════════════════════════════
+//  MINI CALENDAR
+// ════════════════════════════════════════════════
+const _todayObj = new Date();
+let calYear = _todayObj.getFullYear();
+let calMon  = _todayObj.getMonth();
+
+function loadEntries() {
+  try { return JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); } catch { return {}; }
+}
+
+function renderMiniCalendar() {
+  const entries   = loadEntries();
+  const container = document.getElementById('monthDays');
+  const isThisM   = _todayObj.getMonth()===calMon && _todayObj.getFullYear()===calYear;
+
+  setEl('currentMonthDisplay', MONTHS[calMon]);
+  setEl('calYearBadge',        calYear);
+  container.innerHTML = '';
+
+  const firstDay  = new Date(calYear, calMon, 1).getDay();
+  const totalDays = new Date(calYear, calMon+1, 0).getDate();
+
+  for (let i=0; i<firstDay; i++) { const s=span('day empty'); container.appendChild(s); }
+
+  for (let day=1; day<=totalDays; day++) {
+    const key = `${calYear}-${String(calMon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const de  = entries[key] || [];
+    const s   = span('day');
+    if (isThisM && day===_todayObj.getDate()) s.classList.add('today');
+    if (de.length > 0) {
       s.classList.add('has-event');
-      // colored type dots
-      const uniqueTypes = [...new Set(dayEntries.map(e => e.type))];
-      const dotsHtml = uniqueTypes.map(t => `<span class="day-type-dot ${t}"></span>`).join('');
-      s.innerHTML = `<span>${day}</span><div class="day-type-dots">${dotsHtml}</div>`;
+      const types = [...new Set(de.map(e=>e.type))];
+      s.innerHTML = `<span>${day}</span><div class="day-type-dots">${types.map(t=>`<span class="day-type-dot ${t}"></span>`).join('')}</div>`;
     } else {
       s.textContent = day;
     }
     container.appendChild(s);
   }
 
-  // next month filler
-  const total = month.startDay + month.days;
-  const rem   = total > 35 ? 42 - total : 35 - total;
-  for (let i = 1; i <= rem; i++) {
-    const s = document.createElement('span');
-    s.className = 'day empty'; container.appendChild(s);
-  }
+  const total = firstDay + totalDays;
+  const rem   = total%7===0 ? 0 : 7-(total%7);
+  for (let i=0; i<rem; i++) { const s=span('day empty'); container.appendChild(s); }
 
   renderUpcomingEvents();
 }
 
 function changeMonth(dir) {
-  calMonthIdx += dir;
-  if (calMonthIdx < 0)  { calMonthIdx = 11; calYear--; }
-  if (calMonthIdx > 11) { calMonthIdx = 0;  calYear++; }
-  renderCalendar();
+  calMon += dir;
+  if (calMon < 0)  { calMon = 11; calYear--; }
+  if (calMon > 11) { calMon = 0;  calYear++; }
+  renderMiniCalendar();
 }
 
-// ── Render Upcoming Events ────────────────────
+// ════════════════════════════════════════════════
+//  UPCOMING EVENTS
+// ════════════════════════════════════════════════
 function renderUpcomingEvents() {
-  const entries = loadEntries();
-  const prefix  = `${calYear}-${String(calMonthIdx+1).padStart(2,'0')}-`;
-  const monthName = MONTH_DATA[calMonthIdx].name;
-
-  // Gather all entries for this month
-  const items = [];
-  Object.entries(entries).forEach(([k, arr]) => {
-    if (!k.startsWith(prefix)) return;
-    const day = parseInt(k.split('-')[2]);
-    arr.forEach(e => items.push({ day, key: k, ...e }));
-  });
-  items.sort((a, b) => a.day - b.day);
-
-  const label = document.getElementById('eventsMonthLabel');
-  label.textContent = monthName + ' ' + calYear;
-
+  const entries   = loadEntries();
   const container = document.getElementById('eventsContent');
+  const labelEl   = document.getElementById('eventsMonthLabel');
+  if (!container) return;
 
-  if (items.length === 0) {
-    container.innerHTML = `<div class="no-events-msg"><span>🗓️</span>No events in ${monthName}.<br><a href="Calendar/calendarPAGE.html" style="color:#4f46e5;font-weight:600;text-decoration:none">Add in Calendar →</a></div>`;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const todayStr = toYMD(now);
+
+  // Flatten + sort all entries
+  const all = [];
+  Object.entries(entries).forEach(([ds, arr]) => {
+    (arr||[]).forEach(e => all.push({ ds, date: new Date(ds+'T00:00:00'), e }));
+  });
+  all.sort((a,b) => a.date-b.date || (a.e.time||'').localeCompare(b.e.time||''));
+
+  const future = all.filter(x => x.ds >= todayStr);
+  const shown  = future.length > 0 ? future.slice(0,7) : all.slice(-7).reverse();
+
+  if (labelEl) labelEl.textContent = shown.length > 0
+    ? `${MON_SHORT[shown[0].date.getMonth()]} ${shown[0].date.getFullYear()}`
+    : '';
+
+  if (!shown.length) {
+    container.innerHTML = `<div class="no-events-msg"><span>🗓️</span>No upcoming events.<br><a href="Calendar/calendarPAGE.html" style="color:#4f46e5;font-weight:600;text-decoration:none">Add in Calendar →</a></div>`;
     return;
   }
 
-  const monthShort = monthName.slice(0, 3);
-  container.innerHTML = items.map(e => `
-    <div class="event-item type-${e.type}">
-      <span class="event-date">${monthShort} ${e.day}</span>
-      <span class="event-icon">${typeIcons[e.type] || '📌'}</span>
-      <span class="event-title">${escHtml(e.title)}${e.time ? ' · ' + escHtml(e.time) : ''}</span>
+  container.innerHTML = shown.map(({ ds, date, e }) => {
+    const isToday = ds === todayStr;
+    const label   = isToday ? 'Today' : `${MON_SHORT[date.getMonth()]} ${date.getDate()}`;
+    return `<div class="event-item type-${e.type}">
+      <span class="event-date">${label}</span>
+      <span class="event-icon">${TYPE_ICONS[e.type]||'📌'}</span>
+      <span class="event-title">${esc(e.title)}${e.time?' · '+esc(e.time):''}</span>
       <span class="event-type-tag">${cap(e.type)}</span>
-    </div>
-  `).join('');
-}
-
-// ── Helpers ──────────────────────────────────
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-// ════════════════════════════════════════════════
-//  ATTENDANCE CHART
-// ════════════════════════════════════════════════
-const ATTENDANCE_API = 'attendance/attendance_db.php';
-const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-async function loadAttendanceChart() {
-  const chart  = document.getElementById('attendanceBarChart');
-  const filter = document.getElementById('attendanceFilter').value;
-  const now    = new Date();
-  const year   = now.getFullYear();
-  const month  = now.getMonth() + 1;
-
-  try {
-    const res = await fetch(`${ATTENDANCE_API}?action=attendance&grade=&section=&year=${year}&month=${month}`);
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
-
-    if (!data.students || data.students.length === 0) { renderPlaceholderBars(chart); return; }
-
-    const totalStudents = data.students.length;
-    const presentMap = {};
-    data.students.forEach(s => {
-      Object.entries(s.statuses || {}).forEach(([date, status]) => {
-        if (!presentMap[date]) presentMap[date] = 0;
-        if (status === 'present' || status === 'late') presentMap[date]++;
-      });
-    });
-
-    const datesWithData = Object.keys(presentMap).filter(d => {
-      const dow = new Date(d + 'T00:00:00').getDay();
-      return dow >= 1 && dow <= 5;
-    }).sort();
-
-    let days = [];
-
-    if (filter === 'week') {
-      const dayOfWeek = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      const weekDates = [];
-      for (let i = 0; i < 5; i++) {
-        const d = new Date(monday); d.setDate(monday.getDate() + i);
-        weekDates.push(d.toISOString().slice(0,10));
-      }
-      const currentWeekHasData = weekDates.some(d => presentMap[d] !== undefined);
-      if (!currentWeekHasData && datesWithData.length > 0) {
-        const lastDate = new Date(datesWithData[datesWithData.length-1] + 'T00:00:00');
-        const lastDow  = lastDate.getDay();
-        const lastMon  = new Date(lastDate);
-        lastMon.setDate(lastDate.getDate() - (lastDow === 0 ? 6 : lastDow - 1));
-        for (let i = 0; i < 5; i++) {
-          const d = new Date(lastMon); d.setDate(lastMon.getDate() + i);
-          const key = d.toISOString().slice(0,10);
-          const pct = presentMap[key] !== undefined ? Math.round((presentMap[key]/totalStudents)*100) : null;
-          days.push({ label: DAY_NAMES[d.getDay()], pct, key });
-        }
-      } else {
-        weekDates.forEach(key => {
-          const d = new Date(key+'T00:00:00');
-          const pct = presentMap[key] !== undefined ? Math.round((presentMap[key]/totalStudents)*100) : null;
-          days.push({ label: DAY_NAMES[d.getDay()], pct, key });
-        });
-      }
-    } else {
-      const weeks = {};
-      data.dates.forEach(date => {
-        const d = new Date(date+'T00:00:00'); const dow = d.getDay();
-        if (dow === 0 || dow === 6) return;
-        const weekNum = Math.ceil(d.getDate()/7);
-        if (!weeks[weekNum]) weeks[weekNum] = { total: 0, count: 0 };
-        if (presentMap[date] !== undefined) {
-          weeks[weekNum].total += Math.round((presentMap[date]/totalStudents)*100);
-          weeks[weekNum].count++;
-        }
-      });
-      const weekLabels = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
-      Object.entries(weeks).forEach(([wk, v], i) => {
-        days.push({ label: weekLabels[i]||`Wk ${wk}`, pct: v.count > 0 ? Math.round(v.total/v.count) : null });
-      });
-      if (!days.length) days = weekLabels.map(l => ({ label: l, pct: null }));
-    }
-
-    chart.innerHTML = days.map(({ label, pct }) => {
-      const display  = pct !== null ? pct+'%' : '—';
-      const height   = pct !== null ? Math.max(pct, 5) : 20;
-      const belowCls = (pct !== null && pct < 75) ? ' below' : '';
-      return `<div class="bar-item">
-        <div class="bar${belowCls}" style="height:${height}%"><span class="bar-value">${display}</span></div>
-        <span class="bar-label">${label}</span>
-      </div>`;
-    }).join('');
-  } catch (err) {
-    renderPlaceholderBars(chart);
-  }
-}
-
-function renderPlaceholderBars(chart) {
-  chart.innerHTML = ['Mon','Tue','Wed','Thu','Fri'].map(d => `
-    <div class="bar-item">
-      <div class="bar" style="height:20%"><span class="bar-value">—</span></div>
-      <span class="bar-label">${d}</span>
-    </div>`).join('');
-}
-
-// ════════════════════════════════════════════════
-//  DASHBOARD STATS
-// ════════════════════════════════════════════════
-const API = 'api/db.php';
-
-async function loadDashboardStats() {
-  try {
-    const res = await fetch(API);
-    if (!res.ok) throw new Error('API error');
-    const students = await res.json();
-
-    const total     = students.length;
-    const males     = students.filter(s => s.gender === 'Male').length;
-    const females   = students.filter(s => s.gender === 'Female').length;
-    const malePct   = total > 0 ? Math.round((males/total)*100) : 0;
-    const femalePct = total > 0 ? 100 - malePct : 0;
-
-    const countEl = document.getElementById('enrolledCount');
-    if (countEl) countEl.textContent = total;
-
-    const pieChart = document.querySelector('.gender-pie-chart');
-    if (pieChart) {
-      pieChart.style.setProperty('--boys', malePct + '%');
-      pieChart.style.setProperty('--girls', femalePct + '%');
-    }
-
-    const el = id => document.getElementById(id);
-    if (el('genderTotal')) el('genderTotal').textContent = total;
-    if (el('boysCount'))   el('boysCount').textContent   = males;
-    if (el('girlsCount'))  el('girlsCount').textContent  = females;
-    if (el('boysPct'))     el('boysPct').textContent     = malePct + '%';
-    if (el('girlsPct'))    el('girlsPct').textContent    = femalePct + '%';
-
-    renderRecentStudents(students.slice(-5).reverse());
-  } catch(err) {
-    console.warn('Dashboard stats: could not load.', err.message);
-  }
-}
-
-function renderRecentStudents(students) {
-  const container = document.getElementById('recentStudents');
-  if (!container || !students.length) return;
-  const colors = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#ec4899'];
-  container.innerHTML = students.map((s, i) => {
-    const initials = s.fullName.split(' ').map(p => p[0]).slice(0,2).join('');
-    const color = colors[i % colors.length];
-    return `<div class="recent-student-item">
-      <div style="width:36px;height:36px;border-radius:50%;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">${initials}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.fullName}</div>
-        <div style="font-size:11px;color:#64748b">${s.grade} · ${s.section}</div>
-      </div>
-      <span style="font-size:11px;color:#94a3b8;white-space:nowrap">${s.gender}</span>
     </div>`;
   }).join('');
 }
 
-// ── Init ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  renderCalendar();
-  loadDashboardStats();
-  loadAttendanceChart();
-});
+// ════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function cap(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+function setEl(id, val) { const e=document.getElementById(id); if(e) e.textContent=val; }
+function div(cls) { const e=document.createElement('div'); e.className=cls; return e; }
+function span(cls) { const e=document.createElement('span'); e.className=cls; return e; }
+function toYMD(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }

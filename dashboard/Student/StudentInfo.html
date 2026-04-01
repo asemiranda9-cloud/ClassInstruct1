@@ -9,9 +9,9 @@
   </head>
   <body>
     <div class="students-container">
+
       <!-- Sidebar -->
       <aside class="student-sidebar" role="navigation" aria-label="Main navigation">
-        <!-- Logo -->
         <div class="sidebar-logo">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="40" height="40" rx="8" fill="#4f46e5"/>
@@ -19,320 +19,233 @@
           </svg>
           <span>ClassInstruct</span>
         </div>
-        
-        <!-- User Profile -->
         <div class="user-profile">
-          <img src="img/ellipse-13.png" alt="Teacher profile picture" />
+          <img src="img/ellipse-13.png" alt="Teacher" onerror="this.style.display='none'" />
           <div>
             <div class="user-name">Teacher</div>
             <div class="user-role">Instructor</div>
           </div>
         </div>
-        
-        <!-- Navigation Menu -->
         <nav class="nav-menu">
           <button type="button" onclick="window.location.href='../dashboard.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
             <span>Dashboard</span>
           </button>
           <button type="button" onclick="window.location.href='../ai/classinstruct-ai.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             <span>ClassInstruct AI</span>
           </button>
           <button type="button" onclick="window.location.href='../Calendar/calendarPAGE.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             <span>Calendar</span>
           </button>
           <button type="button" onclick="window.location.href='Student.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             <span>Students</span>
           </button>
-          <button type="button" onclick="window.location.href='StudentInfo.html'" class="active student-info">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+          <button type="button" class="active student-info">
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <span>Student Info</span>
           </button>
           <button type="button" onclick="window.location.href='Grades.php'" class="grades">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             <span>Grades</span>
           </button>
           <button type="button" onclick="window.location.href='../attendance/attendance.html'">
-            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-            </svg>
+            <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             <span>Attendance</span>
           </button>
         </nav>
       </aside>
-      
+
       <!-- Main Content -->
       <main class="student-main">
-        <!-- Header -->
         <header class="student-header">
           <h1 class="header-title">Student Info</h1>
-          
           <div class="search-container">
             <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <label for="search-input" class="visually-hidden">Search</label>
-            <input type="search" id="search-input" placeholder="Search for students..." aria-label="Search students" />
+            <input type="search" id="search-input" placeholder="Search for students..." aria-label="Search" />
           </div>
-          
-          <div class="header-actions">
-            <span class="header-brand">ClassInstruct</span>
-          </div>
+          <div class="header-actions"><span class="header-brand">ClassInstruct</span></div>
         </header>
-        
-        <!-- Content -->
+
         <div class="student-content">
-          <!-- Back Button -->
+
           <a href="Student.html" class="back-btn">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
             Back to Students
           </a>
-          
-          <!-- Breadcrumb -->
+
           <div class="breadcrumb">
-            <a href="../dashboard.html">Dashboard</a>
-            <span>/</span>
-            <a href="Student.html">Students</a>
-            <span>/</span>
-            <span class="current">Student Info</span>
+            <a href="../dashboard.html">Dashboard</a><span>/</span>
+            <a href="Student.html">Students</a><span>/</span>
+            <span class="current" id="breadcrumbName">Student Info</span>
           </div>
-          
+
+          <!-- Loading -->
+          <div id="loadingState" style="text-align:center;padding:60px 20px;color:#64748b;font-family:Inter,sans-serif">
+            Loading student information...
+          </div>
+
+          <!-- Error -->
+          <div id="errorState" style="display:none;text-align:center;padding:60px 20px;color:#ef4444;font-family:Inter,sans-serif">
+            <p id="errorMsg">Student not found.</p>
+            <a href="Student.html" style="color:#4f46e5;font-weight:500;margin-top:12px;display:inline-block">Go back to Students</a>
+          </div>
+
           <!-- Info Grid -->
-          <div class="info-grid">
-            <!-- Sidebar -->
+          <div class="info-grid" id="infoGrid" style="display:none">
             <aside class="info-sidebar">
-              <!-- Profile Card -->
               <div class="profile-card">
-                <img class="profile-avatar" src="img/ellipse-14.png" alt="Student profile picture" />
-                <h2 class="profile-name">Adrian S. Gonzales</h2>
-                <p class="profile-id">02194523456</p>
+                <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:#fff;margin:0 auto 12px;background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
+                <h2 class="profile-name" id="profileName">—</h2>
+                <p class="profile-id" id="profileId">—</p>
                 <span class="profile-status">Active</span>
               </div>
-              
-              <!-- Quick Stats -->
               <div class="quick-stats">
                 <div class="quick-stat">
-                  <div class="quick-stat-value">95%</div>
-                  <div class="quick-stat-label">Attendance</div>
+                  <div class="quick-stat-value" id="statGender">—</div>
+                  <div class="quick-stat-label">Gender</div>
                 </div>
                 <div class="quick-stat">
-                  <div class="quick-stat-value">3.8</div>
-                  <div class="quick-stat-label">GPA</div>
+                  <div class="quick-stat-value" id="statEnroll">—</div>
+                  <div class="quick-stat-label">Enrolled</div>
                 </div>
                 <div class="quick-stat">
-                  <div class="quick-stat-value">9.3</div>
-                  <div class="quick-stat-label">Avg Score</div>
-                </div>
-                <div class="quick-stat">
-                  <div class="quick-stat-value">Grade 7</div>
+                  <div class="quick-stat-value" id="statGrade">—</div>
                   <div class="quick-stat-label">Level</div>
+                </div>
+                <div class="quick-stat">
+                  <div class="quick-stat-value" id="statSection">—</div>
+                  <div class="quick-stat-label">Section</div>
                 </div>
               </div>
             </aside>
-            
-            <!-- Main Info -->
+
             <div class="info-main">
-              <!-- Personal Information -->
               <div class="info-card">
                 <h3 class="info-card-title">Personal Information</h3>
                 <div class="info-list">
-                  <div class="info-item">
-                    <span class="info-label">Full Name</span>
-                    <span class="info-value">Adrian S. Gonzales</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Student ID</span>
-                    <span class="info-value">02194523456</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Date of Birth</span>
-                    <span class="info-value">August 1, 2004</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Gender</span>
-                    <span class="info-value">Male</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Address</span>
-                    <span class="info-value">Rosal Cotabato</span>
-                  </div>
+                  <div class="info-item"><span class="info-label">Full Name</span><span class="info-value" id="infoFullName">—</span></div>
+                  <div class="info-item"><span class="info-label">Student ID / LRN</span><span class="info-value" id="infoStudentId">—</span></div>
+                  <div class="info-item"><span class="info-label">Date of Birth</span><span class="info-value" id="infoDob">—</span></div>
+                  <div class="info-item"><span class="info-label">Gender</span><span class="info-value" id="infoGender">—</span></div>
+                  <div class="info-item"><span class="info-label">Address</span><span class="info-value" id="infoAddress">—</span></div>
                 </div>
               </div>
-              
-              <!-- Academic Information -->
               <div class="info-card">
                 <h3 class="info-card-title">Academic Information</h3>
                 <div class="info-list">
-                  <div class="info-item">
-                    <span class="info-label">Grade Level</span>
-                    <span class="info-value">Grade 7 - Love</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Section</span>
-                    <span class="info-value">Section A</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Enrollment Date</span>
-                    <span class="info-value">March 2026</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Previous School</span>
-                    <span class="info-value">Rosal Elementary School</span>
-                  </div>
+                  <div class="info-item"><span class="info-label">Grade Level</span><span class="info-value" id="infoGrade">—</span></div>
+                  <div class="info-item"><span class="info-label">Section</span><span class="info-value" id="infoSection">—</span></div>
+                  <div class="info-item"><span class="info-label">Enrollment Date</span><span class="info-value" id="infoEnrollDate">—</span></div>
+                  <div class="info-item"><span class="info-label">Previous School</span><span class="info-value" id="infoPrevSchool">—</span></div>
                 </div>
               </div>
-              
-              <!-- Contact Information -->
               <div class="info-card">
                 <h3 class="info-card-title">Contact Information</h3>
                 <div class="info-list">
-                  <div class="info-item">
-                    <span class="info-label">Phone Number</span>
-                    <span class="info-value">+63 960 5783 373</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Email</span>
-                    <span class="info-value">adrian.gonzales@email.com</span>
-                  </div>
+                  <div class="info-item"><span class="info-label">Email Address</span><span class="info-value" id="infoEmail">—</span></div>
+                  <div class="info-item"><span class="info-label">Phone Number</span><span class="info-value" id="infoPhone">—</span></div>
                 </div>
               </div>
-              
-              <!-- Parent/Guardian Information -->
               <div class="info-card">
                 <h3 class="info-card-title">Parent / Guardian Information</h3>
                 <div class="info-list">
-                  <div class="info-item">
-                    <span class="info-label">Father</span>
-                    <span class="info-value">Marco Masa</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Father's Phone</span>
-                    <span class="info-value">+63 960 5737 857</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Mother</span>
-                    <span class="info-value">Mary Ann Santos</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Mother's Phone</span>
-                    <span class="info-value">+63 960 1847 943</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Guardian</span>
-                    <span class="info-value">Jasmine Flores (Aunt)</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Guardian's Phone</span>
-                    <span class="info-value">+63 960 1854 865</span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Attendance Record -->
-              <div class="info-card">
-                <h3 class="info-card-title">Attendance Record</h3>
-                <div class="attendance-chart">
-                  <div class="chart-circle">
-                    <span>95%</span>
-                  </div>
-                  <div class="chart-legend">
-                    <div class="legend-item">
-                      <span class="legend-color present"></span>
-                      <span>Present: 13</span>
-                    </div>
-                    <div class="legend-item">
-                      <span class="legend-color late"></span>
-                      <span>Late: 1</span>
-                    </div>
-                    <div class="legend-item">
-                      <span class="legend-color excused"></span>
-                      <span>Excused: 2</span>
-                    </div>
-                    <div class="legend-item">
-                      <span class="legend-color absent"></span>
-                      <span>Absent: 1</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Documents -->
-              <div class="info-card">
-                <h3 class="info-card-title">Documents</h3>
-                <div class="documents-list">
-                  <div class="document-item">
-                    <div class="document-icon">
-                      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                      </svg>
-                    </div>
-                    <div class="document-info">
-                      <div class="document-name">Report_Card_Trinidad.pdf</div>
-                      <div class="document-size">2.4 MB</div>
-                    </div>
-                  </div>
-                  <div class="document-item">
-                    <div class="document-icon">
-                      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                      </svg>
-                    </div>
-                    <div class="document-info">
-                      <div class="document-name">Quiz_bee_award_Trinidad.pdf</div>
-                      <div class="document-size">4.4 MB</div>
-                    </div>
-                  </div>
-                  <div class="document-item">
-                    <div class="document-icon">
-                      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                      </svg>
-                    </div>
-                    <div class="document-info">
-                      <div class="document-name">Birth_Certificate_Trinidad.pdf</div>
-                      <div class="document-size">4.4 MB</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Medical Information -->
-              <div class="info-card">
-                <h3 class="info-card-title">Medical Information</h3>
-                <div class="info-list">
-                  <div class="info-item">
-                    <span class="info-label">Allergy</span>
-                    <span class="info-value">Peanut Allergy</span>
-                  </div>
-                </div>
-                <div style="margin-top: 16px;">
-                  <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Routine health check complete feb 2026 - fit for activities</p>
-                  <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Mid pollen allergy - medication prescribed</p>
-                  <p style="font-size: 0.875rem; color: var(--accent-danger);">Severe reaction - strictly avoid exposure; EpiPen required</p>
+                  <div class="info-item"><span class="info-label">Father's Name</span><span class="info-value" id="infoFatherName">—</span></div>
+                  <div class="info-item"><span class="info-label">Father's Phone</span><span class="info-value" id="infoFatherPhone">—</span></div>
+                  <div class="info-item"><span class="info-label">Mother's Name</span><span class="info-value" id="infoMotherName">—</span></div>
+                  <div class="info-item"><span class="info-label">Mother's Phone</span><span class="info-value" id="infoMotherPhone">—</span></div>
+                  <div class="info-item"><span class="info-label">Guardian's Name</span><span class="info-value" id="infoGuardianName">—</span></div>
+                  <div class="info-item"><span class="info-label">Relation</span><span class="info-value" id="infoGuardianRelation">—</span></div>
+                  <div class="info-item"><span class="info-label">Guardian's Phone</span><span class="info-value" id="infoGuardianPhone">—</span></div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div><!-- /info-grid -->
+
+        </div><!-- /student-content -->
       </main>
     </div>
+
+    <script>
+      var API = '../api/db.php';
+
+      function val(v) {
+        return (v && String(v).trim()) ? String(v).trim() : 'Not provided';
+      }
+      function set(id, v) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val(v);
+      }
+      function getInitials(name) {
+        return (name || '').split(' ').map(function(p){ return p[0]||''; }).slice(0,2).join('').toUpperCase();
+      }
+
+      async function loadStudent() {
+        var params = new URLSearchParams(window.location.search);
+        var id = params.get('id');
+        if (!id) { showError('No student ID specified. Please go back and click a student name.'); return; }
+
+        try {
+          var res = await fetch(API);
+          if (!res.ok) throw new Error('API responded with ' + res.status);
+          var students = await res.json();
+          var s = students.find(function(x){ return String(x.id) === String(id); });
+          if (!s) { showError('Student not found. They may have been deleted.'); return; }
+          renderStudent(s);
+        } catch(err) {
+          showError('Could not load student data. Is XAMPP running? — ' + err.message);
+        }
+      }
+
+      function renderStudent(s) {
+        document.getElementById('breadcrumbName').textContent = s.fullName || 'Student Info';
+        document.title = (s.fullName || 'Student') + ' - ClassInstruct';
+
+        document.getElementById('profileAvatar').textContent = getInitials(s.fullName);
+        document.getElementById('profileName').textContent   = s.fullName  || '—';
+        document.getElementById('profileId').textContent     = s.studentId || '—';
+
+        document.getElementById('statGender').textContent  = s.gender    || '—';
+        document.getElementById('statEnroll').textContent  = s.enrollDate ? s.enrollDate.slice(0,7) : '—';
+        document.getElementById('statGrade').textContent   = s.grade     ? s.grade.replace('Grade ','G') : '—';
+        document.getElementById('statSection').textContent = s.section   ? s.section.replace('Section ','S') : '—';
+
+        set('infoFullName',       s.fullName);
+        set('infoStudentId',      s.studentId);
+        set('infoDob',            s.dob);
+        set('infoGender',         s.gender);
+        set('infoAddress',        s.address);
+        set('infoGrade',          s.grade);
+        set('infoSection',        s.section);
+        set('infoEnrollDate',     s.enrollDate);
+        set('infoPrevSchool',     s.prevSchool);
+        set('infoEmail',          s.email);
+        set('infoPhone',          s.phone);
+        set('infoFatherName',     s.fatherName);
+        set('infoFatherPhone',    s.fatherPhone);
+        set('infoMotherName',     s.motherName);
+        set('infoMotherPhone',    s.motherPhone);
+        set('infoGuardianName',   s.guardianName);
+        set('infoGuardianRelation', s.guardianRelation);
+        set('infoGuardianPhone',  s.guardianPhone);
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('infoGrid').style.display = '';
+      }
+
+      function showError(msg) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorMsg').textContent = msg;
+        document.getElementById('errorState').style.display = 'block';
+      }
+
+      loadStudent();
+    </script>
   </body>
 </html>
-

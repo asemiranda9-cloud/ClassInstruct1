@@ -202,7 +202,13 @@ function renderCalendar() {
 
   dd.innerHTML = `
     <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calShiftMonth(-1);event.stopPropagation()" title="Prev month">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+      </button>
       <span class="cal-header-title" onclick="event.stopPropagation()">${title}</span>
+      <button class="cal-nav-btn" onclick="calShiftMonth(1);event.stopPropagation()" title="Next month">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+      </button>
     </div>
     <div class="cal-weekdays">${dayLabels.map(l => `<div class="cal-weekday">${l}</div>`).join('')}</div>
     <div class="cal-grid">${cells}</div>
@@ -544,3 +550,170 @@ function escHtml(str) {
 
 // ── Start ─────────────────────────────────────────────────
 init();
+// ══════════════════════════════════════════════════
+//  CALENDAR HEATMAP VIEW
+//  Shows monthly attendance % per day as color heat
+// ══════════════════════════════════════════════════
+
+let calHeatYear  = new Date().getFullYear();
+let calHeatMonth = new Date().getMonth(); // 0-indexed
+let calHeatData  = {}; // date -> { pct, present, total }
+let currentView  = 'week'; // 'week' | 'calendar'
+
+function switchView(view) {
+  currentView = view;
+  const weekView = document.getElementById('weekView');
+  const calView  = document.getElementById('calendarView');
+  const btnWeek  = document.getElementById('btnViewWeek');
+  const btnCal   = document.getElementById('btnViewCal');
+
+  if (view === 'calendar') {
+    weekView.style.display  = 'none';
+    calView.style.display   = 'block';
+    btnWeek.classList.remove('active');
+    btnCal.classList.add('active');
+    loadCalendarHeatmap();
+  } else {
+    weekView.style.display  = 'block';
+    calView.style.display   = 'none';
+    btnCal.classList.remove('active');
+    btnWeek.classList.add('active');
+  }
+}
+
+async function loadCalendarHeatmap() {
+  const year  = calHeatYear;
+  const month = calHeatMonth + 1;
+
+  document.getElementById('calHeatMonthLabel').textContent =
+    MONTHS[calHeatMonth] + ' ' + calHeatYear;
+
+  try {
+    // Fetch ALL students (no grade/section filter) for the month
+    const data = await apiFetch({
+      action:  'attendance',
+      grade:   '',
+      section: '',
+      year:    year,
+      month:   month,
+    });
+
+    calHeatData = {};
+    const total = data.students.length;
+
+    if (total === 0) {
+      renderCalendarHeatmap({}, total);
+      return;
+    }
+
+    // Build per-day map
+    data.students.forEach(function(s) {
+      Object.keys(s.statuses || {}).forEach(function(date) {
+        var status = s.statuses[date];
+        if (!calHeatData[date]) calHeatData[date] = { present: 0, total: total };
+        if (status === 'present' || status === 'late') calHeatData[date].present++;
+      });
+    });
+
+    // Calculate pct
+    Object.keys(calHeatData).forEach(function(date) {
+      var d = calHeatData[date];
+      d.pct = Math.round((d.present / d.total) * 100);
+    });
+
+    renderCalendarHeatmap(calHeatData, total);
+  } catch (err) {
+    document.getElementById('calHeatGrid').innerHTML =
+      '<div style="color:#ef4444;padding:20px;grid-column:1/-1">Could not load data: ' + escHtml(err.message) + '</div>';
+  }
+}
+
+function renderCalendarHeatmap(heatData, totalStudents) {
+  var year  = calHeatYear;
+  var month = calHeatMonth;
+
+  var daysInMonth  = new Date(year, month + 1, 0).getDate();
+  var firstDayOfWk = new Date(year, month, 1).getDay(); // 0=Sun
+  // Convert to Mon-based: Mon=0 ... Sun=6
+  var startOffset  = firstDayOfWk === 0 ? 6 : firstDayOfWk - 1;
+
+  var today    = new Date();
+  var todayYMD = toYMD(today);
+
+  var grid = document.getElementById('calHeatGrid');
+  var html  = '';
+
+  // Empty cells before month starts
+  for (var i = 0; i < startOffset; i++) {
+    html += '<div class="heat-cell heat-empty"></div>';
+  }
+
+  for (var day = 1; day <= daysInMonth; day++) {
+    var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    var d       = new Date(dateStr + 'T00:00:00');
+    var dow     = d.getDay(); // 0=Sun 6=Sat
+    var isWeekend = (dow === 0 || dow === 6);
+    var isToday   = dateStr === todayYMD;
+    var info      = heatData[dateStr];
+
+    var cls   = 'heat-cell';
+    var style = '';
+    var label = '';
+    var title = dateStr;
+
+    if (isWeekend) {
+      cls += ' heat-weekend';
+      label = '<span class="heat-day-num">' + day + '</span>';
+    } else if (info) {
+      var pct   = info.pct;
+      var color = pctToColor(pct);
+      style = 'background:' + color + ';';
+      cls  += ' heat-has-data';
+      if (pct >= 75) cls += ' heat-light-text';
+      label = '<span class="heat-day-num">' + day + '</span><span class="heat-pct">' + pct + '%</span>';
+      title = dateStr + ' — ' + pct + '% present (' + info.present + '/' + info.total + ')';
+    } else {
+      cls  += ' heat-no-data';
+      label = '<span class="heat-day-num">' + day + '</span>';
+    }
+
+    if (isToday) cls += ' heat-today';
+
+    html += '<div class="' + cls + '" style="' + style + '" title="' + escHtml(title) + '">' + label + '</div>';
+  }
+
+  // Fill remaining cells
+  var total = startOffset + daysInMonth;
+  var rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (var j = 0; j < rem; j++) {
+    html += '<div class="heat-cell heat-empty"></div>';
+  }
+
+  grid.innerHTML = html;
+
+  // Update legend
+  document.getElementById('calHeatTotal').textContent = totalStudents + ' students';
+}
+
+function pctToColor(pct) {
+  if (pct >= 95) return '#059669'; // deep green
+  if (pct >= 85) return '#10b981'; // green
+  if (pct >= 75) return '#34d399'; // light green
+  if (pct >= 60) return '#fbbf24'; // yellow
+  if (pct >= 40) return '#f97316'; // orange
+  return '#ef4444';                // red
+}
+
+function shiftHeatMonth(delta) {
+  calHeatMonth += delta;
+  if (calHeatMonth > 11) { calHeatMonth = 0;  calHeatYear++; }
+  if (calHeatMonth < 0)  { calHeatMonth = 11; calHeatYear--; }
+  loadCalendarHeatmap();
+}
+
+function heatGoToday() {
+  var now = new Date();
+  calHeatYear  = now.getFullYear();
+  calHeatMonth = now.getMonth();
+  loadCalendarHeatmap();
+}
