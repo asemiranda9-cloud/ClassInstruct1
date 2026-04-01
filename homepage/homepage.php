@@ -67,12 +67,11 @@
           <div class="form-group">
             <label for="emailInput">Gmail address</label>
             <div class="input-wrap">
-              <span class="input-icon">✉</span>
               <input
                 class="form-input"
                 type="email"
                 id="emailInput"
-                placeholder="you@gmail.com"
+                placeholder="✉ you@gmail.com"
                 autocomplete="email"
                 inputmode="email"
               >
