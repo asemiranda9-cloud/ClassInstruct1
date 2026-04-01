@@ -168,42 +168,6 @@ CLASSINS-AI
       </main>
     </div>
   </body>
-  <script>
-    // Right sidebar button functions
-    function toggleSidebar() {
-      const sidebar = document.querySelector('.right-sidebar');
-      if (sidebar) {
-        sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
-      }
-    }
-    
-    function newChat() {
-      // Clear chat input and messages for new conversation
-      const chatInput = document.getElementById('chat-input');
-      const chatMessages = document.querySelector('.chat-messages');
-      if (chatInput) chatInput.value = '';
-      if (chatMessages) {
-        chatMessages.innerHTML = `
-          <div class="welcome-message">
-            <h2>New Conversation</h2>
-            <p>Start a fresh conversation with ClassInstruct AI.</p>
-          </div>
-        `;
-      }
-    }
-    
-    function openLessonPlan() {
-      alert('Lesson Plan feature - Coming soon!');
-    }
-    
-    function openQuiz() {
-      alert('Interactive Quiz feature - Coming soon!');
-    }
-    
-    function openHistory() {
-      alert('Chat History feature - Coming soon!');
-    }
-  </script>
   <script src="app.js"></script>
 </html>
 
