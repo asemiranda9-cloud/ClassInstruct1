@@ -7,7 +7,20 @@ const API = '/ClassInstruct1/dashboard/Student/grades_db.php';
 let students         = [];
 let filtered         = [];
 let activeDesc       = '';
-let weights          = { ww: 30, pt: 50, qa: 20 };
+// Dynamic components — each has: { key, label, pct, color, items:[{id,name,score,maxScore}] }
+let components = [
+  { key:'ww', label:'Written Works',        pct:30, color:'#6c63ff', items:[] },
+  { key:'pt', label:'Performance Tasks',    pct:50, color:'#10b981', items:[] },
+  { key:'qa', label:'Quarterly Assessment', pct:20, color:'#f59e0b', items:[] },
+];
+let compItemCounter = 1;
+// Legacy aliases kept so the rest of the codebase still works unchanged
+function weights_get()  { return Object.fromEntries(components.map(c=>[c.key,c.pct])); }
+// keep a live proxy-like object for code that reads weights.ww / weights.pt / weights.qa
+const weights = new Proxy({}, {
+  get(_,k){ const c=components.find(c=>c.key===k); return c?c.pct:0; },
+  set(_,k,v){ const c=components.find(c=>c.key===k); if(c)c.pct=parseInt(v)||0; return true; }
+});
 let gpaScales        = [];
 let subjects         = [];
 let allSubjects      = [];
@@ -20,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSubjects();
   loadWeights();
   loadGpaScales();
+  loadComponentItems();
   renderWeights();
   loadAllStudents(); // Load students immediately — don't wait for subject selection
   const ov = document.getElementById('editOverlay');
@@ -411,19 +425,16 @@ async function refresh() {
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 function computeFinal(s) {
-  const ww  = s.ww  !== null ? Math.min(100, Math.max(0, parseFloat(s.ww)  || 0)) : 0;
-  const pt  = s.pt  !== null ? Math.min(100, Math.max(0, parseFloat(s.pt)  || 0)) : 0;
-  const qa  = s.qa  !== null ? Math.min(100, Math.max(0, parseFloat(s.qa)  || 0)) : 0;
-  const wwPct = (parseInt(weights.ww) || 30)  / 100;
-  const ptPct = (parseInt(weights.pt) || 50)  / 100;
-  const qaPct = (parseInt(weights.qa) || 20)  / 100;
-  // Guard: if weights don't sum to 1, normalize
-  const total = wwPct + ptPct + qaPct;
+  const total = components.reduce((a,c)=>a+c.pct,0);
   if (total <= 0) return 0;
-  const raw = (ww * wwPct) + (pt * ptPct) + (qa * qaPct);
-  return Math.round(raw * 100) / 100;
+  const raw = components.reduce((sum,c) => {
+    const v = s[c.key] !== null && s[c.key] !== undefined ? Math.min(100,Math.max(0,parseFloat(s[c.key])||0)) : 0;
+    return sum + v * (c.pct/100);
+  },0);
+  // Normalize in case total ≠ 100
+  return Math.round((raw / (total/100)) * 100) / 100;
 }
-function hasAnyGrade(s) { return s.ww !== null || s.pt !== null || s.qa !== null; }
+function hasAnyGrade(s) { return components.some(c => s[c.key] !== null && s[c.key] !== undefined); }
 
 // ── Render Grade Sheet ────────────────────────────────────────────────────────
 function renderTable() {
@@ -438,9 +449,20 @@ function renderTable() {
     }
   }
 
-  document.getElementById('ww-pct-label').textContent = (weights.ww || 30) + '%';
-  document.getElementById('pt-pct-label').textContent = (weights.pt || 50) + '%';
-  document.getElementById('qa-pct-label').textContent = (weights.qa || 20) + '%';
+  // Update column headers dynamically from components
+  const thead = document.querySelector('#gradeBody')?.closest('table')?.querySelector('thead tr');
+  if (thead) {
+    // Rebuild thead: #, Student, [components...], Attendance, Final, Descriptor, GPA, Letter
+    thead.innerHTML = `
+      <th style="width:36px;">#</th>
+      <th style="width:180px;">Student</th>
+      ${components.map(c=>`<th style="width:90px;">${esc(c.label)}<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;">${c.pct}%</small></th>`).join('')}
+      <th style="width:100px;">Attendance</th>
+      <th style="width:70px;">Final</th>
+      <th style="width:140px;">Descriptor</th>
+      <th style="width:65px;">GPA</th>
+      <th style="width:70px;">Letter</th>`;
+  }
 
   // Populate descriptor filter — deduplicated, sorted high to low
   const descSel = document.getElementById('descFilter');
@@ -463,9 +485,10 @@ function renderTable() {
 
   const body = document.getElementById('gradeBody');
   body.innerHTML = '';
+  const totalCols = 4 + components.length; // #, Student, [comps], Attendance, Final, Desc, GPA, Letter
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray-400);">No students found.</td></tr>';
+    body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:30px;color:var(--gray-400);">No students found.</td></tr>`;
     renderStats(); return;
   }
 
@@ -475,21 +498,19 @@ function renderTable() {
     const info     = f !== null ? getGpaInfo(f) : null;
     const attVal   = s.att !== null ? s.att : 0;
     const tr       = document.createElement('tr');
+    const compCells = components.map(c => {
+      const val = s[c.key] !== null && s[c.key] !== undefined ? s[c.key] : '';
+      return `<td><input class="grade-input" type="number" min="0" max="100" step="0.01"
+        value="${val}" placeholder="—"
+        oninput="updateGrade(${students.indexOf(s)},'${c.key}',this.value)"></td>`;
+    }).join('');
     tr.innerHTML = `
       <td style="color:var(--gray-400);font-size:12px;">${i + 1}</td>
       <td>
         <div class="student-name">${esc(s.name)}</div>
         <div class="student-id">${esc(s.id || '')}${s._grade ? ' · ' + esc(s._grade) + ' ' + esc(s._section) : ''}</div>
       </td>
-      <td><input class="grade-input" type="number" min="0" max="100" step="0.01"
-            value="${s.ww !== null ? s.ww : ''}" placeholder="—"
-            oninput="updateGrade(${students.indexOf(s)},'ww',this.value)"></td>
-      <td><input class="grade-input" type="number" min="0" max="100" step="0.01"
-            value="${s.pt !== null ? s.pt : ''}" placeholder="—"
-            oninput="updateGrade(${students.indexOf(s)},'pt',this.value)"></td>
-      <td><input class="grade-input" type="number" min="0" max="100" step="0.01"
-            value="${s.qa !== null ? s.qa : ''}" placeholder="—"
-            oninput="updateGrade(${students.indexOf(s)},'qa',this.value)"></td>
+      ${compCells}
       <td>
         <div class="prog-wrap">
           <div class="prog-bar"><div class="prog-fill" id="attbar-${i}" style="width:${attVal}%;background:${progColor(attVal)};"></div></div>
@@ -608,38 +629,113 @@ async function loadWeights() {
 }
 
 function renderWeights() {
-  const labels = { ww:'Written Works', pt:'Performance Tasks', qa:'Quarterly Assessment' };
-  const grid   = document.getElementById('weightsGrid');
+  const grid = document.getElementById('weightsGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  Object.keys(weights).forEach(k => {
+  components.forEach((c, ci) => {
     const div = document.createElement('div');
     div.className = 'weight-card';
+    div.setAttribute('data-ci', ci);
     div.innerHTML = `
       <div class="weight-header">
-        <span class="weight-name">${labels[k]}</span>
-        <span class="weight-pct" id="wpct-${k}">${weights[k]}%</span>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+          <input type="text" value="${esc(c.label)}"
+            style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--gray-800);border:1px solid transparent;background:transparent;padding:2px 6px;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;outline:none;transition:var(--transition);"
+            onfocus="this.style.borderColor='var(--primary)';this.style.background='var(--white)';"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent';"
+            oninput="components[${ci}].label=this.value;syncCompLabels();"
+            placeholder="Component name">
+        </div>
+        <span class="weight-pct" id="wpct-${c.key}">${c.pct}%</span>
+        ${components.length > 1 ? `<button class="btn btn-icon btn-sm" title="Remove component"
+            style="color:var(--danger);border-color:var(--danger);margin-left:6px;"
+            onclick="removeComponent(${ci})">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>` : ''}
       </div>
-      <input type="range" min="0" max="100" step="5" value="${weights[k]}" oninput="updateWeight('${k}',this.value)">
+      <input type="range" min="0" max="100" step="5" value="${c.pct}" oninput="updateWeight('${c.key}',this.value)">
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:4px;"><span>0%</span><span>100%</span></div>`;
     grid.appendChild(div);
   });
+  // Add component button
+  const addBtn = document.createElement('div');
+  addBtn.className = 'weight-card';
+  addBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--gray-300);background:none;min-height:90px;';
+  addBtn.innerHTML = `<button onclick="addComponent()" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-500);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    Add Component
+  </button>`;
+  grid.appendChild(addBtn);
   updateWeightDisplay();
 }
-function updateWeight(k, v) { weights[k] = parseInt(v); document.getElementById('wpct-' + k).textContent = v + '%'; updateWeightDisplay(); }
+
+function syncCompLabels() {
+  // Update grade sheet column headers to match renamed components
+  components.forEach(c => {
+    const el = document.getElementById('ww-pct-label'); // handled in renderTable
+  });
+  renderTable();
+  renderComponentItems();
+}
+
+function addComponent() {
+  const PALETTE = ['#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6'];
+  const usedColors = components.map(c=>c.color);
+  const color = PALETTE.find(p=>!usedColors.includes(p)) || PALETTE[components.length % PALETTE.length];
+  const key = 'c' + Date.now();
+  components.push({ key, label:'New Component', pct:0, color, items:[] });
+  renderWeights();
+  renderComponentItems();
+  updateWeightDisplay();
+  // Focus the new name input
+  const cards = document.querySelectorAll('#weightsGrid .weight-card');
+  const lastCard = cards[cards.length - 2]; // -2 because last is "Add" button
+  if (lastCard) { const inp = lastCard.querySelector('input[type=text]'); if (inp) { inp.focus(); inp.select(); } }
+}
+
+function removeComponent(ci) {
+  if (components.length <= 1) { toast('You must have at least one component.', 'error'); return; }
+  const name = components[ci].label;
+  if (!confirm(`Remove "${name}"? Its items will also be deleted.`)) return;
+  components.splice(ci, 1);
+  renderWeights();
+  renderComponentItems();
+  updateWeightDisplay();
+  renderTable();
+  toast(`"${name}" removed.`, 'success');
+}
+
+function updateWeight(k, v) {
+  const c = components.find(c=>c.key===k);
+  if (c) c.pct = parseInt(v);
+  const el = document.getElementById('wpct-' + k);
+  if (el) el.textContent = v + '%';
+  updateWeightDisplay();
+}
 function updateWeightDisplay() {
-  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  const total = components.reduce((a,c)=>a+c.pct,0);
   const ok    = total === 100;
   const box   = document.getElementById('weightTotalBox');
   if (box) box.innerHTML = 'Total: <strong style="color:' + (ok ? 'var(--success)' : 'var(--danger)') + ';">' + total + '%</strong> ' + (ok ? '✓ Ready to save' : '— needs to be 100% (off by ' + (total - 100) + '%)');
 }
 async function saveWeights() {
-  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  const total = components.reduce((a,c)=>a+c.pct,0);
   if (total !== 100) { toast('Weights must total 100%. Currently ' + total + '%.', 'error'); return; }
-  try { await fetch(API + '?action=save_weights', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww, performance_tasks_pct: weights.pt, quarterly_assessment_pct: weights.qa }) }); } catch {}
+  // Save to localStorage for custom components
+  try { localStorage.setItem('classinstruct_components', JSON.stringify(components.map(c=>({key:c.key,label:c.label,pct:c.pct,color:c.color})))); } catch {}
+  try { await fetch(API + '?action=save_weights', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww||0, performance_tasks_pct: weights.pt||0, quarterly_assessment_pct: weights.qa||0 }) }); } catch {}
   toast('Weights saved!', 'success'); renderTable();
 }
-function resetWeights() { weights = { ww:30, pt:50, qa:20 }; renderWeights(); }
+function resetWeights() {
+  components = [
+    { key:'ww', label:'Written Works',        pct:30, color:'#6c63ff', items:[] },
+    { key:'pt', label:'Performance Tasks',    pct:50, color:'#10b981', items:[] },
+    { key:'qa', label:'Quarterly Assessment', pct:20, color:'#f59e0b', items:[] },
+  ];
+  try { localStorage.removeItem('classinstruct_components'); } catch {}
+  renderWeights(); renderComponentItems(); renderTable();
+}
 
 // ════════════════════════════════════════
 //  SUMMARY
@@ -730,27 +826,14 @@ async function renderSummary() {
     }).join('');
   }
 
-  // Component averages
-  let compData = {};
-  if (serverData && serverData.components) {
-    compData = serverData.components;
-  } else {
-    const avgOf = key => {
-      const vals = graded.map(s => s[key]).filter(v => v !== null && v !== undefined);
-      return vals.length ? vals.reduce((a,b)=>a+parseFloat(b),0)/vals.length : null;
-    };
-    compData = { written_works: avgOf('ww'), performance_tasks: avgOf('pt'), quarterly_assessment: avgOf('qa') };
-  }
-  document.getElementById('compBars').innerHTML = [
-    { label: 'Written Works',        val: compData.written_works,        color: '#6c63ff' },
-    { label: 'Performance Tasks',    val: compData.performance_tasks,    color: '#10b981' },
-    { label: 'Quarterly Assessment', val: compData.quarterly_assessment, color: '#f59e0b' },
-  ].map(c => {
-    const a = c.val !== null && c.val !== undefined ? parseFloat(c.val) : null;
+  // Component averages — dynamic from components array
+  document.getElementById('compBars').innerHTML = components.map(c => {
+    const vals = graded.map(s => s[c.key]).filter(v => v !== null && v !== undefined);
+    const a = vals.length ? vals.reduce((sum,v)=>sum+parseFloat(v),0)/vals.length : null;
     const display = a !== null ? a.toFixed(1) : '—';
     const width   = a !== null ? Math.min(100, a) : 0;
     return `<div class="dist-row">
-      <div class="dist-label">${c.label}</div>
+      <div class="dist-label">${esc(c.label)}</div>
       <div class="dist-bar-wrap"><div class="dist-bar-fill" style="width:${width}%;background:${c.color};"></div></div>
       <div class="dist-count">${display} avg</div>
     </div>`;
@@ -819,10 +902,122 @@ function switchTab(el, tab) {
     const el2 = document.getElementById('tab-' + t);
     if (el2) el2.style.display = t === tab ? '' : 'none';
   });
-  if (tab === 'components') renderWeights();
+  if (tab === 'components') { renderWeights(); renderComponentItems(); }
   if (tab === 'summary')    renderSummary();
   if (tab === 'gpa')        renderGpaTable();
   if (tab === 'subjects')   renderSubjectTable();
+}
+
+// ════════════════════════════════════════
+//  COMPONENT ITEMS (uses unified components[])
+// ════════════════════════════════════════
+function renderComponentItems() {
+  const grid = document.getElementById('compItemsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  components.forEach(c => {
+    const items = c.items || [];
+    const avg   = computeItemsAvg(c.key);
+    const card  = document.createElement('div');
+    card.className = 'comp-item-card';
+    card.innerHTML = `
+      <div class="comp-item-header">
+        <div class="comp-item-title">
+          <div class="comp-item-dot" style="background:${c.color};"></div>
+          ${esc(c.label)}
+          <span class="comp-item-count">${items.length} item${items.length !== 1 ? 's' : ''}</span>
+        </div>
+        <span style="font-size:11px;color:var(--gray-400);">Weight: <strong style="color:var(--primary);">${c.pct}%</strong></span>
+      </div>
+      <div class="comp-item-body" id="ci-body-${c.key}">
+        ${items.length ? '' : '<p style="font-size:12px;color:var(--gray-400);padding:8px 0;text-align:center;">No items yet. Click below to add.</p>'}
+        ${items.map(item => renderItemRow(c.key, item)).join('')}
+        <button class="comp-item-add" onclick="addComponentItem('${c.key}')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add item
+        </button>
+      </div>
+      <div class="comp-item-avg">
+        <span>Computed component score</span>
+        <strong id="ci-avg-${c.key}">${avg !== null ? avg.toFixed(2) : '—'}</strong>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderItemRow(key, item) {
+  return `<div class="comp-item-row" id="ci-row-${key}-${item.id}">
+    <input type="text" value="${esc(item.name)}" placeholder="Item name (e.g. Quiz 1)"
+      oninput="updateCompItem('${key}',${item.id},'name',this.value)" style="flex:1;min-width:0;">
+    <input type="number" min="0" step="0.01" value="${item.score !== null && item.score !== undefined ? item.score : ''}" placeholder="Score"
+      title="Score" oninput="updateCompItem('${key}',${item.id},'score',this.value)" style="width:70px;text-align:center;">
+    <input type="number" min="1" step="1" value="${item.maxScore || 100}" placeholder="Max"
+      title="Max score" oninput="updateCompItem('${key}',${item.id},'maxScore',this.value)" style="width:60px;text-align:center;">
+    <button class="btn btn-icon btn-sm" title="Remove item" onclick="removeCompItem('${key}',${item.id})">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>`;
+}
+
+function addComponentItem(key) {
+  const c = components.find(c=>c.key===key); if (!c) return;
+  if (!c.items) c.items = [];
+  c.items.push({ id: compItemCounter++, name: '', score: null, maxScore: 100 });
+  renderComponentItems();
+  const body = document.getElementById('ci-body-' + key);
+  if (body) { const inputs = body.querySelectorAll('input[type=text]'); if (inputs.length) inputs[inputs.length-1].focus(); }
+}
+
+function removeCompItem(key, id) {
+  const c = components.find(c=>c.key===key); if (!c) return;
+  c.items = (c.items||[]).filter(it => it.id !== id);
+  renderComponentItems();
+}
+
+function updateCompItem(key, id, field, value) {
+  const c = components.find(c=>c.key===key); if (!c) return;
+  const item = (c.items||[]).find(it => it.id === id); if (!item) return;
+  if (field === 'score')         item.score    = value === '' ? null : Math.max(0, parseFloat(value) || 0);
+  else if (field === 'maxScore') item.maxScore = Math.max(1, parseFloat(value) || 100);
+  else item[field] = value;
+  const avg = computeItemsAvg(key);
+  const el  = document.getElementById('ci-avg-' + key);
+  if (el) el.textContent = avg !== null ? avg.toFixed(2) : '—';
+}
+
+function computeItemsAvg(key) {
+  const c = components.find(c=>c.key===key); if (!c) return null;
+  const scored = (c.items||[]).filter(it => it.score !== null && it.score !== undefined);
+  if (!scored.length) return null;
+  const total = scored.reduce((sum, it) => sum + (parseFloat(it.score) / (parseFloat(it.maxScore)||100)) * 100, 0);
+  return total / scored.length;
+}
+
+function saveComponentItems() {
+  const hasUnnamed = components.some(c => (c.items||[]).some(it => !it.name.trim()));
+  if (hasUnnamed) { toast('Some items are missing names — please fill them in.', 'error'); return; }
+  try { localStorage.setItem('classinstruct_components', JSON.stringify(components)); } catch {}
+  toast('Component items saved!', 'success');
+}
+
+function resetComponentItems() {
+  if (!confirm('Clear all component items?')) return;
+  components.forEach(c => { c.items = []; });
+  renderComponentItems();
+  toast('Component items reset.', 'success');
+}
+
+function loadComponentItems() {
+  try {
+    const raw = localStorage.getItem('classinstruct_components');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        components = parsed.map(c => ({ ...c, items: c.items || [] }));
+        compItemCounter = Math.max(...components.flatMap(c=>(c.items||[]).map(it=>it.id)), 0) + 1;
+      }
+    }
+  } catch {}
 }
 
 // ════════════════════════════════════════

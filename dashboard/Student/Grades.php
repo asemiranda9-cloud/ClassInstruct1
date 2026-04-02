@@ -137,9 +137,30 @@
         </p>
         <div class="weight-total" id="weightTotalBox"></div>
         <div class="weights-grid" id="weightsGrid"></div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:2rem;">
           <button class="btn btn-primary" onclick="saveWeights()">Save Weights</button>
           <button class="btn" onclick="resetWeights()">Reset to DepEd Default</button>
+        </div>
+
+        <!-- Component Items Editor -->
+        <div style="margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--gray-900);margin-bottom:2px;">Component Items</div>
+            <p style="font-size:13px;color:var(--gray-500);margin:0;">
+              Add individual scored items to each component. Each item's score is averaged to produce the component score used in the Final Grade.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="saveComponentItems()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Items
+            </button>
+            <button class="btn" onclick="resetComponentItems()">Reset All</button>
+          </div>
+        </div>
+
+        <div id="compItemsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          <!-- Rendered by JS -->
         </div>
       </div>
 
