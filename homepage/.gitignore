@@ -1,0 +1,9 @@
+# Secret credentials — NEVER commit this
+.env
+
+# Composer dependencies
+/vendor/
+
+# OS junk
+.DS_Store
+Thumbs.db

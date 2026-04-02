@@ -7,6 +7,7 @@
   <title>ClassInstruct — AI-Powered Teaching Assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <style>
 
@@ -80,10 +81,10 @@
       --surface:     #f5f3f0;
 
       /* Modal palette */
-      --primary:      #6366f1;
-      --primary-dark: #4f46e5;
-      --primary-light:#818cf8;
-      --secondary:    #8b5cf6;
+      --primary:      #b8860b;
+      --primary-dark: #a07609;
+      --primary-light: #f5f3f0;
+      --secondary:    #fafaf8;
       --success:      #10b981;
       --error:        #ef4444;
       --white:        #ffffff;
@@ -201,15 +202,39 @@
       align-items: center;
       padding: 24px 64px;
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     }
 
     .navbar > .btn-primary { width: auto; flex-shrink: 0; }
 
-    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo { display: flex; align-items: center; }
 
-    .logo-mark { width: 28px; height: 28px; background: var(--gold); border-radius: 6px; }
+    .logo-link {
+      display: flex;
+      align-items: center;
+      text-decoration: none; }
 
-    .logo-text { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--dark); }
+    .logo-mark { width: 40px;
+      height: 40px;
+      background: linear-gradient(100deg, #b8860b, #f5f3f0); /* gold to beige gradient */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-right: 8px;}
+
+    .logo-mark i {
+      color: #4b2e83; /* dark purple cap */
+      font-size: 20px; }
+
+    .logo-text { 
+      font-size: 20px;
+      font-weight: 600;
+      color: #333; }
 
     .nav-links { display: flex; align-items: center; gap: 32px; }
 
@@ -220,6 +245,7 @@
       letter-spacing: 0.7px;
       text-decoration: none;
       transition: color 0.2s;
+      
     }
 
     .nav-links a:hover { color: var(--dark); }
@@ -1014,17 +1040,20 @@
   <!-- ===== NAVBAR ===== -->
   <nav class="navbar">
     <div class="logo">
-      <div class="logo-mark"></div>
+      <a href="#main-content" class="logo-link">
+      <div class="logo-mark">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
       <span class="logo-text font-serif">ClassInstruct</span>
+      </a>
     </div>
     <div class="nav-links">
-      <a href="#" class="font-sans">Platform</a>
       <a href="#features" class="font-sans">Features</a>
       <a href="#how-it-works" class="font-sans">Method</a>
       <a href="#about" class="font-sans">About</a>
       <a href="#contact" class="font-sans">Contact</a>
     </div>
-    <button class="btn-primary font-sans" id="openSignIn">Sign In</button>
+    <button class="btn-primary font-sans open-signin">Sign In</button>
   </nav>
 
   <!-- ===== SIGN-IN MODAL ===== -->
@@ -1160,7 +1189,7 @@
           ClassInstruct transforms your instructional materials into structured lesson plans, interactive assessments, and mastery-level insights — completely free, so you can focus on what matters most.
         </p>
         <div class="hero-cta">
-          <a href="#" class="btn-primary font-sans">Get Started — Free</a>
+          <button class="btn-primary font-sans open-signin">Get Started — Free</button>
           <a href="#" class="btn-secondary font-sans">Watch Demo</a>
         </div>
       </div>
@@ -1383,13 +1412,13 @@
       </h2>
       <p class="cta-desc font-sans">ClassInstruct is completely free for all educators. Start organizing your instructional materials, generating assessments, and gaining mastery-level insights today.</p>
       <div class="cta-buttons">
-        <a href="#" class="btn-primary font-sans">
+        <button class="btn-primary font-sans open-signin">
           Get Started — Free
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
-        </a>
+        </button>
         <a href="#" class="btn-secondary-dark font-sans">Watch Demo</a>
       </div>
     </section>

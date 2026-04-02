@@ -3,7 +3,7 @@ const BASE = '/ClassInstruct1/homepage';
 (function () {
   /* ── Elements ── */
   const modal        = document.getElementById('signInModal');
-  const openBtn      = document.getElementById('openSignIn');
+  const openBtns     = document.querySelectorAll('.open-signin');
   const closeBtn     = document.getElementById('closeModal');
   const backdrop     = document.getElementById('modalBackdrop');
 
@@ -57,12 +57,20 @@ const BASE = '/ClassInstruct1/homepage';
     clearInterval(timerInterval);
   }
 
-  openBtn.addEventListener('click', openModal);
-  closeBtn.addEventListener('click', closeModal);
-  backdrop.addEventListener('click', closeModal);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
-  });
+  openBtns.forEach(btn => {
+  btn.addEventListener('click', openModal);
+});
+
+// Close logic
+closeBtn.addEventListener('click', closeModal);
+backdrop.addEventListener('click', closeModal);
+
+// Escape key closes modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modal.classList.contains('active')) {
+    closeModal();
+  }
+});
 
   // Auto-open if Google redirected back with error
   window.addEventListener('DOMContentLoaded', () => {

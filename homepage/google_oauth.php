@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * google_oauth.php
  * ClassInstruct — Google OAuth 2.0 Handler
@@ -8,37 +10,39 @@
  *   GET ?action=callback  → Google redirects back here with ?code=...
  *
  * Requirements:
- *   composer require league/oauth2-google
- *   (or: composer require google/apiclient)
+ *   composer require league/oauth2-google vlucas/phpdotenv
  *
  * Setup (Google Cloud Console):
  *   1. Create a project → APIs & Services → Credentials
  *   2. Create OAuth 2.0 Client ID (Web application)
- *   3. Add Authorized redirect URI:  https://yourdomain.com/google_oauth.php?action=callback
- *   4. Copy Client ID + Client Secret below (or into .env)
+ *   3. Add Authorized redirect URI: http://localhost/ClassInstruct1/homepage/google_oauth.php?action=callback
+ *   4. Copy Client ID + Client Secret into your .env file (NEVER hardcode them)
  */
 
-declare(strict_types=1);
+// ─── Load Composer autoload ────────────────────────────────────────────────────
+$autoload = __DIR__ . '/vendor/autoload.php';
+if (!file_exists($autoload)) {
+    die('Server error: Run composer require league/oauth2-google vlucas/phpdotenv');
+}
+require $autoload;
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-// Prefer reading from environment variables in production:
-//   putenv('GOOGLE_CLIENT_ID=xxx') or use a .env loader like vlucas/phpdotenv
+// ─── Load .env ─────────────────────────────────────────────────────────────────
+$dotenvPath = __DIR__ . '/.env';
+if (file_exists($dotenvPath)) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+    $dotenv->required(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APP_URL'])->notEmpty();
+}
+
+// ─── Config (reads from .env) ──────────────────────────────────────────────────
 $config = [
-    'client_id'     => getenv('GOOGLE_CLIENT_ID')     ?: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
-    'client_secret' => getenv('GOOGLE_CLIENT_SECRET') ?: 'YOUR_GOOGLE_CLIENT_SECRET',
-    'redirect_uri'  => getenv('APP_URL')               
-                        ? getenv('APP_URL') . '/google_oauth.php?action=callback'
-                        : 'https://yourdomain.com/google_oauth.php?action=callback',
+    'client_id'     => $_ENV['GOOGLE_CLIENT_ID']     ?? '',
+    'client_secret' => $_ENV['GOOGLE_CLIENT_SECRET'] ?? '',
+    'redirect_uri'  => ($_ENV['APP_URL'] ?? '') . '/google_oauth.php?action=callback',
     'scopes'        => ['openid', 'email', 'profile'],
 ];
 
 session_start();
-
-$autoload = __DIR__ . '/vendor/autoload.php';
-if (!file_exists($autoload)) {
-    die('Server error: Run composer require league/oauth2-google');
-}
-require $autoload;
 
 use League\OAuth2\Client\Provider\Google;
 
@@ -46,7 +50,6 @@ $provider = new Google([
     'clientId'     => $config['client_id'],
     'clientSecret' => $config['client_secret'],
     'redirectUri'  => $config['redirect_uri'],
-    'hostedDomain' => '',                        // set to 'yourschool.edu' to restrict domain
 ]);
 
 $action = $_GET['action'] ?? '';
@@ -58,10 +61,9 @@ if ($action === 'redirect') {
 
     $authUrl = $provider->getAuthorizationUrl([
         'scope'  => $config['scopes'],
-        'prompt' => 'select_account',            // always show account chooser
+        'prompt' => 'select_account',
     ]);
 
-    // Store CSRF state token in session
     $_SESSION['oauth2_state'] = $provider->getState();
 
     header('Location: ' . $authUrl);
@@ -73,14 +75,12 @@ if ($action === 'redirect') {
 // ══════════════════════════════════════════════════════════════════════════════
 if ($action === 'callback') {
 
-    // ── CSRF validation ────────────────────────────────────────────────────────
     if (empty($_GET['state']) || $_GET['state'] !== ($_SESSION['oauth2_state'] ?? '')) {
         unset($_SESSION['oauth2_state']);
         redirectWithError('OAuth state mismatch. Please try again.');
     }
     unset($_SESSION['oauth2_state']);
 
-    // ── Error from Google (user denied, etc.) ─────────────────────────────────
     if (!empty($_GET['error'])) {
         redirectWithError('Google sign-in was cancelled.');
     }
@@ -89,7 +89,6 @@ if ($action === 'callback') {
         redirectWithError('No authorisation code received from Google.');
     }
 
-    // ── Exchange code for access token ────────────────────────────────────────
     try {
         $token = $provider->getAccessToken('authorization_code', [
             'code' => $_GET['code'],
@@ -103,11 +102,7 @@ if ($action === 'callback') {
         $googleId = $googleUser->getId();
         $avatar   = $googleUser->getAvatar();
 
-        // ── Optionally: look up or create user in your DB ─────────────────────
-        // $user = User::findOrCreateByGoogle($email, $googleId, $name, $avatar);
-
-        // ── Start authenticated session ───────────────────────────────────────
-        session_regenerate_id(true);    // prevent session fixation
+        session_regenerate_id(true);
         $_SESSION['ci_user'] = [
             'email'       => $email,
             'name'        => $name,
@@ -117,8 +112,7 @@ if ($action === 'callback') {
             'authed_at'   => time(),
         ];
 
-        // ── Redirect to dashboard ─────────────────────────────────────────────
-        header('Location: /dashboard');
+        header('Location: /ClassInstruct1/dashboard/sidebar.html');
         exit;
 
     } catch (\Exception $e) {
@@ -127,14 +121,11 @@ if ($action === 'callback') {
     }
 }
 
-// ── Unknown action ────────────────────────────────────────────────────────────
 http_response_code(400);
 echo 'Bad request.';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function redirectWithError(string $msg): never
 {
-    // Pass error message back to homepage modal via query string
-    header('Location: /?auth_error=' . urlencode($msg));
+    header('Location: /ClassInstruct1/homepage/homepage.php?auth_error=' . urlencode($msg));
     exit;
 }
