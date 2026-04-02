@@ -28,6 +28,9 @@ let subjectIdCounter = 1;
 let editingSubjectId = null;
 let subjectFilter    = '';
 
+// ── Unsaved Changes Tracking ───────────────────────────────────────────────────
+let hasUnsavedGrades = false;
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadSubjects();
@@ -38,6 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAllStudents(); // Load students immediately — don't wait for subject selection
   const ov = document.getElementById('editOverlay');
   if (ov) ov.addEventListener('click', function(e){ if (e.target === this) closeEditModal(); });
+
+  // ── Unsaved-changes guard ──────────────────────────────────────────────────
+  // Native browser dialog (shown when tab is closed / navigated away)
+  window.addEventListener('beforeunload', e => {
+    if (!hasUnsavedGrades) return;
+    e.preventDefault();
+    e.returnValue = ''; // Required for Chrome to show the dialog
+  });
+
+  // Custom in-page modal — intercept all <a> clicks inside the page
+  document.addEventListener('click', e => {
+    const anchor = e.target.closest('a[href]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href || href === '#' || href.startsWith('javascript')) return;
+    if (!hasUnsavedGrades) return;
+    e.preventDefault();
+    showUnsavedModal(href);
+  });
 });
 
 // Load ALL students into the grade sheet immediately (grades will be empty until subject is picked)
@@ -531,6 +553,8 @@ function renderTable() {
 function updateGrade(idx, field, val) {
   const v = val === '' ? null : Math.min(100, Math.max(0, parseFloat(val) || 0));
   students[idx][field] = v;
+  hasUnsavedGrades = true;          // ← mark dirty
+  markUnsavedIndicator(true);       // ← update UI indicator
   const s    = students[idx];
   const fIdx = filtered.indexOf(s);
   if (fIdx < 0) return;
@@ -603,6 +627,8 @@ async function saveGrades() {
     const res  = await fetch(API + '?action=save_grades', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
     const data = await res.json();
     if (data.error) { toast('Error: ' + data.error, 'error'); return; }
+    hasUnsavedGrades = false;         // ← clear dirty flag
+    markUnsavedIndicator(false);      // ← update UI indicator
     toast('Grades saved! (' + data.saved + ' records)', 'success');
   } catch { toast('Network error — is XAMPP running?', 'error'); }
 }
@@ -1032,4 +1058,163 @@ function toast(msg, type = 'success') {
 }
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════
+//  UNSAVED CHANGES GUARD
+// ════════════════════════════════════════
+
+// Pending navigation target (set when user tries to leave with unsaved grades)
+let _pendingNavHref = null;
+
+/**
+ * Show or hide the small "Unsaved changes" pill next to the Save button.
+ * Looks for an element with id="unsavedBadge" — add it in your HTML near
+ * the Save Grades button.  Falls back silently if the element is absent.
+ */
+function markUnsavedIndicator(dirty) {
+  const badge = document.getElementById('unsavedBadge');
+  if (!badge) return;
+  if (dirty) {
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+/**
+ * Inject the unsaved-changes modal into the page the first time it is needed,
+ * then display it.  `href` is where the user was trying to navigate (may be
+ * null when the browser's own close/navigate-away dialog cannot be suppressed).
+ */
+function showUnsavedModal(href) {
+  _pendingNavHref = href || null;
+
+  // Create modal only once
+  if (!document.getElementById('unsavedModal')) {
+    const overlay = document.createElement('div');
+    overlay.id = 'unsavedModal';
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:10000',
+      'background:rgba(17,24,39,0.55)',
+      'display:flex','align-items:center','justify-content:center',
+      'backdrop-filter:blur(2px)',
+      'opacity:0','transition:opacity 180ms ease',
+    ].join(';');
+
+    overlay.innerHTML = `
+      <div id="unsavedModalBox" style="
+        background:#fff;border-radius:14px;
+        padding:2rem 2rem 1.5rem;
+        max-width:400px;width:calc(100% - 2rem);
+        box-shadow:0 20px 60px rgba(0,0,0,.18);
+        transform:translateY(12px);
+        transition:transform 220ms ease,opacity 220ms ease;
+        opacity:0;
+      ">
+        <!-- Icon -->
+        <div style="width:48px;height:48px;background:#fef3c7;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;margin-bottom:1rem;">
+          <svg width="22" height="22" fill="none" stroke="#d97706" stroke-width="2.2"
+               viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0
+                     1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+
+        <h3 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 .5rem;">
+          Unsaved grades
+        </h3>
+        <p style="font-size:13px;color:#6b7588;margin:0 0 1.5rem;line-height:1.6;">
+          You have grade changes that haven't been saved yet.<br>
+          What would you like to do?
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="unsavedModalSaveAndExit()"
+            style="padding:10px 18px;border-radius:8px;border:none;
+                   background:#6c63ff;color:#fff;font-size:13px;font-weight:600;
+                   font-family:'Inter',sans-serif;cursor:pointer;
+                   display:flex;align-items:center;justify-content:center;gap:8px;
+                   transition:background 160ms ease;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                 viewBox="0 0 24 24">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save grades &amp; exit
+          </button>
+
+          <button onclick="unsavedModalDiscardAndExit()"
+            style="padding:10px 18px;border-radius:8px;
+                   border:1px solid #fca5a5;background:#fff;color:#dc2626;
+                   font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+                   cursor:pointer;transition:background 160ms ease;">
+            Discard changes &amp; exit
+          </button>
+
+          <button onclick="unsavedModalCancel()"
+            style="padding:10px 18px;border-radius:8px;
+                   border:1px solid #e4e8f0;background:#fff;color:#6b7588;
+                   font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
+                   cursor:pointer;transition:background 160ms ease;">
+            Cancel — keep editing
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    // Close on backdrop click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) unsavedModalCancel();
+    });
+  }
+
+  // Animate in
+  const modal = document.getElementById('unsavedModal');
+  const box   = document.getElementById('unsavedModalBox');
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => {
+    modal.style.opacity = '1';
+    box.style.opacity   = '1';
+    box.style.transform = 'translateY(0)';
+  });
+}
+
+function _hideUnsavedModal() {
+  const modal = document.getElementById('unsavedModal');
+  const box   = document.getElementById('unsavedModalBox');
+  if (!modal) return;
+  modal.style.opacity = '0';
+  if (box) { box.style.opacity = '0'; box.style.transform = 'translateY(12px)'; }
+  setTimeout(() => { if (modal) modal.style.display = 'none'; }, 220);
+}
+
+async function unsavedModalSaveAndExit() {
+  _hideUnsavedModal();
+  await saveGrades();
+  // Only navigate if save succeeded (flag cleared by saveGrades on success)
+  if (!hasUnsavedGrades && _pendingNavHref) {
+    window.location.href = _pendingNavHref;
+  }
+  _pendingNavHref = null;
+}
+
+function unsavedModalDiscardAndExit() {
+  hasUnsavedGrades = false;
+  markUnsavedIndicator(false);
+  _hideUnsavedModal();
+  if (_pendingNavHref) {
+    window.location.href = _pendingNavHref;
+  }
+  _pendingNavHref = null;
+}
+
+function unsavedModalCancel() {
+  _hideUnsavedModal();
+  _pendingNavHref = null;
 }

@@ -18,7 +18,7 @@
     <div class="topbar">
       <span class="page-title">Grades</span>
       <div class="topbar-search">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+     
         <input type="text" id="topSearch" placeholder="Search students..." oninput="filterSearch(this.value)">
       </div>
       <div class="topbar-right">ClassInstruct</div>
