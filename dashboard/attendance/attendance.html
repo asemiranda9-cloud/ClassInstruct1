@@ -9,152 +9,68 @@
 </head>
 <body>
 <div class="app">
-  <!-- ══════════════ MAIN ══════════════ -->
   <main class="main-content">
 
     <!-- Header -->
     <header class="page-header">
-      <div class="header-left">
-        <h1 class="page-title">Attendance</h1>
-      </div>
+      <h1 class="page-title">Attendance</h1>
     </header>
 
     <div class="content-body">
 
-      <!-- ── Summary Cards ── -->
+      <!-- Summary Cards -->
       <section class="summary-section">
         <div class="summary-cards" id="summaryCards">
           <div class="summary-skeleton">Loading summary…</div>
         </div>
       </section>
 
-      <!-- ── View Toggle + Controls ── -->
+      <!-- Toolbar -->
       <div class="toolbar">
+
         <!-- Section selector -->
-        <div class="toolbar-group">
-          <div class="select-wrap" style="position:relative">
-            <button class="toolbar-btn" id="sectionBtn" onclick="toggleDropdown('sectionDropdown')">
-              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              <span id="sectionLabel">Loading…</span>
-              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-            <div id="sectionDropdown" class="dropdown-menu" style="display:none"></div>
-          </div>
+        <div class="toolbar-group" style="position:relative">
+          <button class="toolbar-btn" id="sectionBtn" onclick="toggleDropdown('sectionDropdown')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span id="sectionLabel">Loading…</span>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="sectionDropdown" class="dropdown-menu" style="display:none"></div>
         </div>
 
-        <!-- Week navigator -->
-        <div class="toolbar-group" id="weekNav">
-          <div style="position:relative">
-            <button class="toolbar-btn" id="weekBtn" onclick="toggleDropdown('weekDropdown')">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              <span id="weekLabel">Loading…</span>
-              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-            <div id="weekDropdown" class="dropdown-menu cal-popup" style="display:none;overflow:visible"></div>
-          </div>
+        <!-- Week calendar picker -->
+        <div class="toolbar-group" id="weekNav" style="position:relative">
+          <button class="toolbar-btn" id="weekBtn" onclick="toggleDropdown('weekDropdown')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span id="weekLabel">Loading…</span>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="weekDropdown" class="dropdown-menu cal-popup" style="display:none"></div>
         </div>
 
-        <!-- View toggle -->
-        <div class="toolbar-group view-toggle-group">
-          <div class="view-toggle-wrap">
-            <button id="btnViewWeek" class="view-btn active" onclick="switchView('week')">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 10h18M3 6h18M3 14h18M3 18h18"/>
-              </svg>
-              Week
-            </button>
-            <button id="btnViewCal" class="view-btn" onclick="switchView('calendar')">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              Heatmap
-            </button>
-          </div>
-        </div>
-      </div>
+      </div><!-- /toolbar -->
 
-      <!-- ── WEEK VIEW ── -->
+      <!-- Attendance Table -->
       <section id="weekView">
         <div class="table-card">
           <div id="tableWrap" style="overflow-x:auto">
             <table class="att-table" id="attendanceTable">
               <thead id="tableHead"></thead>
               <tbody id="tableBody">
-                <tr>
-                  <td colspan="9" class="table-loading">Loading attendance…</td>
-                </tr>
+                <tr><td colspan="9" class="table-loading">Loading attendance…</td></tr>
               </tbody>
             </table>
           </div>
-        </div>
-      </section>
-
-      <!-- ── CALENDAR / HEATMAP VIEW ── -->
-      <section id="calendarView" style="display:none">
-        <div class="heat-card">
-
-          <!-- Heatmap header -->
-          <div class="heat-header">
-            <div class="heat-header-left">
-              <span class="heat-title" id="calHeatMonthLabel">— —</span>
-              <span class="heat-meta" id="calHeatTotal">— students</span>
-            </div>
-            <div class="heat-nav">
-              <button class="icon-btn" onclick="shiftHeatMonth(-1)" title="Previous month">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-              <button class="heat-today-btn" onclick="heatGoToday()">Today</button>
-              <button class="icon-btn" onclick="shiftHeatMonth(1)" title="Next month">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Weekday labels -->
-          <div class="heat-weekdays">
-            <div class="heat-wd">Mon</div>
-            <div class="heat-wd">Tue</div>
-            <div class="heat-wd">Wed</div>
-            <div class="heat-wd">Thu</div>
-            <div class="heat-wd">Fri</div>
-            <div class="heat-wd">Sat</div>
-            <div class="heat-wd">Sun</div>
-          </div>
-
-          <!-- Grid -->
-          <div class="heat-grid" id="calHeatGrid"></div>
-
-          <!-- Legend -->
-          <div class="heat-legend">
-            <span class="heat-legend-label">Attendance rate:</span>
-            <div class="heat-legend-items">
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#059669"></span>≥95%</div>
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#10b981"></span>85–94%</div>
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#34d399"></span>75–84%</div>
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#fbbf24"></span>60–74%</div>
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#f97316"></span>40–59%</div>
-              <div class="heat-legend-item"><span class="heat-dot" style="background:#ef4444"></span>&lt;40%</div>
-              <div class="heat-legend-item"><span class="heat-dot heat-dot-empty"></span>No data</div>
-              <div class="heat-legend-item"><span class="heat-dot heat-dot-weekend"></span>Weekend</div>
-            </div>
-          </div>
-
         </div>
       </section>
 

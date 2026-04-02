@@ -1,202 +1,307 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <title>Student Info - ClassInstruct</title>
-    <link rel="stylesheet" href="student-modern.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div class="students-container">
-      <!-- Main Content -->
-      <main class="student-main">
-        <header class="student-header">
-          <h1 class="header-title">Student Info</h1>
-          <div class="search-container">
-            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="search" id="search-input" placeholder="Search for students..." aria-label="Search" />
-          </div>
-          <div class="header-actions"><span class="header-brand">ClassInstruct</span></div>
-        </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Info — ClassInstruct</title>
+  <link rel="stylesheet" href="StudentInfo.css" />
+</head>
+<body>
+<div class="page">
 
-        <div class="student-content">
+  <!-- ════════════ MAIN ════════════ -->
+  <div class="main">
 
-          <a href="Student.html" class="back-btn">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-            Back to Students
-          </a>
+    <!-- Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <h1 class="header-title font-serif">Student Info</h1>
+        <div class="breadcrumb">
+          <span class="crumb" onclick="location.href='../dashboard.html'">Dashboard</span>
+          <span class="sep">/</span>
+          <span class="crumb" onclick="location.href='Student.html'">Students</span>
+          <span class="sep">/</span>
+          <span class="bc-current" id="breadcrumbName">Student Info</span>
+        </div>
+      </div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" placeholder="Search students…" aria-label="Search students"/>
+      </div>
+      <span class="header-brand font-serif">ClassInstruct</span>
+    </header>
 
-          <div class="breadcrumb">
-            <a href="../dashboard.html">Dashboard</a><span>/</span>
-            <a href="Student.html">Students</a><span>/</span>
-            <span class="current" id="breadcrumbName">Student Info</span>
-          </div>
-
-          <!-- Loading -->
-          <div id="loadingState" style="text-align:center;padding:60px 20px;color:#64748b;font-family:Inter,sans-serif">
-            Loading student information...
-          </div>
-
-          <!-- Error -->
-          <div id="errorState" style="display:none;text-align:center;padding:60px 20px;color:#ef4444;font-family:Inter,sans-serif">
-            <p id="errorMsg">Student not found.</p>
-            <a href="Student.html" style="color:#4f46e5;font-weight:500;margin-top:12px;display:inline-block">Go back to Students</a>
-          </div>
-
-          <!-- Info Grid -->
-          <div class="info-grid" id="infoGrid" style="display:none">
-            <aside class="info-sidebar">
-              <div class="profile-card">
-                <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:#fff;margin:0 auto 12px;background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
-                <h2 class="profile-name" id="profileName">—</h2>
-                <p class="profile-id" id="profileId">—</p>
-                <span class="profile-status">Active</span>
-              </div>
-              <div class="quick-stats">
-                <div class="quick-stat">
-                  <div class="quick-stat-value" id="statGender">—</div>
-                  <div class="quick-stat-label">Gender</div>
-                </div>
-                <div class="quick-stat">
-                  <div class="quick-stat-value" id="statEnroll">—</div>
-                  <div class="quick-stat-label">Enrolled</div>
-                </div>
-                <div class="quick-stat">
-                  <div class="quick-stat-value" id="statGrade">—</div>
-                  <div class="quick-stat-label">Level</div>
-                </div>
-                <div class="quick-stat">
-                  <div class="quick-stat-value" id="statSection">—</div>
-                  <div class="quick-stat-label">Section</div>
-                </div>
-              </div>
-            </aside>
-
-            <div class="info-main">
-              <div class="info-card">
-                <h3 class="info-card-title">Personal Information</h3>
-                <div class="info-list">
-                  <div class="info-item"><span class="info-label">Full Name</span><span class="info-value" id="infoFullName">—</span></div>
-                  <div class="info-item"><span class="info-label">Student ID / LRN</span><span class="info-value" id="infoStudentId">—</span></div>
-                  <div class="info-item"><span class="info-label">Date of Birth</span><span class="info-value" id="infoDob">—</span></div>
-                  <div class="info-item"><span class="info-label">Gender</span><span class="info-value" id="infoGender">—</span></div>
-                  <div class="info-item"><span class="info-label">Address</span><span class="info-value" id="infoAddress">—</span></div>
-                </div>
-              </div>
-              <div class="info-card">
-                <h3 class="info-card-title">Academic Information</h3>
-                <div class="info-list">
-                  <div class="info-item"><span class="info-label">Grade Level</span><span class="info-value" id="infoGrade">—</span></div>
-                  <div class="info-item"><span class="info-label">Section</span><span class="info-value" id="infoSection">—</span></div>
-                  <div class="info-item"><span class="info-label">Enrollment Date</span><span class="info-value" id="infoEnrollDate">—</span></div>
-                  <div class="info-item"><span class="info-label">Previous School</span><span class="info-value" id="infoPrevSchool">—</span></div>
-                </div>
-              </div>
-              <div class="info-card">
-                <h3 class="info-card-title">Contact Information</h3>
-                <div class="info-list">
-                  <div class="info-item"><span class="info-label">Email Address</span><span class="info-value" id="infoEmail">—</span></div>
-                  <div class="info-item"><span class="info-label">Phone Number</span><span class="info-value" id="infoPhone">—</span></div>
-                </div>
-              </div>
-              <div class="info-card">
-                <h3 class="info-card-title">Parent / Guardian Information</h3>
-                <div class="info-list">
-                  <div class="info-item"><span class="info-label">Father's Name</span><span class="info-value" id="infoFatherName">—</span></div>
-                  <div class="info-item"><span class="info-label">Father's Phone</span><span class="info-value" id="infoFatherPhone">—</span></div>
-                  <div class="info-item"><span class="info-label">Mother's Name</span><span class="info-value" id="infoMotherName">—</span></div>
-                  <div class="info-item"><span class="info-label">Mother's Phone</span><span class="info-value" id="infoMotherPhone">—</span></div>
-                  <div class="info-item"><span class="info-label">Guardian's Name</span><span class="info-value" id="infoGuardianName">—</span></div>
-                  <div class="info-item"><span class="info-label">Relation</span><span class="info-value" id="infoGuardianRelation">—</span></div>
-                  <div class="info-item"><span class="info-label">Guardian's Phone</span><span class="info-value" id="infoGuardianPhone">—</span></div>
-                </div>
-              </div>
-            </div>
-          </div><!-- /info-grid -->
-
-        </div><!-- /student-content -->
-      </main>
+    <!-- Loading State -->
+    <div id="loadingState" class="state-box">
+      <svg width="32" height="32" fill="none" stroke="#b8860b" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-opacity=".2"/>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+      </svg>
+      Loading student information…
     </div>
 
-    <script>
-      var API = '../api/db.php';
+    <!-- Error State -->
+    <div id="errorState" class="state-box error" style="display:none">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p id="errorMsg">Student not found.</p>
+      <a onclick="location.href='Student.html'">← Back to Students</a>
+    </div>
 
-      function val(v) {
-        return (v && String(v).trim()) ? String(v).trim() : 'Not provided';
-      }
-      function set(id, v) {
-        var el = document.getElementById(id);
-        if (el) el.textContent = val(v);
-      }
-      function getInitials(name) {
-        return (name || '').split(' ').map(function(p){ return p[0]||''; }).slice(0,2).join('').toUpperCase();
-      }
+    <!-- ════ PAGE CONTENT ════ -->
+    <div class="content" id="pageContent" style="display:none">
 
-      async function loadStudent() {
-        var params = new URLSearchParams(window.location.search);
-        var id = params.get('id');
-        if (!id) { showError('No student ID specified. Please go back and click a student name.'); return; }
+      <!-- ═══ LEFT COLUMN ═══ -->
+      <div class="col-left">
 
-        try {
-          var res = await fetch(API);
-          if (!res.ok) throw new Error('API responded with ' + res.status);
-          var students = await res.json();
-          var s = students.find(function(x){ return String(x.id) === String(id); });
-          if (!s) { showError('Student not found. They may have been deleted.'); return; }
-          renderStudent(s);
-        } catch(err) {
-          showError('Could not load student data. Is XAMPP running? — ' + err.message);
-        }
-      }
+        <!-- Profile Card -->
+        <div class="card featured profile-card">
+          <div class="photo-frame">
+            <span class="photo-initials font-serif" id="studentAvatar">—</span>
+          </div>
+          <div class="student-name font-serif" id="studentName">—</div>
+          <div class="student-lrn font-mono"   id="studentLrn">—</div>
+          <div class="badges">
+            <span class="badge badge-section" id="studentSection">—</span>
+            <span class="badge badge-active">Active</span>
+          </div>
+          <div class="divider"></div>
+          <div class="info-rows">
+            <div class="info-row">
+              <div class="info-icon">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <span class="info-text" id="infoGender">—</span>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <span class="info-text" id="infoDob">—</span>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.21 12 19.79 19.79 0 0 1 1.14 3.4 2 2 0 0 1 3.11 1.38h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+              <span class="info-text" id="infoPhone">—</span>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <span class="info-text" id="infoAddress">—</span>
+            </div>
+          </div>
+        </div>
 
-      function renderStudent(s) {
-        document.getElementById('breadcrumbName').textContent = s.fullName || 'Student Info';
-        document.title = (s.fullName || 'Student') + ' - ClassInstruct';
+        <!-- Guardian Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title font-serif">Parent / Guardian Info</span>
+            <button class="dots-btn" aria-label="More options">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div id="guardianRows">
+            <p style="font-size:12px;color:rgba(107,107,107,.5);padding:10px 0">Loading…</p>
+          </div>
+        </div>
 
-        document.getElementById('profileAvatar').textContent = getInitials(s.fullName);
-        document.getElementById('profileName').textContent   = s.fullName  || '—';
-        document.getElementById('profileId').textContent     = s.studentId || '—';
+        <!-- Documents Card (static) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title font-serif">Documents</span>
+            <button class="dots-btn" aria-label="More options">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div class="doc-row">
+            <div class="doc-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            </div>
+            <div>
+              <div class="doc-name">Report_Card_1stSem.pdf</div>
+              <div class="doc-size">pdf · 2.4 MB</div>
+            </div>
+          </div>
+          <div class="doc-row">
+            <div class="doc-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            </div>
+            <div>
+              <div class="doc-name">Cert_Good_Moral.pdf</div>
+              <div class="doc-size">pdf · 1.1 MB</div>
+            </div>
+          </div>
+          <div class="doc-row">
+            <div class="doc-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            </div>
+            <div>
+              <div class="doc-name">Birth_Certificate.pdf</div>
+              <div class="doc-size">pdf · 4.4 MB</div>
+            </div>
+          </div>
+        </div>
 
-        document.getElementById('statGender').textContent  = s.gender    || '—';
-        document.getElementById('statEnroll').textContent  = s.enrollDate ? s.enrollDate.slice(0,7) : '—';
-        document.getElementById('statGrade').textContent   = s.grade     ? s.grade.replace('Grade ','G') : '—';
-        document.getElementById('statSection').textContent = s.section   ? s.section.replace('Section ','S') : '—';
+      </div><!-- /col-left -->
 
-        set('infoFullName',       s.fullName);
-        set('infoStudentId',      s.studentId);
-        set('infoDob',            s.dob);
-        set('infoGender',         s.gender);
-        set('infoAddress',        s.address);
-        set('infoGrade',          s.grade);
-        set('infoSection',        s.section);
-        set('infoEnrollDate',     s.enrollDate);
-        set('infoPrevSchool',     s.prevSchool);
-        set('infoEmail',          s.email);
-        set('infoPhone',          s.phone);
-        set('infoFatherName',     s.fatherName);
-        set('infoFatherPhone',    s.fatherPhone);
-        set('infoMotherName',     s.motherName);
-        set('infoMotherPhone',    s.motherPhone);
-        set('infoGuardianName',   s.guardianName);
-        set('infoGuardianRelation', s.guardianRelation);
-        set('infoGuardianPhone',  s.guardianPhone);
+      <!-- ═══ MIDDLE COLUMN ═══ -->
+      <div class="col-mid">
 
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('infoGrid').style.display = '';
-      }
+        <!-- Attendance Calendar Card -->
+        <div class="card">
+          <div class="cal-header">
+            <span class="cal-month font-serif" id="calMonthLabel">—</span>
+            <div class="cal-arrows">
+              <button onclick="shiftCalMonth(-1)" aria-label="Previous month">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button onclick="shiftCalMonth(1)" aria-label="Next month">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="cal-day-headers">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div id="calGrid"></div>
+          <div class="att-summary">
+            <div class="att-stat green">
+              <span class="att-label">Present</span>
+              <span class="att-count font-serif" id="attPresent">0</span>
+            </div>
+            <div class="att-stat yellow">
+              <span class="att-label">Late</span>
+              <span class="att-count font-serif" id="attLate">0</span>
+            </div>
+            <div class="att-stat gold">
+              <span class="att-label">Excused</span>
+              <span class="att-count font-serif" id="attExcused">0</span>
+            </div>
+            <div class="att-stat red">
+              <span class="att-label">Absent</span>
+              <span class="att-count font-serif" id="attAbsent">0</span>
+            </div>
+          </div>
+        </div>
 
-      function showError(msg) {
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('errorMsg').textContent = msg;
-        document.getElementById('errorState').style.display = 'block';
-      }
+        <!-- Health & Medical Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title font-serif">Health &amp; Medical Info</span>
+            <button class="dots-btn" aria-label="More options">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div class="health-row">
+            <span class="health-tag tag-routine">Routine</span>
+            <span class="health-text">Routine health check complete — fit for all school activities.</span>
+          </div>
+          <div class="health-row">
+            <span class="health-tag tag-allergy">Allergy</span>
+            <span class="health-text">Mild pollen allergy — medication prescribed and on file.</span>
+          </div>
+          <div class="health-row">
+            <span class="health-tag tag-severe">Severe</span>
+            <span class="health-text">Severe reaction — strictly avoid exposure, EpiPen required.</span>
+          </div>
+        </div>
 
-      loadStudent();
-    </script>
-  </body>
+      </div><!-- /col-mid -->
+
+      <!-- ═══ RIGHT COLUMN ═══ -->
+      <div class="col-right">
+
+        <!-- Academic Performance Card -->
+        <div class="card" style="padding:24px">
+          <div class="academic-title font-serif">Academic Performance</div>
+          <div class="perf-content">
+            <div class="gauge-wrap">
+              <div class="gauge">
+                <svg viewBox="0 0 120 70" fill="none">
+                  <path d="M 10 65 A 50 50 0 0 1 110 65" stroke="#e8e4df" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 10 65 A 50 50 0 0 1 103 40" stroke="#b8860b" stroke-width="12" stroke-linecap="round"/>
+                </svg>
+                <div class="gauge-value">
+                  <span class="gauge-score font-serif">9.3</span>
+                  <span class="gauge-outof">/10</span>
+                </div>
+              </div>
+              <span class="gauge-label">Average Score</span>
+            </div>
+            <div class="quarter-bars">
+              <div class="quarter-bar">
+                <div class="q-bar" style="height:80px"></div>
+                <span class="quarter-label">First<br>Quarter</span>
+              </div>
+              <div class="quarter-bar">
+                <div class="q-bar" style="height:72px"></div>
+                <span class="quarter-label">Second<br>Quarter</span>
+              </div>
+              <div class="quarter-bar">
+                <div class="q-bar" style="height:64px"></div>
+                <span class="quarter-label">Third<br>Quarter</span>
+              </div>
+              <div class="quarter-bar">
+                <div class="q-bar" style="height:56px"></div>
+                <span class="quarter-label">Fourth<br>Quarter</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scholarship Card -->
+        <div class="card" style="padding:24px">
+          <div class="card-header">
+            <span class="card-title font-serif" style="font-size:16px">Scholarship</span>
+            <button class="dots-btn" aria-label="More options">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div class="empty-state">
+            <span class="empty-text">No scholarship records yet.</span>
+          </div>
+        </div>
+
+        <!-- Behavior & Discipline Log -->
+        <div class="card" style="padding:24px">
+          <div class="behavior-header">
+            <span class="behavior-title font-serif">Behavior &amp; Discipline Log</span>
+            <button class="add-btn" aria-label="Add record">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </button>
+          </div>
+          <div class="log-header">
+            <div class="log-col col-date">
+              <span class="font-mono">Date</span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="log-col col-type">
+              <span class="font-mono">Type &amp; Details</span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="log-col col-reported">
+              <span class="font-mono">Reported by</span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="log-col col-status">
+              <span class="font-mono">Status</span>
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="empty-state" style="padding:28px 0">
+            <span class="empty-text">No behavior records logged.</span>
+          </div>
+        </div>
+
+      </div><!-- /col-right -->
+
+    </div><!-- /content #pageContent -->
+  </div><!-- /main -->
+</div><!-- /page -->
+
+<script src="StudentInfo.js"></script>
+</body>
 </html>
