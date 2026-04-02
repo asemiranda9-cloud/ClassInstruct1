@@ -291,7 +291,7 @@ const BASE = '/ClassInstruct1/homepage';
 
   /* ── Go to Dashboard ── */
   btnDash.addEventListener('click', () => {
-    window.location.href = '/ClassInstruct1/dashboard/dashboard.html';
+    window.location.href = '/ClassInstruct1/dashboard/sidebar.html';
   });
 
   /* ── Sign Up link ── */
