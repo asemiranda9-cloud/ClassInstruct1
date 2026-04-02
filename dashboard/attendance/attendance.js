@@ -169,7 +169,7 @@ function updateWeekLabel() {
 
 function renderWeekCalendar() {
   const dd        = document.getElementById('weekDropdown');
-  const today     = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date();
   const todayYMD  = toYMD(today);
   const wsYMD     = toYMD(state.weekStartDate);
   const weYMD     = toYMD(addDays(state.weekStartDate, 6));
@@ -263,63 +263,71 @@ async function selectWeek(ymd) {
 
 // ════════════════════════════════════════════════════
 //  SUMMARY CARDS
+//  Always computed from tableData (the currently-displayed
+//  week) so the card always matches exactly what's on screen.
 // ════════════════════════════════════════════════════
 function buildSummaryBar(title, d) {
   const total = (d.present || 0) + (d.late || 0) + (d.absent || 0);
-  const pPct = total ? Math.round((d.present || 0) / total * 100) : 0;
-  const lPct = total ? Math.round((d.late || 0) / total * 100) : 0;
-  const aPct = total ? Math.round((d.absent || 0) / total * 100) : 0;
+  const pPct  = total ? Math.round((d.present || 0) / total * 100) : 0;
+  const lPct  = total ? Math.round((d.late    || 0) / total * 100) : 0;
+  const aPct  = total ? Math.round((d.absent  || 0) / total * 100) : 0;
+
   return '<div class="summary-bar-section">' +
     '<div class="summary-bar-title">' + esc(title) + '</div>' +
-    '<div class="summary-bar-count">' + d.present + '</div>' +
+    '<div class="summary-bar-count">' + (d.present || 0) + '</div>' +
     '<div class="summary-bar-stats">' +
-      '<span class="sbs-item" style="color:var(--present)"><span class="sbs-dot"></span>Present: ' + (d.present || 0) + ' (' + pPct + '%)</span>' +
+      '<span class="sbs-item" style="color:var(--present)"><span class="sbs-dot"></span>Present: ' +
+        (d.present || 0) + ' (' + pPct + '%)</span>' +
       '<span class="sbs-sep">|</span>' +
-      '<span class="sbs-item" style="color:var(--late)">Late: ' + (d.late || 0) + ' (' + lPct + '%)</span>' +
+      '<span class="sbs-item" style="color:var(--late)">Late: ' +
+        (d.late || 0) + ' (' + lPct + '%)</span>' +
       '<span class="sbs-sep">|</span>' +
-      '<span class="sbs-item" style="color:var(--absent)">Absent: ' + (d.absent || 0) + ' (' + aPct + '%)</span>' +
+      '<span class="sbs-item" style="color:var(--absent)">Absent: ' +
+        (d.absent || 0) + ' (' + aPct + '%)</span>' +
     '</div>' +
   '</div>';
 }
 
-async function loadSummary() {
-  const ws = state.weekStartDate;
-  const we = addDays(ws, 6);
+/**
+ * Recompute summary from the current tableData (week dates only).
+ * This guarantees the card always matches exactly the dots shown.
+ */
+function refreshSummaryFromTable() {
+  if (!tableData.students.length) return;
 
-  let m1 = await apiFetch({ action: 'summary', year: ws.getFullYear(), month: ws.getMonth() + 1 });
+  const weekYMDs = new Set(tableData.dates);
+  const totals   = { present: 0, late: 0, absent: 0 };
 
-  if (we.getMonth() !== ws.getMonth() || we.getFullYear() !== ws.getFullYear()) {
-    const m2 = await apiFetch({ action: 'summary', year: we.getFullYear(), month: we.getMonth() + 1 });
-    // Merge overall totals
-    m1.overall.present += m2.overall.present;
-    m1.overall.late    += m2.overall.late;
-    m1.overall.absent  += m2.overall.absent;
-    m1.overall.total   += m2.overall.total;
-    const t = m1.overall.total;
-    m1.overall.present_pct = t ? Math.round(m1.overall.present / t * 100) : 0;
-    m1.overall.late_pct    = t ? Math.round(m1.overall.late    / t * 100) : 0;
-    m1.overall.absent_pct = t ? Math.round(m1.overall.absent  / t * 100) : 0;
-    // Merge section totals
-    m2.sections.forEach(function(s2) {
-      const ex = m1.sections.find(function(s) { return s.grade === s2.grade && s.section === s2.section; });
-      if (ex) {
-        ex.present += s2.present; ex.late += s2.late; ex.absent += s2.absent; ex.total += s2.total;
-        ex.present_pct = ex.total ? Math.round(ex.present / ex.total * 100) : 0;
-        ex.late_pct    = ex.total ? Math.round(ex.late    / ex.total * 100) : 0;
-        ex.absent_pct  = ex.total ? Math.round(ex.absent  / ex.total * 100) : 0;
-      } else {
-        m1.sections.push(s2);
-      }
+  tableData.students.forEach(function(s) {
+    Object.entries(s.statuses || {}).forEach(function(entry) {
+      const date   = entry[0];
+      const status = entry[1];
+      if (!weekYMDs.has(date)) return;   // only count the displayed week
+      if (status === 'present') totals.present++;
+      else if (status === 'late')   totals.late++;
+      else if (status === 'absent') totals.absent++;
     });
-  }
+  });
 
-  let html = buildSummaryBar('All Students', m1.overall);
-  if (state.sectionId !== 'all') {
-    const sec = m1.sections.find(function(s) { return s.grade === state.grade && s.section === state.section; });
-    if (sec) html += buildSummaryBar(sec.name, sec);
-  }
-  document.getElementById('summaryCards').innerHTML = html;
+  const title = state.sectionId === 'all' ? 'Overall' : state.sectionName;
+  document.getElementById('summaryCards').innerHTML = buildSummaryBar(title, totals);
 }
+
+/**
+ * loadSummary — fetches fresh data from the API then recomputes.
+ * Only called on initial load and section / week changes.
+ * After individual dot changes we call refreshSummaryFromTable()
+ * directly so there's no extra network round-trip.
+ */
+async function loadSummary() {
+  // We drive the summary entirely from tableData so we just
+  // need to wait until tableData is populated (handled by
+  // loadAttendance → renderTable → refreshSummaryFromTable).
+  // This function is kept for the initial skeleton replacement.
+  document.getElementById('summaryCards').innerHTML =
+    '<div class="summary-skeleton"><div class="skeleton-shimmer"></div></div>';
+}
+
 
 // ════════════════════════════════════════════════════
 //  ATTENDANCE TABLE
@@ -423,6 +431,9 @@ function renderTable() {
       '</div></td>' +
     '</tr>';
   }).join('');
+
+  // Always sync the summary card with exactly what's displayed
+  refreshSummaryFromTable();
 }
 
 // ════════════════════════════════════════════════════
@@ -434,16 +445,20 @@ async function cycleStatus(studentId, date, dot) {
   const cur  = ([].slice.call(dot.classList).find(function(c) { return c.startsWith('dot-'); }) || 'dot-none').replace('dot-', '');
   const next = CYCLE[cur] || 'present';
 
+  // Update UI immediately
   dot.className = 'status-dot dot-' + next;
   dot.title     = cap(next) + ' \u2014 ' + date;
 
   const student = tableData.students.find(function(s) { return s.id == studentId; });
   if (student) student.statuses[date] = next;
-  updateRowSummary(studentId);
 
+  // Update both the row summary AND the header summary card instantly
+  updateRowSummary(studentId);
+  refreshSummaryFromTable();
+
+  // Persist to DB in the background
   try {
     await apiPost({ student_id: studentId, date: date, status: next });
-    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Save failed:', e); }
 }
 
@@ -494,11 +509,12 @@ async function setStatus(status) {
 
   const student = tableData.students.find(function(s) { return s.id == studentId; });
   if (student) student.statuses[date] = status;
+
   updateRowSummary(studentId);
+  refreshSummaryFromTable();
 
   try {
     await apiPost({ student_id: studentId, date: date, status: status });
-    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Save failed:', e); }
 }
 
@@ -514,11 +530,12 @@ async function clearStatus() {
 
   const student = tableData.students.find(function(s) { return s.id == studentId; });
   if (student) delete student.statuses[date];
+
   updateRowSummary(studentId);
+  refreshSummaryFromTable();
 
   try {
     await fetch(API + '?student_id=' + studentId + '&date=' + date, { method: 'DELETE' });
-    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Delete failed:', e); }
 }
 
@@ -560,6 +577,18 @@ function esc(str) {
 }
 
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+function filterStudents(q) {
+  const lower = (q || '').toLowerCase();
+  document.querySelectorAll('#tableBody tr[data-name]').forEach(function(row) {
+    row.style.display = row.dataset.name.includes(lower) ? '' : 'none';
+  });
+}
+
+function dismissError() {
+  const b = document.getElementById('errorBanner');
+  if (b) b.style.display = 'none';
+}
 
 // Boot
 init();
