@@ -1,12 +1,12 @@
-
 'use strict';
 
 // ════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════
-const ATT_API  = '/ClassInstruct1/dashboard/attendance/attedance_db.php';
-const STUD_API = '/ClassInstruct1/dashboard/api/db.php';
-const CAL_KEY  = 'ci_dayEntries';
+const ATT_API    = '/ClassInstruct1/dashboard/attendance/attedance_db.php';
+const STUD_API   = '/ClassInstruct1/dashboard/api/db.php';
+const GRADES_API = '/ClassInstruct1/dashboard/Student/grades_db.php';
+const CAL_KEY    = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderUpcomingEvents();
   await loadStudents();
   loadAttendanceCal();
+  loadSubjectsForPerf();
+  loadPerformanceChart();
 });
 
 // ════════════════════════════════════════════════
@@ -376,6 +378,198 @@ function renderUpcomingEvents() {
 }
 
 // ════════════════════════════════════════════════
+//  STUDENT PERFORMANCE CHART (from Grades API)
+// ════════════════════════════════════════════════
+
+// Descriptor → bar style mapping (matches Grades.js GPA scale labels)
+const PERF_TIERS = [
+  { key: 'Outstanding',        label: 'Outstanding',      barClass: 'excellent', color: '#10b981' },
+  { key: 'Very Satisfactory',  label: 'Very Satisfactory',barClass: 'good',      color: '#4f46e5' },
+  { key: 'Satisfactory',       label: 'Satisfactory',     barClass: 'good',      color: '#6366f1' },
+  { key: 'Fairly Satisfactory',label: 'Fairly Satisf.',   barClass: 'average',   color: '#f59e0b' },
+  { key: 'Did Not Meet',       label: 'Did Not Meet',     barClass: 'poor',      color: '#ef4444' },
+];
+
+// GPA scale fallback (mirrors Grades.js default)
+const _defaultGpaScales = [
+  { min:90,    max:100,   letter:'A',  descriptor:'Outstanding' },
+  { min:85,    max:89.99, letter:'B+', descriptor:'Very Satisfactory' },
+  { min:80,    max:84.99, letter:'B',  descriptor:'Satisfactory' },
+  { min:75,    max:79.99, letter:'C',  descriptor:'Fairly Satisfactory' },
+  { min:0,     max:74.99, letter:'F',  descriptor:'Did Not Meet' },
+];
+
+function _getDescriptor(grade, scales) {
+  const list = (scales && scales.length ? scales : _defaultGpaScales)
+    .sort((a,b) => parseFloat(b.max||b.max_grade) - parseFloat(a.max||a.max_grade));
+  for (const sc of list) {
+    const mn = parseFloat(sc.min || sc.min_grade);
+    const mx = parseFloat(sc.max || sc.max_grade);
+    if (grade >= mn && grade <= mx) return sc.descriptor || 'Unknown';
+  }
+  return 'Did Not Meet';
+}
+
+async function loadSubjectsForPerf() {
+  try {
+    const res  = await fetch(GRADES_API + '?action=subjects');
+    const data = await res.json();
+    const sel  = document.getElementById('perfSubjectFilter');
+    if (!sel) return;
+    // remove old options except first "All Subjects"
+    while (sel.options.length > 1) sel.remove(1);
+    data.filter(s => parseInt(s.is_active)).forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.name;
+      o.textContent = s.name + (s.code ? ' (' + s.code + ')' : '');
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    console.warn('Could not load subjects for performance chart:', e.message);
+  }
+}
+
+async function loadPerformanceChart() {
+  const barEl  = document.getElementById('perfBarChart');
+  const distEl = document.getElementById('perfDistBars');
+  const statsEl= document.getElementById('perfStatsRow');
+  if (!barEl) return;
+
+  const subject = (document.getElementById('perfSubjectFilter') || {}).value || '';
+  const quarter = (document.getElementById('perfQuarterFilter') || {}).value || 'Q1';
+
+  barEl.innerHTML  = '<div style="width:100%;display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-3);font-size:.82rem">Loading…</div>';
+  if (distEl) distEl.innerHTML = '';
+  if (statsEl) statsEl.innerHTML = '';
+
+  let grades = [];
+  let gpaScales = [];
+
+  try {
+    // 1. Fetch GPA scales
+    const gsRes  = await fetch(GRADES_API + '?action=gpa_scales');
+    const gsData = await gsRes.json();
+    if (Array.isArray(gsData) && gsData.length) gpaScales = gsData;
+  } catch(e) { /* use defaults */ }
+
+  try {
+    // 2. Fetch grade summary from API
+    const params = new URLSearchParams({ action: 'grades', quarter });
+    if (subject) params.append('subject', subject);
+    const res  = await fetch(GRADES_API + '?' + params);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Compute final grades for students that have at least one component
+    grades = data
+      .filter(r => r.written_works !== null || r.performance_tasks !== null || r.quarterly_assessment !== null)
+      .map(r => {
+        const ww  = r.written_works        !== null ? parseFloat(r.written_works)        : 0;
+        const pt  = r.performance_tasks    !== null ? parseFloat(r.performance_tasks)    : 0;
+        const qa  = r.quarterly_assessment !== null ? parseFloat(r.quarterly_assessment) : 0;
+        // Use DepEd default weights if not available
+        return Math.round((ww * 0.30 + pt * 0.50 + qa * 0.20) * 100) / 100;
+      });
+  } catch(e) {
+    console.warn('Performance chart API error:', e.message);
+    _renderPerfEmpty(barEl, distEl, statsEl, 'No grade data yet.');
+    return;
+  }
+
+  if (!grades.length) {
+    _renderPerfEmpty(barEl, distEl, statsEl, subject ? 'No grades recorded for this subject.' : 'No grades recorded yet.');
+    return;
+  }
+
+  // 3. Build distribution counts per tier
+  const tierCounts = PERF_TIERS.map(tier => {
+    const count = grades.filter(g => _getDescriptor(g, gpaScales) === tier.key).length;
+    return { ...tier, count };
+  }).filter(t => t.count > 0 || PERF_TIERS.indexOf(t) < 3); // always show top 3 tiers
+
+  // 4. Build letter-grade distribution for bar chart (A/B+/B/C/F)
+  const letterMap = {};
+  const scaleList = (gpaScales.length ? gpaScales : _defaultGpaScales)
+    .sort((a,b) => parseFloat(b.max||b.max_grade) - parseFloat(a.max||a.max_grade));
+  grades.forEach(g => {
+    for (const sc of scaleList) {
+      const mn = parseFloat(sc.min || sc.min_grade);
+      const mx = parseFloat(sc.max || sc.max_grade);
+      if (g >= mn && g <= mx) {
+        const ltr = sc.letter_grade || sc.letter || '?';
+        letterMap[ltr] = (letterMap[ltr] || 0) + 1;
+        break;
+      }
+    }
+  });
+
+  const letterEntries = Object.entries(letterMap).sort((a,b) => {
+    const order = ['A','A+','B+','B','C+','C','D','F'];
+    return (order.indexOf(a[0]) === -1 ? 99 : order.indexOf(a[0])) - (order.indexOf(b[0]) === -1 ? 99 : order.indexOf(b[0]));
+  });
+  const maxCount = Math.max(...letterEntries.map(([,c]) => c), 1);
+
+  // 5. Render bar chart
+  const barColors = ['#10b981','#4f46e5','#6366f1','#f59e0b','#ef4444','#8b5cf6'];
+  barEl.innerHTML = letterEntries.length
+    ? letterEntries.map(([ltr, cnt], i) => {
+        const pct   = Math.round((cnt / maxCount) * 100);
+        const color = barColors[i % barColors.length];
+        const isLow = ltr === 'F' || ltr === 'D';
+        return `<div class="bar-item">
+          <div class="bar ${isLow ? 'needs-improvement' : ''}" style="height:${Math.max(pct,8)}%;background:linear-gradient(180deg,${color} 0%,${color}aa 100%)">
+            <span class="bar-value">${cnt}</span>
+          </div>
+          <span class="bar-label">${esc(ltr)}</span>
+        </div>`;
+      }).join('')
+    : '<div style="width:100%;text-align:center;padding:40px 0;color:var(--text-3);font-size:.82rem">No data</div>';
+
+  // 6. Render distribution bars
+  if (distEl) {
+    const allTiers = PERF_TIERS.filter(t => {
+      const c = grades.filter(g => _getDescriptor(g, gpaScales) === t.key).length;
+      return c > 0;
+    });
+    const maxTierCount = Math.max(...allTiers.map(t => grades.filter(g => _getDescriptor(g, gpaScales) === t.key).length), 1);
+
+    distEl.innerHTML = PERF_TIERS.map(tier => {
+      const count = grades.filter(g => _getDescriptor(g, gpaScales) === tier.key).length;
+      const pct   = Math.round((count / grades.length) * 100);
+      const width = Math.round((count / maxTierCount) * 100);
+      if (!count) return '';
+      return `<div class="grade-row">
+        <span class="grade-label" style="font-size:.72rem">${tier.label}</span>
+        <div class="grade-bar-container">
+          <div class="grade-bar ${tier.barClass}" style="width:${Math.max(width,4)}%;background:linear-gradient(90deg,${tier.color},${tier.color}bb)">
+            ${pct >= 12 ? pct + '%' : ''}
+          </div>
+        </div>
+        <span style="font-size:.68rem;color:var(--text-3);margin-left:4px;min-width:22px">${pct < 12 ? pct+'%' : ''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // 7. Summary stats
+  if (statsEl) {
+    const avg     = (grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1);
+    const passing = grades.filter(g => g >= 75).length;
+    const passRate= Math.round((passing/grades.length)*100);
+    statsEl.innerHTML = `
+      <div class="perf-stat"><span class="perf-stat-label">Avg Grade</span><span class="perf-stat-val" style="color:var(--primary)">${avg}</span></div>
+      <div class="perf-stat"><span class="perf-stat-label">Graded</span><span class="perf-stat-val">${grades.length}</span></div>
+      <div class="perf-stat"><span class="perf-stat-label">Passing</span><span class="perf-stat-val" style="color:var(--green)">${passing}</span></div>
+      <div class="perf-stat"><span class="perf-stat-label">Pass Rate</span><span class="perf-stat-val" style="color:var(--green)">${passRate}%</span></div>`;
+  }
+}
+
+function _renderPerfEmpty(barEl, distEl, statsEl, msg) {
+  if (barEl)  barEl.innerHTML  = `<div style="width:100%;display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-3);font-size:.82rem">${msg}</div>`;
+  if (distEl) distEl.innerHTML = `<p style="font-size:.78rem;color:var(--text-3);text-align:center;padding:8px 0">${msg}</p>`;
+  if (statsEl) statsEl.innerHTML = '';
+}
+
+// ════════════════════════════════════════════════
 //  HELPERS
 // ════════════════════════════════════════════════
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -384,5 +578,3 @@ function setEl(id, val) { const e=document.getElementById(id); if(e) e.textConte
 function div(cls) { const e=document.createElement('div'); e.className=cls; return e; }
 function span(cls) { const e=document.createElement('span'); e.className=cls; return e; }
 function toYMD(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-
-
