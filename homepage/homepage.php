@@ -163,7 +163,7 @@
       position: absolute;
       inset: 0;
       background: url('https://cdn.wonder.so/images/019d44da-e731-707b-938e-e22b33072424/60e721895e12f8c274dc4bfb1ba1f8d289a8a66860aa9625aa60deffa4cf0c4b.jpg') center/cover no-repeat;
-      opacity: 0.30;
+      opacity: 0.06;
     }
 
     .hero-content {
@@ -864,6 +864,7 @@
       <span class="logo-text font-serif">ClassInstruct</span>
     </div>
     <div class="nav-links">
+      <a href="#" class="font-sans">Platform</a>
       <a href="#features" class="font-sans">Features</a>
       <a href="#how-it-works" class="font-sans">Method</a>
       <a href="#about" class="font-sans">About</a>
