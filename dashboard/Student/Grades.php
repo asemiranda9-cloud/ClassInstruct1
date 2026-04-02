@@ -1,10 +1,4 @@
-<?php
-/**
- * grades.php
- * ClassInstruct — Grades Page
- */
-session_start();
-?>
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,10 +12,6 @@ session_start();
 </head>
 <body>
 <div class="layout">
-
-  
-
-  <!-- Main -->
   <div class="main">
 
     <!-- Topbar -->
@@ -29,7 +19,7 @@ session_start();
       <span class="page-title">Grades</span>
       <div class="topbar-search">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" placeholder="Search students, lessons, resources...">
+        <input type="text" id="topSearch" placeholder="Search students..." oninput="filterSearch(this.value)">
       </div>
       <div class="topbar-right">ClassInstruct</div>
     </div>
@@ -37,7 +27,7 @@ session_start();
     <!-- Filters bar -->
     <div class="filters-bar">
       <div class="filters-left">
-        <select id="subjectSel" onchange="refresh()"></select>
+        <select id="subjectSel" onchange="refresh()"><option value="">Loading subjects...</option></select>
         <select id="quarterSel" onchange="refresh()">
           <option value="Q1">Q1 — First Quarter</option>
           <option value="Q2">Q2 — Second Quarter</option>
@@ -48,6 +38,13 @@ session_start();
           <option value="">All Grades</option>
           <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
           <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+          <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+          <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+        </select>
+        <select id="sectionSel" onchange="refresh()">
+          <option value="">All Sections</option>
+          <option>Section A</option><option>Section B</option>
+          <option>Section C</option><option>Section D</option>
         </select>
       </div>
       <div class="filters-right">
@@ -68,16 +65,17 @@ session_start();
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" onclick="switchTab(this,'gradesheet')">Grade Sheet</button>
-      <button class="tab" onclick="switchTab(this,'components')">Grade Components</button>
-      <button class="tab" onclick="switchTab(this,'summary')">Class Summary</button>
-      <button class="tab" onclick="switchTab(this,'subjects')">Manage Subjects</button>
+      <button class="tab active"  onclick="switchTab(this,'gradesheet')">Grade Sheet</button>
+      <button class="tab"         onclick="switchTab(this,'components')">Grade Components</button>
+      <button class="tab"         onclick="switchTab(this,'summary')">Class Summary</button>
+      <button class="tab"         onclick="switchTab(this,'gpa')">GPA Scale</button>
+      <button class="tab"         onclick="switchTab(this,'subjects')">Manage Subjects</button>
     </div>
 
     <!-- Content -->
     <div class="content">
 
-      <!-- ══ GRADE SHEET TAB ══ -->
+      <!-- ══ GRADE SHEET ══ -->
       <div id="tab-gradesheet">
         <div class="import-zone" id="importZone">
           <div class="import-zone-icon">📊</div>
@@ -88,30 +86,28 @@ session_start();
             <button class="btn" onclick="toggleImport()">Cancel</button>
           </div>
           <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleImport(this)">
-          <p style="font-size:11px;color:var(--gray-400);margin-top:12px;">Supported formats: .xlsx, .xls, .csv</p>
+          <p style="font-size:11px;color:var(--gray-400);margin-top:12px;">Supported: .xlsx, .xls, .csv</p>
         </div>
 
         <div class="stat-grid" id="statGrid"></div>
 
         <div class="table-card">
           <div class="table-toolbar">
-            <span class="table-toolbar-title" id="tableTitle"></span>
+            <span class="table-toolbar-title" id="tableTitle">Loading students...</span>
             <div class="table-filters">
               <div class="search-wrap">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input type="text" placeholder="Search student..." oninput="filterSearch(this.value)">
               </div>
-              <select onchange="filterDesc(this.value)">
+              <select onchange="filterDesc(this.value)" id="descFilter">
                 <option value="">All descriptors</option>
-                <option>Outstanding</option>
-                <option>Very Satisfactory</option>
-                <option>Satisfactory</option>
-                <option>Fairly Satisfactory</option>
-                <option>Did Not Meet</option>
               </select>
             </div>
           </div>
-          <div style="overflow-x:auto;">
+          <div id="loadingRow" style="text-align:center;padding:40px;color:var(--gray-400);font-size:13px;">
+            Loading students...
+          </div>
+          <div style="overflow-x:auto;display:none;" id="tableWrap">
             <table>
               <thead>
                 <tr>
@@ -133,11 +129,11 @@ session_start();
         </div>
       </div>
 
-      <!-- ══ COMPONENTS TAB ══ -->
+      <!-- ══ COMPONENTS ══ -->
       <div id="tab-components" style="display:none;">
         <p style="font-size:13px;color:var(--gray-500);margin-bottom:1.25rem;">
           Set the weight for each grading component. The total must equal <strong>100%</strong>.
-          Changes here affect the Final Grade calculation in the Grade Sheet.
+          Changes affect the Final Grade calculation.
         </p>
         <div class="weight-total" id="weightTotalBox"></div>
         <div class="weights-grid" id="weightsGrid"></div>
@@ -147,7 +143,7 @@ session_start();
         </div>
       </div>
 
-      <!-- ══ SUMMARY TAB ══ -->
+      <!-- ══ SUMMARY ══ -->
       <div id="tab-summary" style="display:none;">
         <div class="stat-grid" id="summaryStats"></div>
         <div class="table-card" style="margin-bottom:1.5rem;">
@@ -160,12 +156,47 @@ session_start();
         </div>
       </div>
 
-      <!-- ══ SUBJECTS TAB ══ -->
-      <div id="tab-subjects" style="display:none;">
+      <!-- ══ GPA SCALE ══ -->
+      <div id="tab-gpa" style="display:none;">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:1.25rem;">
+          Configure your school's GPA scale. Each row maps a grade range to a GPA value, letter grade, and descriptor.
+          <strong>Changes apply immediately to all grade calculations.</strong>
+        </p>
         <div class="table-card" style="margin-bottom:1.5rem;">
           <div class="table-toolbar">
-            <span class="table-toolbar-title">Add New Subject</span>
+            <span class="table-toolbar-title">GPA Scale Rows</span>
+            <button class="btn btn-primary" onclick="addGpaRow()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Row
+            </button>
           </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Min Grade</th>
+                  <th>Max Grade</th>
+                  <th>GPA Value</th>
+                  <th>Letter</th>
+                  <th>Descriptor</th>
+                  <th>Scale Name</th>
+                  <th style="width:80px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="gpaBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="saveGpaScales()">Save GPA Scale</button>
+          <button class="btn" onclick="resetGpaDefault()">Reset to DepEd Default</button>
+        </div>
+      </div>
+
+      <!-- ══ SUBJECTS ══ -->
+      <div id="tab-subjects" style="display:none;">
+        <div class="table-card" style="margin-bottom:1.5rem;">
+          <div class="table-toolbar"><span class="table-toolbar-title">Add New Subject</span></div>
           <div style="padding:1.25rem;">
             <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;">
               <div>
@@ -184,7 +215,6 @@ session_start();
             <p id="subjectFormError" style="font-size:12px;color:var(--danger);margin-top:8px;display:none;"></p>
           </div>
         </div>
-
         <div class="table-card">
           <div class="table-toolbar">
             <span class="table-toolbar-title">All Subjects <span id="subjectCount" style="color:var(--gray-400);font-weight:400;"></span></span>
@@ -199,7 +229,7 @@ session_start();
                 <tr>
                   <th style="width:36px;">#</th>
                   <th>Subject Name</th>
-                  <th style="width:100px;">Short Code</th>
+                  <th style="width:100px;">Code</th>
                   <th style="width:100px;">Status</th>
                   <th style="width:160px;">Actions</th>
                 </tr>
@@ -209,14 +239,12 @@ session_start();
           </div>
         </div>
 
-        <!-- Edit modal overlay -->
+        <!-- Edit subject modal -->
         <div id="editOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
           <div style="background:var(--white);border-radius:var(--radius-lg);padding:1.5rem;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
               <span style="font-size:15px;font-weight:700;color:var(--gray-900);">Edit Subject</span>
-              <button class="btn btn-icon" onclick="closeEditModal()">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+              <button class="btn btn-icon" onclick="closeEditModal()">✕</button>
             </div>
             <div style="margin-bottom:12px;">
               <label style="font-size:12px;color:var(--gray-500);display:block;margin-bottom:6px;font-weight:500;">Subject Name *</label>
@@ -239,7 +267,6 @@ session_start();
 </div><!-- /layout -->
 
 <div class="toast" id="toast"></div>
-
 <script src="Grades.js"></script>
 </body>
 </html>

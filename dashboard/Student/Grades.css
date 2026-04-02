@@ -383,3 +383,22 @@ input[type=range]::-webkit-slider-thumb{
   .content{padding:1rem;}
   .filters-bar{padding:.75rem 1rem;}
 }
+
+/* ── GPA Scale tab ── */
+#tab-gpa .grade-input { width: 70px; }
+#gpaBody td { vertical-align: middle; }
+#gpaBody input[type=text] {
+  padding: 4px 8px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-800);
+  outline: none;
+  transition: var(--transition);
+}
+#gpaBody input[type=text]:focus,
+#gpaBody input[type=number]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.1);
+}
