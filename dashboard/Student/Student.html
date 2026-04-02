@@ -53,10 +53,16 @@
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">Student Records</span>
-          <button class="btn btn-primary" onclick="openAddModal()">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add New Student
-          </button>
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="btn btn-secondary" onclick="openImportModal()" title="Import students from a master list image">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              Import from Image
+            </button>
+            <button class="btn btn-primary" onclick="openAddModal()">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add New Student
+            </button>
+          </div>
         </div>
 
         <!-- Filter Bar -->
@@ -121,6 +127,142 @@
     </div>
   </main>
 </div>
+
+<!-- ══════════════════════════════════════════
+     IMPORT FROM IMAGE MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="importOverlay" style="align-items:flex-start;padding:20px;overflow-y:auto">
+  <div class="modal" style="max-width:900px;width:100%;margin:auto">
+    <div class="modal-header" style="position:sticky;top:0;z-index:10;background:#fff;border-radius:16px 16px 0 0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:var(--primary-color)">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div>
+          <h2 class="modal-title" style="margin:0;font-size:1.15rem">Import Students from Image</h2>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px">Upload a master list photo or scan — AI will extract and import the students</div>
+        </div>
+      </div>
+      <button class="close-btn" onclick="closeImportModal()">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding:24px">
+
+      <!-- Step 1: Upload -->
+      <div id="importStep1">
+        <div id="importDropZone" style="border:2px dashed #c7d2fe;border-radius:14px;padding:48px 24px;text-align:center;cursor:pointer;background:#fafbff;transition:all 200ms" onclick="document.getElementById('importFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <div style="width:64px;height:64px;border-radius:16px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--primary-color)">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-bottom:6px">Drop your master list image here</div>
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">Supports JPG, PNG, WEBP — photos of printed lists, Excel screenshots, handwritten tables</div>
+          <button class="btn btn-primary" type="button" style="pointer-events:none">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Browse File
+          </button>
+        </div>
+        <input type="file" id="importFileInput" accept="image/*" style="display:none" onchange="handleImportFile(event)">
+
+        <!-- Image preview -->
+        <div id="importPreviewWrap" style="display:none;margin-top:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-weight:600;font-size:0.95rem">Selected Image</span>
+            <button class="btn btn-secondary btn-sm" onclick="clearImportImage()">✕ Remove</button>
+          </div>
+          <img id="importPreviewImg" style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;border:1px solid var(--bg-input)" alt="Preview"/>
+        </div>
+
+        <!-- Extra context -->
+        <div style="margin-top:20px">
+          <label class="form-label" for="importContext">Additional context <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+          <input type="text" id="importContext" class="form-input" style="margin-top:6px" placeholder="e.g. Grade 7 Section A, S.Y. 2024-2025 — helps AI fill in missing fields">
+        </div>
+
+        <!-- Info note -->
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(6,182,212,0.07);border-left:3px solid var(--accent-info);border-radius:0 8px 8px 0;font-size:0.83rem;color:var(--text-secondary)">
+          <strong style="color:var(--accent-info)">How it works:</strong> AI reads the image, extracts each student's info (name, LRN/ID, gender, grade, section, etc.) and shows you a preview before saving anything to the database.
+        </div>
+      </div>
+
+      <!-- Step 2: AI Processing (shown while loading) -->
+      <div id="importStep2" style="display:none;text-align:center;padding:48px 24px">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg id="importSpinner" width="32" height="32" fill="none" stroke="var(--primary-color)" stroke-width="2" viewBox="0 0 24 24" style="animation:spin 1s linear infinite">
+            <circle cx="12" cy="12" r="10" stroke-opacity=".2"/>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div style="font-size:1.1rem;font-weight:600;margin-bottom:8px" id="importLoadingMsg">Analyzing image…</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary)">AI is reading the master list and extracting student records</div>
+      </div>
+
+      <!-- Step 3: Preview extracted students -->
+      <div id="importStep3" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:1rem;font-weight:700" id="importFoundCount">0 students found</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary)">Review the extracted records — uncheck any you don't want to import</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="importSelectAll(true)">Select All</button>
+            <button class="btn btn-secondary btn-sm" onclick="importSelectAll(false)">Deselect All</button>
+          </div>
+        </div>
+
+        <!-- Issues banner -->
+        <div id="importIssuesBanner" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border-left:3px solid var(--accent-warning);border-radius:0 8px 8px 0;font-size:0.83rem;color:#92400e"></div>
+
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--bg-input)">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead>
+              <tr style="background:var(--bg-input)">
+                <th style="padding:10px 12px;text-align:center;width:36px"><input type="checkbox" id="importCheckAll" onchange="importToggleAll(this.checked)" style="accent-color:var(--primary-color)"></th>
+                <th style="padding:10px 12px;text-align:left">Full Name</th>
+                <th style="padding:10px 12px;text-align:left">LRN / ID</th>
+                <th style="padding:10px 12px;text-align:left">Gender</th>
+                <th style="padding:10px 12px;text-align:left">Grade</th>
+                <th style="padding:10px 12px;text-align:left">Section</th>
+                <th style="padding:10px 12px;text-align:left">DOB</th>
+                <th style="padding:10px 12px;text-align:center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="importPreviewBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(16,185,129,0.07);border-left:3px solid var(--accent-success);border-radius:0 8px 8px 0;font-size:0.83rem;color:var(--text-secondary)">
+          <strong style="color:var(--accent-success)">Note:</strong> Only checked students will be saved. Students with a duplicate LRN/ID already in the database will be skipped automatically.
+        </div>
+      </div>
+
+      <!-- Step 4: Import complete -->
+      <div id="importStep4" style="display:none;text-align:center;padding:48px 24px">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg width="36" height="36" fill="none" stroke="var(--accent-success)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:8px" id="importDoneTitle">Import Complete!</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary)" id="importDoneMsg"></div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer" id="importFooter">
+      <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" id="importActionBtn" onclick="runImportAction()" disabled>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span id="importActionLabel">Analyze Image</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+#importDropZone:hover { border-color: var(--primary-color); background: var(--primary-light); }
+#importDropZone.drag-over { border-color: var(--primary-color); background: var(--primary-light); transform: scale(1.01); }
+.import-row-warn td { background: rgba(245,158,11,0.05); }
+.import-row-dup td { background: rgba(239,68,68,0.05); }
+</style>
 
 <!-- ══════════════════════════════════════════
      ADD / EDIT MODAL
@@ -741,6 +883,270 @@ function toast(msg, type='') {
 document.getElementById('formOverlay').addEventListener('click',   function(e){ if(e.target===this) closeFormModal(); });
 document.getElementById('viewOverlay').addEventListener('click',   function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById('confirmOverlay').addEventListener('click',function(e){ if(e.target===this) closeConfirm(); });
+document.getElementById('importOverlay').addEventListener('click', function(e){ if(e.target===this) closeImportModal(); });
+
+// ══════════════════════════════════════════════════════
+//  IMPORT FROM IMAGE
+// ══════════════════════════════════════════════════════
+let importStep       = 1;   // 1=upload, 2=loading, 3=preview, 4=done
+let importImageB64   = null;
+let importImageType  = null;
+let importExtracted  = [];  // parsed students from AI
+
+function openImportModal() {
+  resetImportModal();
+  document.getElementById('importOverlay').classList.add('open');
+}
+function closeImportModal() {
+  document.getElementById('importOverlay').classList.remove('open');
+}
+
+function resetImportModal() {
+  importStep      = 1;
+  importImageB64  = null;
+  importImageType = null;
+  importExtracted = [];
+  showImportStep(1);
+  document.getElementById('importContext').value = '';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importPreviewWrap').style.display = 'none';
+  document.getElementById('importActionBtn').disabled = true;
+  document.getElementById('importActionLabel').textContent = 'Analyze Image';
+  setImportFooter(true, false);
+}
+
+function setImportFooter(showCancel, showDone) {
+  const cancelBtn = document.querySelector('#importFooter .btn-secondary');
+  if (cancelBtn) cancelBtn.textContent = showDone ? 'Close' : 'Cancel';
+}
+
+function showImportStep(n) {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('importStep' + i);
+    if (el) el.style.display = (i === n) ? '' : 'none';
+  });
+  importStep = n;
+  const btn = document.getElementById('importActionBtn');
+  const lbl = document.getElementById('importActionLabel');
+  if (n === 1) { btn.disabled = !importImageB64; lbl.textContent = 'Analyze Image'; btn.style.display = ''; }
+  if (n === 2) { btn.disabled = true; btn.style.display = 'none'; }
+  if (n === 3) { btn.disabled = false; lbl.textContent = 'Import Selected'; btn.style.display = ''; }
+  if (n === 4) { btn.style.display = 'none'; setImportFooter(false, true); }
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('importDropZone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('importDropZone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('importDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImportFile(file);
+}
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (file) loadImportFile(file);
+}
+function clearImportImage() {
+  importImageB64 = null; importImageType = null;
+  document.getElementById('importPreviewWrap').style.display = 'none';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importActionBtn').disabled = true;
+}
+function loadImportFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const dataUrl = ev.target.result;
+    importImageType = file.type;
+    importImageB64  = dataUrl.split(',')[1];
+    document.getElementById('importPreviewImg').src = dataUrl;
+    document.getElementById('importPreviewWrap').style.display = '';
+    document.getElementById('importActionBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runImportAction() {
+  if (importStep === 1) await analyzeImportImage();
+  else if (importStep === 3) await saveImportedStudents();
+}
+
+async function analyzeImportImage() {
+  if (!importImageB64) return;
+  showImportStep(2);
+
+  const msgs = ['Analyzing image…', 'Reading student data…', 'Extracting records…', 'Almost done…'];
+  let mi = 0;
+  const ticker = setInterval(() => {
+    mi = (mi + 1) % msgs.length;
+    const el = document.getElementById('importLoadingMsg');
+    if (el) el.textContent = msgs[mi];
+  }, 1800);
+
+  const context = document.getElementById('importContext').value.trim();
+  const systemPrompt = `You are a school data extraction assistant. The user provides an image of a student master list (printed, scanned, or screenshot). Extract ALL students you can see.
+
+Return ONLY a valid JSON array — no markdown, no explanation, no code fences. Each object must have these exact keys (use empty string "" if unknown):
+{
+  "fullName": "",
+  "studentId": "",
+  "gender": "",
+  "grade": "",
+  "section": "",
+  "dob": "",
+  "email": "",
+  "phone": "",
+  "address": "",
+  "fatherName": "",
+  "motherName": "",
+  "guardianName": ""
+}
+
+Rules:
+- fullName: Last, First Middle → convert to "First Middle Last" format
+- gender: must be exactly "Male" or "Female" or ""
+- grade: match one of: Kindergarten, Grade 1, Grade 2 … Grade 12, or ""
+- section: use what's in the image, or ""
+- dob: ISO format YYYY-MM-DD if possible, or ""
+- studentId: LRN or any ID number visible
+- Extract every row in the table, even partial rows
+${context ? '- Extra context from user: ' + context : ''}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: importImageType, data: importImageB64 } },
+            { type: 'text', text: 'Please extract all students from this master list.' }
+          ]
+        }]
+      })
+    });
+    clearInterval(ticker);
+    const data = await response.json();
+    const raw  = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+    // Strip any markdown fences just in case
+    const clean = raw.replace(/```json|```/gi, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(clean); } catch(e) {
+      toast('AI could not parse the image correctly. Try a clearer photo.', 'danger');
+      showImportStep(1); return;
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      toast('No students detected in the image. Try a clearer or closer photo.', 'danger');
+      showImportStep(1); return;
+    }
+
+    importExtracted = parsed;
+    renderImportPreview();
+  } catch(err) {
+    clearInterval(ticker);
+    toast('Error contacting AI: ' + err.message, 'danger');
+    showImportStep(1);
+  }
+}
+
+function renderImportPreview() {
+  const existingIds = new Set(students.map(s => (s.studentId || '').toLowerCase()));
+  let warnCount = 0, dupCount = 0;
+
+  const tbody = document.getElementById('importPreviewBody');
+  tbody.innerHTML = importExtracted.map((s, i) => {
+    const isDup     = s.studentId && existingIds.has(s.studentId.toLowerCase());
+    const isMissing = !s.fullName;
+    const rowClass  = isDup ? 'import-row-dup' : (isMissing ? 'import-row-warn' : '');
+    if (isDup) dupCount++;
+    if (isMissing) warnCount++;
+
+    const badge = isDup
+      ? '<span style="background:rgba(239,68,68,0.12);color:#dc2626;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600">Duplicate</span>'
+      : isMissing
+        ? '<span style="background:rgba(245,158,11,0.12);color:#d97706;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600">Incomplete</span>'
+        : '<span style="background:rgba(16,185,129,0.12);color:#059669;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600">Ready</span>';
+
+    return `<tr class="${rowClass}" id="importRow_${i}">
+      <td style="text-align:center;padding:10px 12px">
+        <input type="checkbox" class="import-chk" data-idx="${i}" ${isDup ? '' : 'checked'} style="accent-color:var(--primary-color)">
+      </td>
+      <td style="padding:10px 12px;font-weight:500">${esc(s.fullName || '—')}</td>
+      <td style="padding:10px 12px;font-family:monospace;font-size:0.82rem">${esc(s.studentId || '—')}</td>
+      <td style="padding:10px 12px">${esc(s.gender || '—')}</td>
+      <td style="padding:10px 12px">${esc(s.grade || '—')}</td>
+      <td style="padding:10px 12px">${esc(s.section || '—')}</td>
+      <td style="padding:10px 12px;font-size:0.82rem">${esc(s.dob || '—')}</td>
+      <td style="padding:10px 12px;text-align:center">${badge}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('importFoundCount').textContent = importExtracted.length + ' student' + (importExtracted.length !== 1 ? 's' : '') + ' found';
+  document.getElementById('importCheckAll').checked = true;
+
+  const banner = document.getElementById('importIssuesBanner');
+  const issues = [];
+  if (dupCount)  issues.push(`${dupCount} duplicate(s) already in the database — unchecked by default`);
+  if (warnCount) issues.push(`${warnCount} incomplete record(s) — name is missing`);
+  if (issues.length) { banner.style.display = ''; banner.innerHTML = '⚠️ ' + issues.join(' · '); }
+  else banner.style.display = 'none';
+
+  showImportStep(3);
+}
+
+function importSelectAll(state) {
+  document.querySelectorAll('.import-chk').forEach(c => c.checked = state);
+  document.getElementById('importCheckAll').checked = state;
+}
+function importToggleAll(state) { document.querySelectorAll('.import-chk').forEach(c => c.checked = state); }
+
+async function saveImportedStudents() {
+  const selected = [...document.querySelectorAll('.import-chk:checked')].map(c => importExtracted[+c.dataset.idx]);
+  if (!selected.length) { toast('No students selected.', ''); return; }
+
+  const btn = document.getElementById('importActionBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg> Saving…';
+
+  let saved = 0, skipped = 0;
+  const existingIds = new Set(students.map(s => (s.studentId || '').toLowerCase()));
+
+  for (const s of selected) {
+    if (s.studentId && existingIds.has(s.studentId.toLowerCase())) { skipped++; continue; }
+    const payload = {
+      studentId:        s.studentId || '',
+      fullName:         s.fullName  || '',
+      dob:              s.dob       || '',
+      gender:           s.gender    || '',
+      grade:            s.grade     || '',
+      section:          s.section   || '',
+      email:            s.email     || '',
+      phone:            s.phone     || '',
+      address:          s.address   || '',
+      fatherName:       s.fatherName || '',
+      motherName:       s.motherName || '',
+      guardianName:     s.guardianName || '',
+      enrollDate:       '', prevSchool: '', fatherPhone: '',
+      motherPhone: '', guardianRelation: '', guardianPhone: ''
+    };
+    try {
+      const created = await apiPost(payload);
+      students.push(created);
+      existingIds.add((s.studentId||'').toLowerCase());
+      saved++;
+    } catch(e) { skipped++; }
+  }
+
+  applyFilters();
+  document.getElementById('importDoneTitle').textContent = saved + ' Student' + (saved !== 1 ? 's' : '') + ' Imported!';
+  document.getElementById('importDoneMsg').textContent   = saved + ' added successfully' + (skipped ? ', ' + skipped + ' skipped (duplicate or error).' : '.');
+  showImportStep(4);
+  toast(saved + ' student' + (saved !== 1 ? 's' : '') + ' imported successfully!', 'success');
+}
 
 // ═══════════════════════════════════
 //  INIT — load from MySQL
