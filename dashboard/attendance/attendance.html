@@ -11,48 +11,98 @@
 <div class="app">
   <main class="main-content">
 
-    <!-- Header -->
+    <!-- ── Header ── -->
     <header class="page-header">
-      <h1 class="page-title">Attendance</h1>
+      <div class="page-header-left">
+        <h1 class="page-title">Attendance</h1>
+        <p class="page-sub" id="pageSubtitle">Loading…</p>
+      </div>
+      <div class="header-right">
+        <div class="search-wrap">
+          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <label for="studentSearch" class="visually-hidden">Search students</label>
+          <input type="search" id="studentSearch" placeholder="Search students…"
+            oninput="filterStudents(this.value)" />
+        </div>
+      </div>
     </header>
+
+    <!-- ── Global error banner (hidden by default) ── -->
+    <div class="error-banner" id="errorBanner" role="alert" aria-live="assertive" style="display:none">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <span id="errorMessage">An error occurred.</span>
+      <button class="error-close" onclick="dismissError()" aria-label="Dismiss error">✕</button>
+    </div>
 
     <div class="content-body">
 
-      <!-- Summary Cards -->
-      <section class="summary-section">
+      <!-- ── Summary Cards ── -->
+      <section class="summary-section" aria-label="Attendance summary">
         <div class="summary-cards" id="summaryCards">
-          <div class="summary-skeleton">Loading summary…</div>
+          <div class="summary-skeleton" aria-busy="true">
+            <div class="skeleton-shimmer"></div>
+          </div>
+          <div class="summary-skeleton" aria-busy="true">
+            <div class="skeleton-shimmer"></div>
+          </div>
         </div>
       </section>
 
-      <!-- Toolbar -->
-      <div class="toolbar">
+      <!-- ── Toolbar ── -->
+      <div class="toolbar" role="toolbar" aria-label="Attendance filters">
 
         <!-- Section selector -->
         <div class="toolbar-group" style="position:relative">
-          <button class="toolbar-btn" id="sectionBtn" onclick="toggleDropdown('sectionDropdown')">
+          <button class="toolbar-btn" id="sectionBtn"
+            onclick="toggleDropdown('sectionDropdown')"
+            aria-haspopup="listbox" aria-expanded="false"
+            aria-label="Select section">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
+                   M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857
+                   m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <span id="sectionLabel">Loading…</span>
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="chevron" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
-          <div id="sectionDropdown" class="dropdown-menu" style="display:none"></div>
+          <div id="sectionDropdown" class="dropdown-menu" role="listbox"
+            aria-label="Sections" style="display:none"></div>
         </div>
 
         <!-- Week calendar picker -->
         <div class="toolbar-group" id="weekNav" style="position:relative">
-          <button class="toolbar-btn" id="weekBtn" onclick="toggleDropdown('weekDropdown')">
+          <button class="toolbar-btn toolbar-btn--icon-only" id="prevWeekBtn"
+            onclick="navigateWeek(-1)" aria-label="Previous week">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <button class="toolbar-btn" id="weekBtn"
+            onclick="toggleDropdown('weekDropdown')"
+            aria-haspopup="true" aria-expanded="false"
+            aria-label="Select week">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
             <span id="weekLabel">Loading…</span>
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="chevron" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <button class="toolbar-btn toolbar-btn--icon-only" id="nextWeekBtn"
+            onclick="navigateWeek(1)" aria-label="Next week">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </button>
           <div id="weekDropdown" class="dropdown-menu cal-popup" style="display:none"></div>
@@ -60,17 +110,38 @@
 
       </div><!-- /toolbar -->
 
-      <!-- Attendance Table -->
-      <section id="weekView">
+      <!-- ── Attendance Table ── -->
+      <section id="weekView" aria-label="Weekly attendance grid">
         <div class="table-card">
+
+          <!-- Inline save status toast -->
+          <div class="save-toast" id="saveToast" role="status" aria-live="polite"></div>
+
           <div id="tableWrap" style="overflow-x:auto">
             <table class="att-table" id="attendanceTable">
               <thead id="tableHead"></thead>
               <tbody id="tableBody">
-                <tr><td colspan="9" class="table-loading">Loading attendance…</td></tr>
+                <tr>
+                  <td colspan="9" class="table-loading" aria-busy="true">
+                    <span class="loading-spinner"></span>
+                    Loading attendance…
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
+
+          <!-- Empty state (shown via JS when no students) -->
+          <div class="empty-state" id="emptyState" style="display:none">
+            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283
+                   -.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283
+                   .356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <p>No students found for this section.</p>
+          </div>
+
         </div>
       </section>
 

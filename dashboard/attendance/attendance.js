@@ -85,13 +85,11 @@ async function apiPost(body) {
 async function init() {
   try {
     state.sections = await apiFetch({ action: 'sections' });
-    if (state.sections.length) {
-      const first       = state.sections[0];
-      state.sectionId   = first.id;
-      state.sectionName = first.name;
-      state.grade       = first.grade;
-      state.section     = first.section;
-    }
+    // Default to "All Sections" — grade/section stay empty
+    state.sectionId   = 'all';
+    state.sectionName = 'All Sections';
+    state.grade       = '';
+    state.section     = '';
     buildSectionDropdown();
     buildWeekDropdown();
     await Promise.all([loadSummary(), loadAttendance()]);
@@ -119,7 +117,7 @@ document.addEventListener('click', function(e) {
 function buildSectionDropdown() {
   const dd = document.getElementById('sectionDropdown');
   dd.innerHTML =
-    '<button onclick="selectAllSections()">All Sections</button>' +
+    '<button class="' + (state.sectionId === 'all' ? 'selected' : '') + '" onclick="selectAllSections()">All Sections</button>' +
     state.sections.map(function(s) {
       return '<button class="' + (s.id == state.sectionId ? 'selected' : '') + '"' +
         ' onclick="selectSection(' + s.id + ',\'' + esc(s.name) + '\',\'' + esc(s.grade) + '\',\'' + esc(s.section) + '\')">' +
@@ -129,16 +127,18 @@ function buildSectionDropdown() {
   if (lbl) lbl.textContent = state.sectionName || 'All Sections';
 }
 
-function selectAllSections() {
+async function selectAllSections() {
   state.sectionId   = 'all';
   state.sectionName = 'All Sections';
+  state.grade       = '';
+  state.section     = '';
   document.getElementById('sectionLabel').textContent = 'All Sections';
   document.getElementById('sectionDropdown').style.display = 'none';
   buildSectionDropdown();
-  Promise.all([loadSummary(), loadAttendance()]);
+  await Promise.all([loadSummary(), loadAttendance()]);
 }
 
-function selectSection(id, name, grade, section) {
+async function selectSection(id, name, grade, section) {
   state.sectionId   = id;
   state.sectionName = name;
   state.grade       = grade;
@@ -146,7 +146,7 @@ function selectSection(id, name, grade, section) {
   document.getElementById('sectionLabel').textContent = name;
   document.getElementById('sectionDropdown').style.display = 'none';
   buildSectionDropdown();
-  Promise.all([loadSummary(), loadAttendance()]);
+  await Promise.all([loadSummary(), loadAttendance()]);
 }
 
 // ════════════════════════════════════════════════════
@@ -187,7 +187,7 @@ function renderWeekCalendar() {
   for (let i = 0; i < startOffset; i++) {
     const prevDate = new Date(calViewYear, calViewMonth, 1 - (startOffset - i));
     const wStart   = toYMD(weekStart(prevDate));
-    cells += '<button class="cal-day cal-day-other-month" onclick="selectWeek(\'' + wStart + '\')">' + prevDate.getDate() + '</button>';
+    cells += '<button class="cal-day cal-day-other-month" onclick="selectWeek(\'' + wStart + '\');event.stopPropagation()">' + prevDate.getDate() + '</button>';
   }
 
   // Current month
@@ -206,7 +206,7 @@ function renderWeekCalendar() {
     if (isWkSt)  cls += ' cal-day-week-start';
     if (isWkEnd) cls += ' cal-day-week-end';
 
-    cells += '<button class="' + cls + '" onclick="selectWeek(\'' + wYMD + '\')">' + d + '</button>';
+    cells += '<button class="' + cls + '" onclick="selectWeek(\'' + wYMD + '\');event.stopPropagation()">' + d + '</button>';
   }
 
   // Next-month overflow
@@ -215,7 +215,7 @@ function renderWeekCalendar() {
     for (let d = 1; d <= 7 - rem; d++) {
       const nextDate = new Date(calViewYear, calViewMonth + 1, d);
       const wStart   = toYMD(weekStart(nextDate));
-      cells += '<button class="cal-day cal-day-other-month" onclick="selectWeek(\'' + wStart + '\')">' + d + '</button>';
+      cells += '<button class="cal-day cal-day-other-month" onclick="selectWeek(\'' + wStart + '\');event.stopPropagation()">' + d + '</button>';
     }
   }
 
@@ -239,81 +239,84 @@ function calShiftMonth(delta) {
   renderWeekCalendar();
 }
 
-function calGoToday() {
+async function navigateWeek(delta) {
+  state.weekStartDate = addDays(state.weekStartDate, delta * 7);
+  document.getElementById('weekDropdown').style.display = 'none';
+  updateWeekLabel();
+  await Promise.all([loadSummary(), loadAttendance()]);
+}
+
+async function calGoToday() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   state.weekStartDate = weekStart(today);
   document.getElementById('weekDropdown').style.display = 'none';
   buildWeekDropdown();
-  Promise.all([loadSummary(), loadAttendance()]);
+  await Promise.all([loadSummary(), loadAttendance()]);
 }
 
-function selectWeek(ymd) {
+async function selectWeek(ymd) {
   state.weekStartDate = new Date(ymd + 'T00:00:00');
   document.getElementById('weekDropdown').style.display = 'none';
   buildWeekDropdown();
-  Promise.all([loadSummary(), loadAttendance()]);
+  await Promise.all([loadSummary(), loadAttendance()]);
 }
 
 // ════════════════════════════════════════════════════
 //  SUMMARY CARDS
 // ════════════════════════════════════════════════════
+function buildSummaryBar(title, d) {
+  const total = (d.present || 0) + (d.late || 0) + (d.absent || 0);
+  const pPct = total ? Math.round((d.present || 0) / total * 100) : 0;
+  const lPct = total ? Math.round((d.late || 0) / total * 100) : 0;
+  const aPct = total ? Math.round((d.absent || 0) / total * 100) : 0;
+  return '<div class="summary-bar-section">' +
+    '<div class="summary-bar-title">' + esc(title) + '</div>' +
+    '<div class="summary-bar-count">' + d.present + '</div>' +
+    '<div class="summary-bar-stats">' +
+      '<span class="sbs-item" style="color:var(--present)"><span class="sbs-dot"></span>Present: ' + (d.present || 0) + ' (' + pPct + '%)</span>' +
+      '<span class="sbs-sep">|</span>' +
+      '<span class="sbs-item" style="color:var(--late)">Late: ' + (d.late || 0) + ' (' + lPct + '%)</span>' +
+      '<span class="sbs-sep">|</span>' +
+      '<span class="sbs-item" style="color:var(--absent)">Absent: ' + (d.absent || 0) + ' (' + aPct + '%)</span>' +
+    '</div>' +
+  '</div>';
+}
+
 async function loadSummary() {
   const ws = state.weekStartDate;
-  let data;
+  const we = addDays(ws, 6);
 
-  if (state.sectionId === 'all') {
-    const allData = await Promise.all(state.sections.map(function(s) {
-      return apiFetch({ action: 'summary', year: ws.getFullYear(), month: ws.getMonth() + 1 });
-    }));
-    data = { overall: { present: 0, late: 0, absent: 0, present_pct: 0, late_pct: 0, absent_pct: 0 }, sections: [] };
-    allData.forEach(function(d) {
-      data.overall.present += d.overall.present;
-      data.overall.late    += d.overall.late;
-      data.overall.absent  += d.overall.absent;
-      data.sections.push.apply(data.sections, d.sections);
+  let m1 = await apiFetch({ action: 'summary', year: ws.getFullYear(), month: ws.getMonth() + 1 });
+
+  if (we.getMonth() !== ws.getMonth() || we.getFullYear() !== ws.getFullYear()) {
+    const m2 = await apiFetch({ action: 'summary', year: we.getFullYear(), month: we.getMonth() + 1 });
+    // Merge overall totals
+    m1.overall.present += m2.overall.present;
+    m1.overall.late    += m2.overall.late;
+    m1.overall.absent  += m2.overall.absent;
+    m1.overall.total   += m2.overall.total;
+    const t = m1.overall.total;
+    m1.overall.present_pct = t ? Math.round(m1.overall.present / t * 100) : 0;
+    m1.overall.late_pct    = t ? Math.round(m1.overall.late    / t * 100) : 0;
+    m1.overall.absent_pct = t ? Math.round(m1.overall.absent  / t * 100) : 0;
+    // Merge section totals
+    m2.sections.forEach(function(s2) {
+      const ex = m1.sections.find(function(s) { return s.grade === s2.grade && s.section === s2.section; });
+      if (ex) {
+        ex.present += s2.present; ex.late += s2.late; ex.absent += s2.absent; ex.total += s2.total;
+        ex.present_pct = ex.total ? Math.round(ex.present / ex.total * 100) : 0;
+        ex.late_pct    = ex.total ? Math.round(ex.late    / ex.total * 100) : 0;
+        ex.absent_pct  = ex.total ? Math.round(ex.absent  / ex.total * 100) : 0;
+      } else {
+        m1.sections.push(s2);
+      }
     });
-    const total = data.overall.present + data.overall.late + data.overall.absent || 1;
-    data.overall.present_pct = Math.round(data.overall.present / total * 100);
-    data.overall.late_pct    = Math.round(data.overall.late    / total * 100);
-    data.overall.absent_pct  = Math.round(data.overall.absent  / total * 100);
-  } else {
-    data = await apiFetch({ action: 'summary', year: ws.getFullYear(), month: ws.getMonth() + 1 });
   }
 
-  function mkCard(title, d) {
-    return '<article class="summary-card">' +
-      '<div class="card-header">' +
-        '<h3>' + esc(title) + '</h3>' +
-        '<span class="badge badge-present">Present</span>' +
-      '</div>' +
-      '<div class="card-value">' + d.present + '</div>' +
-      '<div class="breakdown">' +
-        '<div class="breakdown-item">' +
-          '<span class="breakdown-dot" style="background:var(--present)"></span>' +
-          '<span class="breakdown-label">On-Time</span>' +
-          '<span class="breakdown-value">' + d.present + '</span>' +
-          '<span class="breakdown-pct pct-present">' + d.present_pct + '%</span>' +
-        '</div>' +
-        '<div class="breakdown-item">' +
-          '<span class="breakdown-dot" style="background:var(--late)"></span>' +
-          '<span class="breakdown-label">Late</span>' +
-          '<span class="breakdown-value">' + d.late + '</span>' +
-          '<span class="breakdown-pct">' + d.late_pct + '%</span>' +
-        '</div>' +
-        '<div class="breakdown-item">' +
-          '<span class="breakdown-dot" style="background:var(--absent)"></span>' +
-          '<span class="breakdown-label">Absent</span>' +
-          '<span class="breakdown-value">' + d.absent + '</span>' +
-          '<span class="breakdown-pct pct-absent">' + d.absent_pct + '%</span>' +
-        '</div>' +
-      '</div>' +
-    '</article>';
-  }
-
-  let html = mkCard('All Students', data.overall);
+  let html = buildSummaryBar('All Students', m1.overall);
   if (state.sectionId !== 'all') {
-    const sec = data.sections.find(function(s) { return s.grade === state.grade && s.section === state.section; });
-    if (sec) html += mkCard(sec.name, sec);
+    const sec = m1.sections.find(function(s) { return s.grade === state.grade && s.section === state.section; });
+    if (sec) html += buildSummaryBar(sec.name, sec);
   }
   document.getElementById('summaryCards').innerHTML = html;
 }
@@ -329,14 +332,7 @@ async function loadAttendance() {
   let data;
 
   if (state.sectionId === 'all') {
-    const allData = await Promise.all(state.sections.map(function(s) {
-      return apiFetch({ action: 'attendance', grade: s.grade, section: s.section, year: ws.getFullYear(), month: ws.getMonth() + 1 });
-    }));
-    data = { dates: [], students: [] };
-    allData.forEach(function(d) {
-      data.dates    = data.dates.concat(d.dates);
-      data.students = data.students.concat(d.students);
-    });
+    data = await apiFetch({ action: 'attendance', year: ws.getFullYear(), month: ws.getMonth() + 1 });
   } else {
     data = await apiFetch({
       action: 'attendance', grade: state.grade, section: state.section,
@@ -348,21 +344,14 @@ async function loadAttendance() {
   if (we.getMonth() !== ws.getMonth() || we.getFullYear() !== ws.getFullYear()) {
     let m2;
     if (state.sectionId === 'all') {
-      const allData2 = await Promise.all(state.sections.map(function(s) {
-        return apiFetch({ action: 'attendance', grade: s.grade, section: s.section, year: we.getFullYear(), month: we.getMonth() + 1 });
-      }));
-      m2 = { dates: [], students: [] };
-      allData2.forEach(function(d) {
-        m2.dates    = m2.dates.concat(d.dates);
-        m2.students = m2.students.concat(d.students);
-      });
+      m2 = await apiFetch({ action: 'attendance', year: we.getFullYear(), month: we.getMonth() + 1 });
     } else {
       m2 = await apiFetch({
         action: 'attendance', grade: state.grade, section: state.section,
         year: we.getFullYear(), month: we.getMonth() + 1,
       });
     }
-    data.dates = data.dates.concat(m2.dates);
+    data.dates = Array.from(new Set(data.dates.concat(m2.dates)));
     m2.students.forEach(function(s2) {
       const ex = data.students.find(function(s) { return s.id === s2.id; });
       if (ex) Object.assign(ex.statuses, s2.statuses);
@@ -428,9 +417,9 @@ function renderTable() {
       '</div></td>' +
       cells +
       '<td><div class="summary-cell">' +
-        '<span class="summary-pill" style="color:var(--present)"><span class="breakdown-dot" style="background:var(--present)"></span>P: ' + p + '</span>' +
-        '<span class="summary-pill" style="color:var(--late)"><span class="breakdown-dot" style="background:var(--late)"></span>L: ' + l + '</span>' +
-        '<span class="summary-pill" style="color:var(--absent)"><span class="breakdown-dot" style="background:var(--absent)"></span>A: ' + a + '</span>' +
+        '<span class="sbs-item" style="color:var(--present)"><span class="sbs-dot"></span>P: ' + p + '</span>' +
+        '<span class="sbs-item" style="color:var(--late)"><span class="sbs-dot"></span>L: ' + l + '</span>' +
+        '<span class="sbs-item" style="color:var(--absent)"><span class="sbs-dot"></span>A: ' + a + '</span>' +
       '</div></td>' +
     '</tr>';
   }).join('');
@@ -454,7 +443,7 @@ async function cycleStatus(studentId, date, dot) {
 
   try {
     await apiPost({ student_id: studentId, date: date, status: next });
-    loadSummary();
+    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Save failed:', e); }
 }
 
@@ -509,7 +498,7 @@ async function setStatus(status) {
 
   try {
     await apiPost({ student_id: studentId, date: date, status: status });
-    loadSummary();
+    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Save failed:', e); }
 }
 
@@ -529,7 +518,7 @@ async function clearStatus() {
 
   try {
     await fetch(API + '?student_id=' + studentId + '&date=' + date, { method: 'DELETE' });
-    loadSummary();
+    await Promise.all([loadSummary(), loadAttendance()]);
   } catch (e) { console.error('Delete failed:', e); }
 }
 
@@ -547,9 +536,9 @@ function updateRowSummary(studentId) {
     const last = row.querySelector('td:last-child');
     if (last) last.innerHTML =
       '<div class="summary-cell">' +
-        '<span class="summary-pill" style="color:var(--present)"><span class="breakdown-dot" style="background:var(--present)"></span>P: ' + p + '</span>' +
-        '<span class="summary-pill" style="color:var(--late)"><span class="breakdown-dot" style="background:var(--late)"></span>L: ' + l + '</span>' +
-        '<span class="summary-pill" style="color:var(--absent)"><span class="breakdown-dot" style="background:var(--absent)"></span>A: ' + a + '</span>' +
+        '<span class="sbs-item" style="color:var(--present)"><span class="sbs-dot"></span>P: ' + p + '</span>' +
+        '<span class="sbs-item" style="color:var(--late)"><span class="sbs-dot"></span>L: ' + l + '</span>' +
+        '<span class="sbs-item" style="color:var(--absent)"><span class="sbs-dot"></span>A: ' + a + '</span>' +
       '</div>';
   }
 }
