@@ -311,9 +311,13 @@ function ensureSchoolCalendar($conn) {
         "INSERT IGNORE INTO school_calendar (date, is_school_day, quarter, holiday_name)
          VALUES (?, ?, ?, ?)"
     );
-    $ins->bind_param('siss', $ds, );
-    foreach ($schoolDays as $ds => $row) {
-        $sd = 1; $q = $row['q']; $hn = $row['h'];
+    $ds = ''; $sd = 1; $q = ''; $hn = '';
+    $ins->bind_param('siss', $ds, $sd, $q, $hn);
+    foreach ($schoolDays as $dateKey => $row) {
+        $ds = $dateKey;
+        $sd = 1;
+        $q  = $row['q'];
+        $hn = $row['h'];
         $ins->execute();
     }
     $ins->close();

@@ -185,24 +185,21 @@
           <!-- Color legend + keyboard hint -->
           <div class="table-legend" id="tableLegend">
             <span class="legend-item">
-              <span class="legend-dot dot-present" aria-hidden="true"></span>
-              <span class="legend-label">P = Present</span>
+              <span class="status-badge badge-present" style="min-width:auto;padding:2px 8px;pointer-events:none" aria-hidden="true">Present</span>
             </span>
             <span class="legend-item">
-              <span class="legend-dot dot-late" aria-hidden="true"></span>
-              <span class="legend-label">L = Late</span>
+              <span class="status-badge badge-late" style="min-width:auto;padding:2px 8px;pointer-events:none" aria-hidden="true">Late</span>
             </span>
             <span class="legend-item">
-              <span class="legend-dot dot-absent" aria-hidden="true"></span>
-              <span class="legend-label">A = Absent</span>
+              <span class="status-badge badge-absent" style="min-width:auto;padding:2px 8px;pointer-events:none" aria-hidden="true">Absent</span>
             </span>
             <span class="legend-item">
-              <span class="legend-dot dot-none" aria-hidden="true"></span>
-              <span class="legend-label">&#8212; = No record</span>
+              <span class="status-badge badge-none" style="min-width:auto;padding:2px 8px;pointer-events:none" aria-hidden="true">&#8212;</span>
+              <span class="legend-label" style="margin-left:4px">= No record</span>
             </span>
             <span class="legend-sep" aria-hidden="true"></span>
-            <span class="legend-keyhint" aria-label="Use Tab to navigate dots, Space or Enter to toggle status">
-              <kbd>Tab</kbd> to navigate &nbsp;&middot;&nbsp; <kbd>Space</kbd> / <kbd>Enter</kbd> to toggle
+            <span class="legend-keyhint" aria-label="Use Tab to navigate cells, Space or Enter to cycle status">
+              <kbd>Tab</kbd> to navigate &nbsp;&middot;&nbsp; <kbd>Space</kbd> / <kbd>Enter</kbd> to cycle
             </span>
           </div>
 
