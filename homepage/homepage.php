@@ -108,6 +108,58 @@
     }
 
     /* =============================================
+       ANIMATION KEYFRAMES
+    ============================================= */
+    @keyframes starPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px rgba(184, 134, 11, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(184, 134, 11, 0.6); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* =============================================
        SECTION TAG
     ============================================= */
     .section-tag {
@@ -146,12 +198,22 @@
       border: none;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
       width: fit-content;
       white-space: nowrap;
+      position: relative;
+      overflow: hidden;
     }
 
-    .btn-primary:hover { background: var(--gold-dark); }
+    .btn-primary:hover { 
+      background: var(--gold-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(184, 134, 11, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(-1px);
+    }
 
     .btn-primary svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; }
 
@@ -169,10 +231,13 @@
       border: 1px solid var(--dark);
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .btn-secondary:hover { background: rgba(0, 0, 0, 0.04); }
+    .btn-secondary:hover { 
+      background: rgba(0, 0, 0, 0.04);
+      transform: translateY(-3px);
+    }
 
     .btn-secondary-dark {
       display: inline-flex;
@@ -188,10 +253,14 @@
       border: 1px solid rgba(250, 250, 248, 0.3);
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .btn-secondary-dark:hover { background: rgba(255, 255, 255, 0.05); }
+    .btn-secondary-dark:hover {
+      background: rgba(250, 250, 248, 0.1);
+      transform: translateY(-3px);
+      border-color: rgba(250, 250, 248, 0.5);
+    }
 
     /* =============================================
        NAVBAR
@@ -343,12 +412,34 @@
       border-radius: 8px;
       padding: 40px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      will-change: transform, box-shadow;
     }
 
-    .feature-card.featured { border: none; border-top: 2px solid var(--gold); }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent);
+      transition: left 0.5s ease;
+      pointer-events: none;
+    }
+
+    .feature-card:hover::before {
+      left: 100%;
+    }
+
+    
 
     .feature-icon {
-      width: 48px; height: 48px;
+      width: 48px; 
+      height: 48px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -359,7 +450,8 @@
     }
 
     .feature-icon svg {
-      width: 20px; height: 20px;
+      width: 20px; 
+      height: 20px;
       stroke: var(--gold);
       fill: none;
       stroke-width: 2;
@@ -373,9 +465,14 @@
       font-weight: 600;
       margin-bottom: 12px;
       color: var(--dark);
+      transition: color 0.3s ease;
     }
 
-    .feature-card p { color: var(--mid); font-size: 14px; line-height: 1.75; }
+    .feature-card p { 
+      color: var(--mid); 
+      font-size: 14px; 
+      line-height: 1.75; 
+    }
 
     /* =============================================
        HOW IT WORKS
@@ -401,6 +498,27 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 40px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      will-change: transform, box-shadow;
+    }
+
+    .step-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent);
+      transition: left 0.5s ease;
+      pointer-events: none;
+    }
+
+    .step-card:hover::before {
+      left: 100%;
     }
 
     .step-number {
@@ -408,6 +526,7 @@
       font-size: 24px;
       color: var(--gold);
       margin-bottom: 32px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .step-card h3 {
@@ -416,9 +535,14 @@
       font-weight: 600;
       margin-bottom: 12px;
       color: var(--dark);
+      transition: color 0.3s ease;
     }
 
-    .step-card p { color: var(--mid); font-size: 14px; line-height: 1.75; }
+    .step-card p { 
+      color: var(--mid); 
+      font-size: 14px; 
+      line-height: 1.75;
+    }
 
     .step-icon-area {
       display: flex;
@@ -464,13 +588,37 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 40px;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      will-change: transform, box-shadow;
     }
 
-    .testimonial-card.featured { border: none; border-top: 2px solid var(--gold); }
+    .testimonial-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(184, 134, 11, 0.1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
 
-    .stars { display: flex; gap: 4px; margin-bottom: 24px; }
+    .testimonial-card:hover::after {
+      opacity: 1;
+    }
+
+    .stars { 
+      display: flex; 
+      gap: 4px; 
+      margin-bottom: 24px;
+      justify-content: center;
+    }
     .stars svg { width: 16px; height: 16px; }
-    .stars.gold svg { stroke: var(--gold); fill: var(--gold); }
     .stars.red  svg { stroke: #ff3000;    fill: #ff3000; }
 
     .testimonial-card blockquote {
@@ -481,9 +629,16 @@
       color: var(--dark);
       margin-bottom: 40px;
       flex: 1;
+      transition: all 0.3s ease;
     }
 
-    .author-name { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 4px; }
+    .author-name { 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: var(--dark); 
+      margin-bottom: 4px;
+      transition: all 0.3s ease;
+    }
     .author-role { font-size: 12px; color: var(--mid); }
 
     /* =============================================
@@ -528,8 +683,6 @@
       border-radius: 8px;
       padding: 40px;
     }
-
-    .value-card.featured { border: none; border-top: 2px solid var(--gold); }
 
     .value-card svg {
       width: 20px; height: 20px;
@@ -1010,6 +1163,18 @@
     .step.active { display: block; }
 
     /* =============================================
+       INTERACTIVE ELEMENTS - PERFORMANCE
+    ============================================= */
+    button, .btn-primary, .btn-secondary, .btn-secondary-dark,
+    .feature-card, .testimonial-card, .value-card, .step-card {
+      will-change: transform;
+    }
+
+    a {
+      transition: color 0.2s ease;
+    }
+
+    /* =============================================
        REDUCED MOTION
     ============================================= */
     @media (prefers-reduced-motion: reduce) {
@@ -1018,6 +1183,28 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+      }
+    }
+
+    /* =============================================
+       RESPONSIVE ANIMATIONS
+    ============================================= */
+    @media (max-width: 768px) {
+      .step-card {
+        transition: all 0.2s ease;
+      }
+
+      .feature-card:hover,
+      .testimonial-card:hover,
+      .value-card:hover,
+      .step-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-icon,
+      .step-number {
+        transition: all 0.2s ease;
       }
     }
 
@@ -1222,7 +1409,7 @@
           <h3 class="font-serif">Lesson Structuring</h3>
           <p class="font-sans">Upload your materials and ClassInstruct converts them into organized, sequenced lesson plans aligned with your curriculum goals and teaching style.</p>
         </div>
-        <div class="feature-card featured">
+        <div class="feature-card">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <polyline points="9 11 12 14 22 4"></polyline>
@@ -1324,8 +1511,8 @@
           </div>
         </div>
 
-        <div class="testimonial-card featured">
-          <div class="stars gold">
+        <div class="testimonial-card">
+          <div class="stars red">
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -1340,7 +1527,7 @@
         </div>
 
         <div class="testimonial-card">
-          <div class="stars gold">
+          <div class="stars red">
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -1379,7 +1566,7 @@
           <h3 class="font-serif">Teacher-First</h3>
           <p class="font-sans">Every feature adapts to your curriculum, methods, and voice.</p>
         </div>
-        <div class="value-card featured">
+        <div class="value-card">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
@@ -1517,7 +1704,7 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="scripts.js"></script>
   <script src="signin_modal_wired.js"></script>
 
 </body>
