@@ -15,7 +15,6 @@
     <header class="page-header">
       <div class="page-header-left">
         <h1 class="page-title">Attendance</h1>
-        <p class="page-sub" id="pageSubtitle">Loading…</p>
       </div>
       <div class="header-right">
         <div class="search-wrap">
@@ -78,14 +77,34 @@
             aria-label="Sections" style="display:none"></div>
         </div>
 
+        <!-- View mode tabs: Weekly / Daily -->
+        <div class="toolbar-group view-tabs" role="group" aria-label="View mode">
+          <button class="view-tab-btn view-tab-btn--active"
+            data-view="week"
+            onclick="Actions.toggleViewMode('week')"
+            aria-label="Weekly view"
+            aria-pressed="true">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Weekly
+          </button>
+          <button class="view-tab-btn"
+            data-view="day"
+            onclick="Actions.toggleViewMode('day')"
+            aria-label="Daily view"
+            aria-pressed="false">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7a4 4 0 100 8 4 4 0 000-8zm0 0v1.5m0-1.5v6m0-7.5h6"/>
+            </svg>
+            Daily
+          </button>
+        </div>
+
         <!-- Week calendar picker -->
         <div class="toolbar-group" id="weekNav" style="position:relative">
-          <button class="toolbar-btn toolbar-btn--icon-only" id="prevWeekBtn"
-            onclick="navigateWeek(-1)" aria-label="Previous week">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-          </button>
           <button class="toolbar-btn" id="weekBtn"
             onclick="toggleDropdown('weekDropdown')"
             aria-haspopup="true" aria-expanded="false"
@@ -99,13 +118,34 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
-          <button class="toolbar-btn toolbar-btn--icon-only" id="nextWeekBtn"
-            onclick="navigateWeek(1)" aria-label="Next week">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-          </button>
           <div id="weekDropdown" class="dropdown-menu cal-popup" style="display:none"></div>
+        </div>
+
+        <!-- Save Changes — shown only when pendingChanges queue has items -->
+        <div class="toolbar-group" id="saveGroup">
+          <button class="toolbar-btn toolbar-btn--save" id="saveChangesBtn"
+            onclick="Actions.saveAllPending()"
+            style="display:none"
+            aria-label="Save all pending attendance changes">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1-4l-3 3m0 0l-3-3m3 3V4"/>
+            </svg>
+            <span id="saveChangesLabel">Save Changes</span>
+          </button>
+        </div>
+
+        <!-- Monthly Report -->
+        <div class="toolbar-group" id="reportGroup">
+          <button class="toolbar-btn" id="monthlyReportBtn"
+            onclick="Actions.openMonthlyReport()"
+            aria-label="Generate Monthly Attendance Report">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Monthly Report
+          </button>
         </div>
 
       </div><!-- /toolbar -->
@@ -142,7 +182,36 @@
             <p>No students found for this section.</p>
           </div>
 
+          <!-- Color legend + keyboard hint -->
+          <div class="table-legend" id="tableLegend">
+            <span class="legend-item">
+              <span class="legend-dot dot-present" aria-hidden="true"></span>
+              <span class="legend-label">P = Present</span>
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot dot-late" aria-hidden="true"></span>
+              <span class="legend-label">L = Late</span>
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot dot-absent" aria-hidden="true"></span>
+              <span class="legend-label">A = Absent</span>
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot dot-none" aria-hidden="true"></span>
+              <span class="legend-label">&#8212; = No record</span>
+            </span>
+            <span class="legend-sep" aria-hidden="true"></span>
+            <span class="legend-keyhint" aria-label="Use Tab to navigate dots, Space or Enter to toggle status">
+              <kbd>Tab</kbd> to navigate &nbsp;&middot;&nbsp; <kbd>Space</kbd> / <kbd>Enter</kbd> to toggle
+            </span>
+          </div>
+
         </div>
+      </section>
+
+      <!-- ── Daily Focused View ── -->
+      <section id="dayView" aria-label="Daily attendance view" style="display:none">
+        <!-- dayView innerHTML is generated by Render.renderDayView() -->
       </section>
 
     </div><!-- /content-body -->
