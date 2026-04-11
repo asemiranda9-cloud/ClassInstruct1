@@ -3,21 +3,42 @@
 //  db.php — ClassInstruct MySQL Backend
 // ═══════════════════════════════════
 
+// Disable all error output before anything else
+error_reporting(0);
+ini_set('display_errors', 0);
+@ini_set('display_errors', '0');
+// Start output buffer to catch any stray output
+while (ob_get_level()) ob_end_clean();
+ob_start();
+
+// Return JSON on any fatal error
+set_exception_handler(function($e) {
+    http_response_code(500);
+    echo json_encode(['error' => $e->getMessage()]);
+    exit;
+});
+
+register_shutdown_function(function() {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR])) {
+        while (ob_get_level()) ob_end_clean();
+        http_response_code(500);
+        echo json_encode(['error' => $e['message']]);
+    }
+});
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-// ── Database Config (XAMPP defaults) ──
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');       // XAMPP default user
-define('DB_PASS', '');           // XAMPP default password (empty)
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_NAME', 'classinstructdb');
 
-// ── Connect ──
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
     http_response_code(500);
@@ -26,7 +47,6 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
-// ── Router ──
 $method = $_SERVER['REQUEST_METHOD'];
 $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
@@ -67,13 +87,21 @@ function addStudent($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
-    // Check duplicate studentId
-    $sid = $conn->real_escape_string($data['studentId'] ?? '');
-    $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid'");
-    if ($check->num_rows > 0) {
-        http_response_code(409);
-        echo json_encode(['error' => 'Student ID / LRN already exists']);
-        return;
+    // Normalise studentId: blank string or null both become SQL NULL.
+    // MySQL allows multiple NULLs in a UNIQUE column, so students without
+    // an LRN can all be inserted without conflicting with each other.
+    $rawSid    = isset($data['studentId']) ? trim((string)$data['studentId']) : '';
+    $studentId = ($rawSid === '') ? null : $rawSid;
+
+    // Only enforce uniqueness when an actual ID was supplied
+    if ($studentId !== null) {
+        $sid   = $conn->real_escape_string($studentId);
+        $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid'");
+        if ($check && $check->num_rows > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Student ID / LRN already exists']);
+            return;
+        }
     }
 
     $stmt = $conn->prepare(
@@ -88,13 +116,14 @@ function addStudent($conn) {
     $dob        = empty($data['dob'])        ? null : $data['dob'];
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
 
+    // Bind $studentId (may be null) — NOT $data['studentId']
     $stmt->bind_param('ssssssssssssssssss',
-        $data['studentId'],  $data['fullName'],     $dob,
-        $data['gender'],     $data['grade'],         $data['section'],
-        $enrollDate,        $data['prevSchool'],    $data['email'],
-        $data['phone'],      $data['address'],       $data['fatherName'],
-        $data['fatherPhone'],$data['motherName'],    $data['motherPhone'],
-        $data['guardianName'],$data['guardianRelation'],$data['guardianPhone']
+        $studentId,            $data['fullName'],       $dob,
+        $data['gender'],       $data['grade'],           $data['section'],
+        $enrollDate,           $data['prevSchool'],      $data['email'],
+        $data['phone'],        $data['address'],         $data['fatherName'],
+        $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
+        $data['guardianName'], $data['guardianRelation'],$data['guardianPhone']
     );
 
     if ($stmt->execute()) {
@@ -118,13 +147,19 @@ function updateStudent($conn, $id) {
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
-    // Check duplicate studentId (excluding self)
-    $sid = $conn->real_escape_string($data['studentId'] ?? '');
-    $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid' AND id != $id");
-    if ($check->num_rows > 0) {
-        http_response_code(409);
-        echo json_encode(['error' => 'Student ID / LRN already exists']);
-        return;
+    // Same NULL normalisation as addStudent
+    $rawSid    = isset($data['studentId']) ? trim((string)$data['studentId']) : '';
+    $studentId = ($rawSid === '') ? null : $rawSid;
+
+    // Only check uniqueness (excluding self) when a real ID is provided
+    if ($studentId !== null) {
+        $sid   = $conn->real_escape_string($studentId);
+        $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid' AND id != $id");
+        if ($check && $check->num_rows > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Student ID / LRN already exists']);
+            return;
+        }
     }
 
     $stmt = $conn->prepare("
@@ -140,12 +175,12 @@ function updateStudent($conn, $id) {
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
 
     $stmt->bind_param('ssssssssssssssssssi',
-        $data['studentId'],  $data['fullName'],      $dob,
-        $data['gender'],     $data['grade'],          $data['section'],
-        $enrollDate,        $data['prevSchool'],     $data['email'],
-        $data['phone'],      $data['address'],        $data['fatherName'],
-        $data['fatherPhone'],$data['motherName'],     $data['motherPhone'],
-        $data['guardianName'],$data['guardianRelation'],$data['guardianPhone'],
+        $studentId,            $data['fullName'],       $dob,
+        $data['gender'],       $data['grade'],           $data['section'],
+        $enrollDate,           $data['prevSchool'],      $data['email'],
+        $data['phone'],        $data['address'],         $data['fatherName'],
+        $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
+        $data['guardianName'], $data['guardianRelation'],$data['guardianPhone'],
         $id
     );
 
@@ -183,7 +218,7 @@ function deleteStudent($conn, $id) {
 function mapRow($row) {
     return [
         'id'               => (int)$row['id'],
-        'studentId'        => $row['student_id'],
+        'studentId'        => $row['student_id'],   // may be null — JS handles null fine
         'fullName'         => $row['full_name'],
         'dob'              => $row['dob'],
         'gender'           => $row['gender'],
