@@ -9,7 +9,17 @@
       "Read(//c/laragon/**)",
       "Bash(find:*)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Got {len\\(d\\)} students'\\); print\\(d[0].get\\('fullName', d[0].get\\('full_name','?'\\)\\)\\)\")",
-      "Bash(grep -n 'enrollDate\\\\|$dob' C:/laragon/www/ClassInstruct1/dashboard/api/db.php)"
+      "Bash(grep -n 'enrollDate\\\\|$dob' C:/laragon/www/ClassInstruct1/dashboard/api/db.php)",
+      "Bash(xxd)",
+      "Bash(tasklist)",
+      "Bash(cat C:/laragon/etc/apache2/sites-enabled/*.conf)",
+      "Bash(taskkill //F //IM httpd.exe)",
+      "Bash(net start:*)",
+      "Bash(C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe:*)",
+      "Bash(taskkill //F //PID 11428)",
+      "Bash(taskkill //F //PID 6844)",
+      "Bash(\"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe\" -k start)",
+      "Bash(\"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe\" -f \"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/conf/httpd.conf\")"
     ]
   }
 }

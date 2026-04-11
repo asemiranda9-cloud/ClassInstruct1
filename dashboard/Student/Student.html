@@ -639,6 +639,8 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Add New Student';
   document.getElementById('saveBtnText').textContent = 'Add Student';
   clearForm();
+  originalFormData = getFormData();
+  formIsDirty = false;
   document.getElementById('formOverlay').classList.add('open');
 }
 
@@ -649,13 +651,38 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit Student';
   document.getElementById('saveBtnText').textContent = 'Save Changes';
   fillForm(s);
+  originalFormData = getFormData();
+  formIsDirty = false;
   document.getElementById('formOverlay').classList.add('open');
   document.getElementById('viewOverlay').classList.remove('open');
 }
 
 function closeFormModal() {
+  const dirty = isFormDirty();
+  if (dirty) {
+    const confirmed = confirm('You have unsaved changes. Are you sure you want to close?');
+    if (!confirmed) return;
+  }
   document.getElementById('formOverlay').classList.remove('open');
   clearErrors();
+}
+
+let originalFormData = null;
+let formIsDirty = false;
+
+function isFormDirty() {
+  const data = getFormData();
+  if (!originalFormData) return false;
+  return JSON.stringify(data) !== JSON.stringify(originalFormData);
+}
+
+function markDirty() {
+  const wasClean = !formIsDirty;
+  formIsDirty = true;
+  const btn = document.getElementById('saveBtnText');
+  if (btn && wasClean) {
+    btn.textContent = editingId ? 'Update Changes *' : 'Add Student *';
+  }
 }
 
 function clearForm() {
@@ -748,11 +775,13 @@ async function saveStudent() {
       const idx = students.findIndex(s=>s.id===editingId);
       students[idx] = updated;
       toast('Student updated successfully!', 'success');
+      formIsDirty = false;
     } else {
       const created = await apiPost(data);
       students.push(created);
       toast('Student added successfully!', 'success');
     }
+    formIsDirty = false;
     closeFormModal();
     applyFilters();
   } catch (e) {
@@ -884,6 +913,16 @@ document.getElementById('formOverlay').addEventListener('click',   function(e){ 
 document.getElementById('viewOverlay').addEventListener('click',   function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById('confirmOverlay').addEventListener('click',function(e){ if(e.target===this) closeConfirm(); });
 document.getElementById('importOverlay').addEventListener('click', function(e){ if(e.target===this) closeImportModal(); });
+
+// Track dirty state on form inputs
+['f-studentId','f-fullName','f-dob','f-email','f-phone','f-address',
+ 'f-prevSchool','f-enrollDate','f-fatherName','f-fatherPhone',
+ 'f-motherName','f-motherPhone','f-guardianName','f-guardianRelation','f-guardianPhone',
+ 'f-grade','f-section'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', markDirty);
+});
+document.querySelectorAll('input[name="f-gender"]').forEach(function(r) { r.addEventListener('change', markDirty); });
 
 // ══════════════════════════════════════════════════════
 //  IMPORT FROM IMAGE

@@ -2,6 +2,15 @@
 
 const API = 'attedance_db.php';
 
+// Warn before leaving if there are unsaved attendance changes
+window.addEventListener('beforeunload', function(e) {
+  if (pendingChanges && pendingChanges.size > 0) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved attendance changes. Are you sure you want to leave?';
+    return e.returnValue;
+  }
+});
+
 const MONTHS = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December'
@@ -507,7 +516,7 @@ async function cycleStatus(studentId, date, badge) {
   const cur  = ([].slice.call(badge.classList).find(function(c) { return c.startsWith('badge-'); }) || 'badge-none').replace('badge-', '');
   const next = CYCLE[cur] || 'present';
 
-  // Update UI immediately
+  // Update UI immediately (optimistic update)
   badge.className = 'status-badge badge-' + next;
   badge.textContent = next === 'none' ? '\u2014' : cap(next);
   badge.setAttribute('aria-label', (next === 'none' ? 'No record' : cap(next)) + ' \u2014 ' + date);
@@ -520,9 +529,8 @@ async function cycleStatus(studentId, date, badge) {
   refreshDateCounts();
   refreshDayViewChips();
 
-  try {
-    await apiPost({ student_id: studentId, date: date, status: next });
-  } catch (e) { console.error('Save failed:', e); }
+  // Queue for manual save (do NOT auto-save)
+  queueChange(studentId, date, next);
 }
 
 let ctxTarget = null;
@@ -579,9 +587,8 @@ async function setStatus(status) {
   refreshDateCounts();
   refreshDayViewChips();
 
-  try {
-    await apiPost({ student_id: studentId, date: date, status: status });
-  } catch (e) { console.error('Save failed:', e); }
+  // Queue for manual save
+  queueChange(studentId, date, status);
 }
 
 async function clearStatus() {
@@ -603,9 +610,8 @@ async function clearStatus() {
   refreshDateCounts();
   refreshDayViewChips();
 
-  try {
-    await fetch(API + '?student_id=' + studentId + '&date=' + date, { method: 'DELETE' });
-  } catch (e) { console.error('Delete failed:', e); }
+  // Queue for manual save
+  queueChange(studentId, date, 'none');
 }
 
 // ════════════════════════════════════════════════════
@@ -744,19 +750,10 @@ async function markAllForDate(date, status) {
   refreshDateCounts();
   refreshSummaryFromTable();
 
-  showToast('Saving\u2026', 'saving');
-  let ok = 0, fail = 0;
+  // Queue all for manual save
   for (const s of students) {
-    try {
-      if (status === 'none') {
-        await fetch(API + '?student_id=' + s.id + '&date=' + date, { method: 'DELETE' });
-      } else {
-        await apiPost({ student_id: s.id, date: date, status: status });
-      }
-      ok++;
-    } catch (err) { fail++; }
+    queueChange(s.id, date, status);
   }
-  showToast(fail ? ok + ' saved, ' + fail + ' failed' : 'All marked!', fail ? 'error' : 'success');
 }
 
 function updateRowSummary(studentId) {
@@ -888,10 +885,18 @@ const Actions = {
     const btn = document.getElementById('saveChangesBtn');
     if (btn) btn.disabled = true;
     showToast('Saving…', 'saving');
+
+    // Snapshot items so iteration is stable even if pendingChanges is modified mid-loop
+    const items = Array.from(pendingChanges.values());
     let saved = 0, failed = 0;
-    for (const item of pendingChanges.values()) {
+
+    for (const item of items) {
       try {
-        await apiPost({ student_id: item.studentId, date: item.date, status: item.status });
+        if (item.status === 'none') {
+          await fetch(API + '?student_id=' + item.studentId + '&date=' + item.date, { method: 'DELETE' });
+        } else {
+          await apiPost({ student_id: item.studentId, date: item.date, status: item.status });
+        }
         pendingChanges.delete(item.studentId + '|' + item.date);
         saved++;
       } catch (e) {
