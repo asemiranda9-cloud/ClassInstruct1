@@ -1,7 +1,7 @@
 // ── Config ────────────────────────────────────────────────────────────────────
 // Path matches the project structure: Student.html uses /ClassInstruct1/dashboard/api/db.php
 // Place grades_db.php in the same /api/ folder as db.php
-const API = '/ClassInstruct1/dashboard/Student/grades_db.php';
+const API = './grades_db.php';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let students         = [];

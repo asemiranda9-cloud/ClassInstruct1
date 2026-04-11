@@ -3,9 +3,9 @@
 // ════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════
-const ATT_API    = '/ClassInstruct1/dashboard/attendance/attedance_db.php';
-const STUD_API   = '/ClassInstruct1/dashboard/api/db.php';
-const GRADES_API = '/ClassInstruct1/dashboard/Student/grades_db.php';
+const ATT_API    = '/dashboard/attendance/attedance_db.php';
+const STUD_API   = '/dashboard/api/db.php';
+const GRADES_API = '/dashboard/Student/grades_db.php';
 const CAL_KEY    = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];

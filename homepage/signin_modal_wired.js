@@ -114,10 +114,11 @@ document.addEventListener('keydown', e => {
     setLoading(btnSendOtp, true);
 
     try {
-      const res = await fetch('/ClassInstruct1/homepage/send_otp.php', {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ email }),
+      const res = await fetch('/homepage/send_otp.php', {
+        method     : 'POST',
+        headers    : { 'Content-Type': 'application/json' },
+        body       : JSON.stringify({ email }),
+        credentials: 'include',
       });
       const data = await res.json();
 
@@ -143,7 +144,7 @@ document.addEventListener('keydown', e => {
 
   /* ── Google OAuth — real redirect ── */
   btnGoogle.addEventListener('click', () => {
-    window.location.href = '/ClassInstruct1/homepage/google_oauth.php?action=redirect';
+    window.location.href = '/homepage/google_oauth.php?action=redirect';
   });
 
   /* ── OTP digit input handling (unchanged from original) ── */
@@ -213,18 +214,20 @@ document.addEventListener('keydown', e => {
     setLoading(btnVerify, true);
 
     try {
-      const res = await fetch('/ClassInstruct1/homepage/verify_otp.php', {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ otp: entered }),
+      const res = await fetch('/homepage/verify_otp.php', {
+        method     : 'POST',
+        headers    : { 'Content-Type': 'application/json' },
+        body       : JSON.stringify({ otp: entered }),
+        credentials: 'include',
       });
       const data = await res.json();
 
       if (data.success) {
         clearInterval(timerInterval);
-        // Optionally store token for SPA use:
         if (data.token) sessionStorage.setItem('ci_token', data.token);
         showStep(stepSuccess);
+        // Auto-redirect after 1.5s
+        setTimeout(() => { window.location.href = '/dashboard/sidebar.html'; }, 1500);
       } else {
         otpError.textContent = data.error || 'Incorrect code. Please try again.';
         otpDigits.forEach(d => d.classList.add('error-shake'));
@@ -270,10 +273,11 @@ document.addEventListener('keydown', e => {
     clearOtpDigits();
 
     try {
-      const res = await fetch('/ClassInstruct1/homepage/send_otp.php', {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ email: currentEmail }),
+      const res = await fetch('/homepage/send_otp.php', {
+        method     : 'POST',
+        headers    : { 'Content-Type': 'application/json' },
+        body       : JSON.stringify({ email: currentEmail }),
+        credentials: 'include',
       });
       const data = await res.json();
       if (!data.success) {
@@ -299,12 +303,12 @@ document.addEventListener('keydown', e => {
 
   /* ── Go to Dashboard ── */
   btnDash.addEventListener('click', () => {
-    window.location.href = '/ClassInstruct1/dashboard/sidebar.html';
+    window.location.href = '/dashboard/sidebar.html';
   });
 
   /* ── Sign Up link ── */
   document.getElementById('linkSignUp').addEventListener('click', () => {
-    window.location.href = '/ClassInstruct1/homepage/homepage.php';
+    window.location.href = '/homepage/homepage.php';
   });
 
   /* ── Loading helper ── */

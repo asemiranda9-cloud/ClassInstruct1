@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(php:*)",
+      "Bash(rm:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Read(//c/laragon/apache2/logs/**)",
+      "Read(//c/laragon/**)",
+      "Bash(find:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Got {len\\(d\\)} students'\\); print\\(d[0].get\\('fullName', d[0].get\\('full_name','?'\\)\\)\\)\")",
+      "Bash(grep -n 'enrollDate\\\\|$dob' C:/laragon/www/ClassInstruct1/dashboard/api/db.php)"
     ]
   }
 }

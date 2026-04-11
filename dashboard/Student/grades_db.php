@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
-define('DB_NAME', 'classinstruct');
+define('DB_NAME', 'classinstructdb');
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
@@ -95,8 +95,11 @@ $conn->query("
       AND g1.max_grade = g2.max_grade
 ");
 
-// Add unique constraint so duplicates can never happen again
-$conn->query("ALTER TABLE gpa_scales ADD UNIQUE KEY IF NOT EXISTS unique_range (min_grade, max_grade)");
+// Add unique constraint only if it doesn't already exist
+$result = $conn->query("SHOW INDEX FROM gpa_scales WHERE Key_name = 'unique_range'");
+if ($result->num_rows == 0) {
+    $conn->query("ALTER TABLE gpa_scales ADD UNIQUE KEY unique_range (min_grade, max_grade)");
+}
 
 // Insert defaults only if truly empty; INSERT IGNORE respects the unique key
 $check = $conn->query("SELECT COUNT(*) as cnt FROM gpa_scales");

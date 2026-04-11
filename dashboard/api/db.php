@@ -1,7 +1,6 @@
 <?php
 // ═══════════════════════════════════
-//  db.php — XAMPP MySQL Backend
-//  ClassInstruct Student Database
+//  db.php — ClassInstruct MySQL Backend
 // ═══════════════════════════════════
 
 header('Content-Type: application/json');
@@ -16,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');       // XAMPP default user
 define('DB_PASS', '');           // XAMPP default password (empty)
-define('DB_NAME', 'classinstruct');
+define('DB_NAME', 'classinstructdb');
 
 // ── Connect ──
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
@@ -77,19 +76,22 @@ function addStudent($conn) {
         return;
     }
 
-    $stmt = $conn->prepare("
-        INSERT INTO students
+    $stmt = $conn->prepare(
+        "INSERT INTO students
           (student_id, full_name, dob, gender, grade, section, enroll_date,
            prev_school, email, phone, address,
            father_name, father_phone, mother_name, mother_phone,
            guardian_name, guardian_relation, guardian_phone)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    ");
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    );
+
+    $dob        = empty($data['dob'])        ? null : $data['dob'];
+    $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
 
     $stmt->bind_param('ssssssssssssssssss',
-        $data['studentId'],  $data['fullName'],     $data['dob'],
+        $data['studentId'],  $data['fullName'],     $dob,
         $data['gender'],     $data['grade'],         $data['section'],
-        $data['enrollDate'], $data['prevSchool'],    $data['email'],
+        $enrollDate,        $data['prevSchool'],    $data['email'],
         $data['phone'],      $data['address'],       $data['fatherName'],
         $data['fatherPhone'],$data['motherName'],    $data['motherPhone'],
         $data['guardianName'],$data['guardianRelation'],$data['guardianPhone']
@@ -134,10 +136,13 @@ function updateStudent($conn, $id) {
         WHERE id=?
     ");
 
+    $dob        = empty($data['dob'])        ? null : $data['dob'];
+    $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
+
     $stmt->bind_param('ssssssssssssssssssi',
-        $data['studentId'],  $data['fullName'],      $data['dob'],
+        $data['studentId'],  $data['fullName'],      $dob,
         $data['gender'],     $data['grade'],          $data['section'],
-        $data['enrollDate'], $data['prevSchool'],     $data['email'],
+        $enrollDate,        $data['prevSchool'],     $data['email'],
         $data['phone'],      $data['address'],        $data['fatherName'],
         $data['fatherPhone'],$data['motherName'],     $data['motherPhone'],
         $data['guardianName'],$data['guardianRelation'],$data['guardianPhone'],
