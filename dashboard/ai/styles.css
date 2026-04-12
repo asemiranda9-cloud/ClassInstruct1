@@ -490,6 +490,21 @@ body {
   height: 22px;
 }
 
+/* Collapsed Sidebar */
+.right-sidebar.collapsed {
+  width: 50px;
+}
+
+.right-sidebar.collapsed .sidebar-actions {
+  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+.right-sidebar.collapsed .icon-button {
+  width: 36px;
+  height: 36px;
+}
+
 /* ============================================
    UTILITY CLASSES
    ============================================ */

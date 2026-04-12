@@ -1,5 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const dotenv = require("dotenv");
+
+// Load .env from dashboard/ai directory
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 
@@ -7,8 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Get API key from environment variable or use a placeholder
-// To use your own key: set GEMINI_API_KEY=your_api_key_here
-const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyARKE_iGGBXGbugAhP5zGnOQezbQ7R1sjI";
+const API_KEY = process.env.GEMINI_API_KEY;
 
 app.get("/", (req, res) => {
   const hasApiKey = !!API_KEY;
