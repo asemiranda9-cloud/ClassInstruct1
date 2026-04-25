@@ -61,11 +61,8 @@
             <span class="photo-initials font-serif" id="studentAvatar">—</span>
           </div>
           <div class="student-name font-serif" id="studentName">—</div>
-          <div class="student-lrn font-mono"   id="studentLrn">—</div>
-          <div class="badges">
-            <span class="badge badge-section" id="studentSection">—</span>
-            <span class="badge badge-active">Active</span>
-          </div>
+          <div class="student-lrn font-mono" id="studentLrn">—</div>
+          <div class="student-section-badge" id="studentSection">—</div>
           <div class="divider"></div>
           <div class="info-rows">
             <div class="info-row">
@@ -108,41 +105,30 @@
           </div>
         </div>
 
-        <!-- Documents Card (static) -->
-        <div class="card">
+        <!-- Documents Card (functional) -->
+        <div class="card" id="documentsCard">
           <div class="card-header">
             <span class="card-title font-serif">Documents</span>
-            <button class="dots-btn" aria-label="More options">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <button class="add-btn" aria-label="Upload document" onclick="triggerDocUpload()" title="Upload document">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
           </div>
-          <div class="doc-row">
-            <div class="doc-icon">
-              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-            </div>
-            <div>
-              <div class="doc-name">Report_Card_1stSem.pdf</div>
-              <div class="doc-size">pdf · 2.4 MB</div>
-            </div>
+
+          <!-- Drop zone -->
+          <div class="doc-dropzone" id="docDropzone"
+               onclick="triggerDocUpload()"
+               ondragover="docDragOver(event)"
+               ondragleave="docDragLeave(event)"
+               ondrop="docDrop(event)">
+            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>Drop files or click to upload</span>
           </div>
-          <div class="doc-row">
-            <div class="doc-icon">
-              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-            </div>
-            <div>
-              <div class="doc-name">Cert_Good_Moral.pdf</div>
-              <div class="doc-size">pdf · 1.1 MB</div>
-            </div>
-          </div>
-          <div class="doc-row">
-            <div class="doc-icon">
-              <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-            </div>
-            <div>
-              <div class="doc-name">Birth_Certificate.pdf</div>
-              <div class="doc-size">pdf · 4.4 MB</div>
-            </div>
-          </div>
+          <input type="file" id="docFileInput" multiple
+                 accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.xlsx,.xls,.ppt,.pptx,.txt"
+                 style="display:none" onchange="handleDocFiles(event)">
+
+          <!-- Document list -->
+          <div id="docList"></div>
         </div>
 
       </div><!-- /col-left -->
@@ -150,62 +136,100 @@
       <!-- ═══ MIDDLE COLUMN ═══ -->
       <div class="col-mid">
 
-        <!-- Attendance Calendar Card -->
-        <div class="card">
-          <div class="cal-header">
-            <span class="cal-month font-serif" id="calMonthLabel">—</span>
-            <div class="cal-arrows">
-              <button onclick="shiftCalMonth(-1)" aria-label="Previous month">
+        <!-- Attendance Heatmap Card -->
+        <div class="card heatmap-card">
+          <div class="heatmap-top">
+            <span class="card-title font-serif">Attendance Heatmap</span>
+            <div class="hm-month-nav">
+              <button class="hm-nav-btn" onclick="shiftHeatmapMonth(-1)" aria-label="Previous month">
                 <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              <button onclick="shiftCalMonth(1)" aria-label="Next month">
+              <span class="hm-month-label font-mono" id="heatmapMonthLabel">—</span>
+              <button class="hm-nav-btn" onclick="shiftHeatmapMonth(1)" aria-label="Next month">
                 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
           </div>
-          <div class="cal-day-headers">
-            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-          </div>
-          <div id="calGrid"></div>
+          <div class="hm-single-month" id="hmGrid"></div>
+          <div class="hm-tooltip" id="hmTooltip" style="display:none"></div>
           <div class="att-summary">
-            <div class="att-stat green">
-              <span class="att-label">Present</span>
-              <span class="att-count font-serif" id="attPresent">0</span>
-            </div>
-            <div class="att-stat yellow">
-              <span class="att-label">Late</span>
-              <span class="att-count font-serif" id="attLate">0</span>
-            </div>
-            <div class="att-stat gold">
-              <span class="att-label">Excused</span>
-              <span class="att-count font-serif" id="attExcused">0</span>
-            </div>
-            <div class="att-stat red">
-              <span class="att-label">Absent</span>
-              <span class="att-count font-serif" id="attAbsent">0</span>
-            </div>
+            <div class="att-stat green"><span class="att-label">Present</span><span class="att-count font-serif" id="attPresent">0</span></div>
+            <div class="att-stat yellow"><span class="att-label">Late</span><span class="att-count font-serif" id="attLate">0</span></div>
+            <div class="att-stat gold"><span class="att-label">Excused</span><span class="att-count font-serif" id="attExcused">0</span></div>
+            <div class="att-stat red"><span class="att-label">Absent</span><span class="att-count font-serif" id="attAbsent">0</span></div>
+          </div>
+          <div class="hm-legend">
+            <div class="hm-legend-cell hm-present"></div><span class="hm-legend-text">Present</span>
+            <div class="hm-legend-cell hm-late"></div><span class="hm-legend-text">Late</span>
+            <div class="hm-legend-cell hm-absent"></div><span class="hm-legend-text">Absent</span>
+            <div class="hm-legend-cell hm-empty"></div><span class="hm-legend-text">No record</span>
           </div>
         </div>
 
-        <!-- Health & Medical Card -->
+        <!-- ══ HEALTH & MEDICAL INFO CARD ══ -->
         <div class="card">
           <div class="card-header">
             <span class="card-title font-serif">Health &amp; Medical Info</span>
-            <button class="dots-btn" aria-label="More options">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <button class="add-btn" aria-label="Add health record" onclick="openHealthModal()">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
           </div>
-          <div class="health-row">
-            <span class="health-tag tag-routine">Routine</span>
-            <span class="health-text">Routine health check complete — fit for all school activities.</span>
+
+          <!-- Vitals row -->
+          <div class="health-vitals-row" id="healthVitals">
+            <div class="vital-pill">
+              <span class="vital-icon">⚖️</span>
+              <span class="vital-label">Weight</span>
+              <span class="vital-val" id="vitalWeight">—</span>
+            </div>
+            <div class="vital-pill">
+              <span class="vital-icon">📏</span>
+              <span class="vital-label">Height</span>
+              <span class="vital-val" id="vitalHeight">—</span>
+            </div>
+            <div class="vital-pill">
+              <span class="vital-icon">🩸</span>
+              <span class="vital-label">Blood Type</span>
+              <span class="vital-val" id="vitalBlood">—</span>
+            </div>
           </div>
-          <div class="health-row">
-            <span class="health-tag tag-allergy">Allergy</span>
-            <span class="health-text">Mild pollen allergy — medication prescribed and on file.</span>
+
+          <!-- Vitals edit row -->
+          <div class="health-vitals-edit" id="healthVitalsEdit" style="display:none">
+            <div class="vi-field">
+              <label class="vi-label">Weight (kg)</label>
+              <input type="number" id="vi-weight" class="si-input vi-input" placeholder="e.g. 45" step="0.1" min="0">
+            </div>
+            <div class="vi-field">
+              <label class="vi-label">Height (cm)</label>
+              <input type="number" id="vi-height" class="si-input vi-input" placeholder="e.g. 152" step="0.1" min="0">
+            </div>
+            <div class="vi-field">
+              <label class="vi-label">Blood Type</label>
+              <select id="vi-blood" class="si-input vi-input">
+                <option value="">Unknown</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option>
+                <option>O+</option><option>O-</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:2px">
+              <button class="si-btn si-btn-primary" style="padding:7px 14px;font-size:12px" onclick="saveVitals()">Save</button>
+              <button class="si-btn si-btn-secondary" style="padding:7px 14px;font-size:12px" onclick="cancelVitals()">Cancel</button>
+            </div>
           </div>
-          <div class="health-row">
-            <span class="health-tag tag-severe">Severe</span>
-            <span class="health-text">Severe reaction — strictly avoid exposure, EpiPen required.</span>
+
+          <button class="health-vitals-edit-btn" id="vitalsEditBtn" onclick="toggleVitalsEdit()">
+            <svg viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Edit vitals
+          </button>
+
+          <div class="health-divider"></div>
+
+          <!-- Records list -->
+          <div id="healthList">
+            <div class="empty-state"><span class="empty-text">No health records yet. Click + to add one.</span></div>
           </div>
         </div>
 
@@ -214,54 +238,82 @@
       <!-- ═══ RIGHT COLUMN ═══ -->
       <div class="col-right">
 
-        <!-- Academic Performance Card -->
+        <!-- ══ ACADEMIC PERFORMANCE CARD ══ -->
         <div class="card" style="padding:24px">
-          <div class="academic-title font-serif">Academic Performance</div>
-          <div class="perf-content">
-            <div class="gauge-wrap">
-              <div class="gauge">
-                <svg viewBox="0 0 120 70" fill="none">
-                  <path d="M 10 65 A 50 50 0 0 1 110 65" stroke="#e8e4df" stroke-width="12" stroke-linecap="round"/>
-                  <path d="M 10 65 A 50 50 0 0 1 103 40" stroke="#b8860b" stroke-width="12" stroke-linecap="round"/>
-                </svg>
-                <div class="gauge-value">
-                  <span class="gauge-score font-serif">9.3</span>
-                  <span class="gauge-outof">/10</span>
-                </div>
-              </div>
-              <span class="gauge-label">Average Score</span>
-            </div>
-            <div class="quarter-bars">
-              <div class="quarter-bar">
-                <div class="q-bar" style="height:80px"></div>
-                <span class="quarter-label">First<br>Quarter</span>
-              </div>
-              <div class="quarter-bar">
-                <div class="q-bar" style="height:72px"></div>
-                <span class="quarter-label">Second<br>Quarter</span>
-              </div>
-              <div class="quarter-bar">
-                <div class="q-bar" style="height:64px"></div>
-                <span class="quarter-label">Third<br>Quarter</span>
-              </div>
-              <div class="quarter-bar">
-                <div class="q-bar" style="height:56px"></div>
-                <span class="quarter-label">Fourth<br>Quarter</span>
-              </div>
+          <div class="acad-header">
+            <span class="academic-title font-serif">Academic Performance</span>
+            <div class="acad-filters">
+              <select class="filter-sel" id="acadSubjectFilter" onchange="loadAcademicPerformance()">
+                <option value="">All Subjects</option>
+              </select>
+              <select class="filter-sel" id="acadQuarterFilter" onchange="loadAcademicPerformance()">
+                <option value="Q1">1st Quarter</option>
+                <option value="Q2">2nd Quarter</option>
+                <option value="Q3">3rd Quarter</option>
+                <option value="Q4">4th Quarter</option>
+              </select>
             </div>
           </div>
+
+          <!-- Gauge + Quarter bars -->
+          <div class="perf-content" id="perfContent">
+            <div class="gauge-wrap">
+              <div class="gauge">
+                <svg viewBox="0 0 120 70" fill="none" id="gaugeSvg">
+                  <path d="M 10 65 A 50 50 0 0 1 110 65" stroke="#e8e4df" stroke-width="12" stroke-linecap="round"/>
+                  <path id="gaugeArc" d="M 10 65 A 50 50 0 0 1 110 65" stroke="#b8860b" stroke-width="12" stroke-linecap="round"/>
+                </svg>
+                <div class="gauge-value">
+                  <span class="gauge-score font-serif" id="gaugeScore">—</span>
+                  <span class="gauge-outof" id="gaugeOutof"></span>
+                </div>
+              </div>
+              <span class="gauge-label" id="gaugeLabel">Average Grade</span>
+              <span class="gauge-descriptor" id="gaugeDescriptor"></span>
+            </div>
+            <div class="quarter-bars" id="quarterBars">
+              <!-- injected by JS -->
+            </div>
+          </div>
+
+          <!-- Per-subject grade table -->
+          <div class="acad-table-wrap" id="acadTableWrap" style="display:none">
+            <table class="acad-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Written Works</th>
+                  <th>Perf. Tasks</th>
+                  <th>Quarterly</th>
+                  <th>Final Grade</th>
+                  <th>Overall</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="acadTableBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Toggle table button -->
+          <button class="acad-toggle-btn" id="acadToggleBtn" onclick="toggleGradeTable()">
+            <svg viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M9 4v16M15 4v16"/></svg>
+            View Grade Table
+          </button>
+
+          <!-- Component breakdown -->
+          <div class="comp-breakdown" id="compBreakdown"></div>
         </div>
 
         <!-- Scholarship Card -->
         <div class="card" style="padding:24px">
           <div class="card-header">
             <span class="card-title font-serif" style="font-size:16px">Scholarship</span>
-            <button class="dots-btn" aria-label="More options">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            <button class="add-btn" aria-label="Add scholarship" onclick="openScholarshipModal()">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
           </div>
-          <div class="empty-state">
-            <span class="empty-text">No scholarship records yet.</span>
+          <div id="scholarshipList">
+            <div class="empty-state"><span class="empty-text">No scholarship records yet.</span></div>
           </div>
         </div>
 
@@ -269,30 +321,21 @@
         <div class="card" style="padding:24px">
           <div class="behavior-header">
             <span class="behavior-title font-serif">Behavior &amp; Discipline Log</span>
-            <button class="add-btn" aria-label="Add record">
+            <button class="add-btn" aria-label="Add record" onclick="openBehaviorModal()">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
           </div>
           <div class="log-header">
-            <div class="log-col col-date">
-              <span class="font-mono">Date</span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="log-col col-type">
-              <span class="font-mono">Type &amp; Details</span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="log-col col-reported">
-              <span class="font-mono">Reported by</span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="log-col col-status">
-              <span class="font-mono">Status</span>
-              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
+            <div class="log-col col-date"><span class="font-mono">Date</span></div>
+            <div class="log-col col-type"><span class="font-mono">Type &amp; Details</span></div>
+            <div class="log-col col-reported"><span class="font-mono">Reported by</span></div>
+            <div class="log-col col-status"><span class="font-mono">Status</span></div>
+            <div style="width:52px"></div>
           </div>
-          <div class="empty-state" style="padding:28px 0">
-            <span class="empty-text">No behavior records logged.</span>
+          <div id="behaviorList">
+            <div class="empty-state" style="padding:28px 0">
+              <span class="empty-text">No behavior records logged.</span>
+            </div>
           </div>
         </div>
 
@@ -302,6 +345,222 @@
   </div><!-- /main -->
 </div><!-- /page -->
 
+<!-- ══════════ HEALTH MODAL ══════════ -->
+<div class="si-overlay" id="healthOverlay">
+  <div class="si-modal">
+    <div class="si-modal-header">
+      <span class="si-modal-title font-serif" id="healthModalTitle">Add Health Record</span>
+      <button class="si-close-btn" onclick="closeHealthModal()">✕</button>
+    </div>
+    <div class="si-modal-body">
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Date <span class="si-req">*</span></label>
+          <input type="date" id="hlt-date" class="si-input">
+          <span class="si-err" id="hlt-date-err"></span>
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">Category <span class="si-req">*</span></label>
+          <select id="hlt-category" class="si-input">
+            <option value="">Select…</option>
+            <option value="Routine">Routine Check-up</option>
+            <option value="Allergy">Allergy</option>
+            <option value="Illness">Illness</option>
+            <option value="Injury">Injury</option>
+            <option value="Medication">Medication</option>
+            <option value="Vaccination">Vaccination</option>
+            <option value="Severe">Severe / Emergency</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="si-err" id="hlt-category-err"></span>
+        </div>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Description <span class="si-req">*</span></label>
+        <textarea id="hlt-desc" class="si-input si-textarea" placeholder="Describe the health concern, finding, or record…"></textarea>
+        <span class="si-err" id="hlt-desc-err"></span>
+      </div>
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Physician / Nurse</label>
+          <input type="text" id="hlt-physician" class="si-input" placeholder="e.g. Dr. Reyes">
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">Status</label>
+          <select id="hlt-status" class="si-input">
+            <option value="Noted">Noted</option>
+            <option value="Ongoing">Ongoing</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Monitoring">Monitoring</option>
+            <option value="Referred">Referred</option>
+          </select>
+        </div>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Prescription / Notes</label>
+        <textarea id="hlt-notes" class="si-input si-textarea" placeholder="Medications prescribed, follow-up notes…"></textarea>
+      </div>
+    </div>
+    <div class="si-modal-footer">
+      <button class="si-btn si-btn-secondary" onclick="closeHealthModal()">Cancel</button>
+      <button class="si-btn si-btn-primary" onclick="saveHealth()">
+        <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        <span id="hlt-save-text">Add Record</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCHOLARSHIP MODAL ══════════ -->
+<div class="si-overlay" id="scholarshipOverlay">
+  <div class="si-modal">
+    <div class="si-modal-header">
+      <span class="si-modal-title font-serif" id="scholarshipModalTitle">Add Scholarship</span>
+      <button class="si-close-btn" onclick="closeScholarshipModal()">✕</button>
+    </div>
+    <div class="si-modal-body">
+      <div class="si-form-group">
+        <label class="si-label">Scholarship Name <span class="si-req">*</span></label>
+        <input type="text" id="sch-name" class="si-input" placeholder="e.g. Academic Excellence Grant">
+        <span class="si-err" id="sch-name-err"></span>
+      </div>
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Grantor / Organization <span class="si-req">*</span></label>
+          <input type="text" id="sch-grantor" class="si-input" placeholder="e.g. DepEd, CHED">
+          <span class="si-err" id="sch-grantor-err"></span>
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">Amount / Benefit</label>
+          <input type="text" id="sch-amount" class="si-input" placeholder="e.g. ₱5,000 / semester">
+        </div>
+      </div>
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Start Date</label>
+          <input type="date" id="sch-start" class="si-input">
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">End Date</label>
+          <input type="date" id="sch-end" class="si-input">
+        </div>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Status</label>
+        <select id="sch-status" class="si-input">
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+          <option value="Pending">Pending</option>
+          <option value="Revoked">Revoked</option>
+        </select>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Notes</label>
+        <textarea id="sch-notes" class="si-input si-textarea" placeholder="Any additional notes…"></textarea>
+      </div>
+    </div>
+    <div class="si-modal-footer">
+      <button class="si-btn si-btn-secondary" onclick="closeScholarshipModal()">Cancel</button>
+      <button class="si-btn si-btn-primary" onclick="saveScholarship()">
+        <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        <span id="sch-save-text">Add Scholarship</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BEHAVIOR MODAL ══════════ -->
+<div class="si-overlay" id="behaviorOverlay">
+  <div class="si-modal">
+    <div class="si-modal-header">
+      <span class="si-modal-title font-serif" id="behaviorModalTitle">Add Behavior Record</span>
+      <button class="si-close-btn" onclick="closeBehaviorModal()">✕</button>
+    </div>
+    <div class="si-modal-body">
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Date <span class="si-req">*</span></label>
+          <input type="date" id="beh-date" class="si-input">
+          <span class="si-err" id="beh-date-err"></span>
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">Type <span class="si-req">*</span></label>
+          <select id="beh-type" class="si-input">
+            <option value="">Select type…</option>
+            <option value="Commendation">Commendation</option>
+            <option value="Minor Offense">Minor Offense</option>
+            <option value="Major Offense">Major Offense</option>
+            <option value="Warning">Warning</option>
+            <option value="Suspension">Suspension</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="si-err" id="beh-type-err"></span>
+        </div>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Details <span class="si-req">*</span></label>
+        <textarea id="beh-details" class="si-input si-textarea" placeholder="Describe the incident or commendation…"></textarea>
+        <span class="si-err" id="beh-details-err"></span>
+      </div>
+      <div class="si-form-row">
+        <div class="si-form-group">
+          <label class="si-label">Reported By</label>
+          <input type="text" id="beh-reported" class="si-input" placeholder="e.g. Mrs. Santos">
+        </div>
+        <div class="si-form-group">
+          <label class="si-label">Status</label>
+          <select id="beh-status" class="si-input">
+            <option value="Open">Open</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Pending">Pending</option>
+            <option value="Escalated">Escalated</option>
+          </select>
+        </div>
+      </div>
+      <div class="si-form-group">
+        <label class="si-label">Notes</label>
+        <textarea id="beh-notes" class="si-input si-textarea" placeholder="Any follow-up notes or actions taken…"></textarea>
+      </div>
+    </div>
+    <div class="si-modal-footer">
+      <button class="si-btn si-btn-secondary" onclick="closeBehaviorModal()">Cancel</button>
+      <button class="si-btn si-btn-primary" onclick="saveBehavior()">
+        <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        <span id="beh-save-text">Add Record</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="si-toast-wrap" id="siToastWrap"></div>
+
+<!-- ══════════ DOCUMENT VIEWER MODAL ══════════ -->
+<div class="si-overlay" id="docViewerOverlay">
+  <div class="si-modal" style="max-width:780px;width:100%;max-height:92vh;display:flex;flex-direction:column">
+    <div class="si-modal-header">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div class="doc-viewer-icon" id="dvIcon">
+          <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>
+        <div style="min-width:0">
+          <div class="si-modal-title" id="dvTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:480px">Document</div>
+          <div id="dvMeta" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="si-btn si-btn-secondary" id="dvDownloadBtn" style="padding:6px 12px;font-size:12px">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+        <button class="si-close-btn" onclick="closeDocViewer()">✕</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow:auto;background:#f5f3f0;border-radius:0 0 16px 16px;display:flex;align-items:center;justify-content:center;min-height:300px;padding:12px" id="dvBody">
+      <!-- content injected by JS -->
+    </div>
+  </div>
+</div>
 <script src="StudentInfo.js"></script>
 </body>
 </html>

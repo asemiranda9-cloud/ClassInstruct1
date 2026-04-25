@@ -93,6 +93,12 @@ function addStudent($conn) {
     $rawSid    = isset($data['studentId']) ? trim((string)$data['studentId']) : '';
     $studentId = ($rawSid === '') ? null : $rawSid;
 
+    // Build full_name from parts
+    $firstName  = isset($data['firstName']) ? trim((string)$data['firstName']) : '';
+    $middleName = isset($data['middleName']) ? trim((string)$data['middleName']) : '';
+    $lastName   = isset($data['lastName'])   ? trim((string)$data['lastName'])   : '';
+    $fullName   = trim("$firstName $middleName $lastName");
+
     // Only enforce uniqueness when an actual ID was supplied
     if ($studentId !== null) {
         $sid   = $conn->real_escape_string($studentId);
@@ -118,7 +124,7 @@ function addStudent($conn) {
 
     // Bind $studentId (may be null) — NOT $data['studentId']
     $stmt->bind_param('ssssssssssssssssss',
-        $studentId,            $data['fullName'],       $dob,
+        $studentId,            $fullName,               $dob,
         $data['gender'],       $data['grade'],           $data['section'],
         $enrollDate,           $data['prevSchool'],      $data['email'],
         $data['phone'],        $data['address'],         $data['fatherName'],
@@ -151,6 +157,12 @@ function updateStudent($conn, $id) {
     $rawSid    = isset($data['studentId']) ? trim((string)$data['studentId']) : '';
     $studentId = ($rawSid === '') ? null : $rawSid;
 
+    // Build full_name from parts
+    $firstName  = isset($data['firstName']) ? trim((string)$data['firstName']) : '';
+    $middleName = isset($data['middleName']) ? trim((string)$data['middleName']) : '';
+    $lastName   = isset($data['lastName'])   ? trim((string)$data['lastName'])   : '';
+    $fullName   = trim("$firstName $middleName $lastName");
+
     // Only check uniqueness (excluding self) when a real ID is provided
     if ($studentId !== null) {
         $sid   = $conn->real_escape_string($studentId);
@@ -175,7 +187,7 @@ function updateStudent($conn, $id) {
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
 
     $stmt->bind_param('ssssssssssssssssssi',
-        $studentId,            $data['fullName'],       $dob,
+        $studentId,            $fullName,               $dob,
         $data['gender'],       $data['grade'],           $data['section'],
         $enrollDate,           $data['prevSchool'],      $data['email'],
         $data['phone'],        $data['address'],         $data['fatherName'],
@@ -216,10 +228,28 @@ function deleteStudent($conn, $id) {
 //  Helper — Map DB row → JS-style keys
 // ═══════════════════════════════════
 function mapRow($row) {
+    // Split full_name into first/middle/last if available
+    $fullName = $row['full_name'] ?? '';
+    $parts = preg_split('/\s+/', trim($fullName));
+    $firstName = $parts[0] ?? '';
+    $middleName = '';
+    $lastName = '';
+    if (count($parts) >= 3) {
+        $middleName = $parts[1] ?? '';
+        $lastName = implode(' ', array_slice($parts, 2));
+    } elseif (count($parts) === 2) {
+        $lastName = $parts[1] ?? '';
+    } elseif (count($parts) === 1) {
+        $lastName = $parts[0] ?? '';
+    }
+
     return [
         'id'               => (int)$row['id'],
         'studentId'        => $row['student_id'],   // may be null — JS handles null fine
-        'fullName'         => $row['full_name'],
+        'firstName'        => $firstName,
+        'middleName'       => $middleName,
+        'lastName'         => $lastName,
+        'fullName'         => $fullName, // fallback for backward compat
         'dob'              => $row['dob'],
         'gender'           => $row['gender'],
         'grade'            => $row['grade'],

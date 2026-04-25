@@ -192,6 +192,7 @@
   async function submitRegistration() {
     const firstName = regFirstName.value.trim();
     const lastName  = regLastName.value.trim();
+    const gender    = document.getElementById('regGender').value.trim();
     const email     = regEmail.value.trim();
     const password  = regPassword.value;
     const confirm   = regPasswordConfirm.value;
@@ -205,6 +206,17 @@
     if (!lastName) {
       setFieldError(regLastName, regLastNameError, true, 'Please enter your last name.');
       hasError = true;
+    }
+    // Validate gender
+    const regGenderEl  = document.getElementById('regGender');
+    const regGenderErr = document.getElementById('regGenderError');
+    if (!gender || !['Male', 'Female', 'Other'].includes(gender)) {
+      if (regGenderEl)  regGenderEl.classList.add('error');
+      if (regGenderErr) { regGenderErr.textContent = 'Please select a gender.'; regGenderErr.classList.add('show'); }
+      hasError = true;
+    } else {
+      if (regGenderEl)  regGenderEl.classList.remove('error');
+      if (regGenderErr) regGenderErr.classList.remove('show');
     }
     if (!isValidEmail(email)) {
       setFieldError(regEmail, regEmailError, true, 'Please enter a valid email address.');
@@ -227,7 +239,7 @@
       const res = await fetch('/homepage/register_otp.php', {
         method:      'POST',
         headers:     { 'Content-Type': 'application/json' },
-        body:        JSON.stringify({ firstName, lastName, email, password }),
+        body:        JSON.stringify({ firstName, lastName, gender, email, password }),
         credentials: 'include',
       });
       const data = await res.json();
