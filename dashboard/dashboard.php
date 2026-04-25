@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,23 +8,95 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="sidebar.css">
+  <script>
+    // PHP session → JS globals (used by renderGreeting as fallback)
+    window.CI_FIRST_NAME = "<?php echo isset($_SESSION['first_name']) ? addslashes($_SESSION['first_name']) : ''; ?>";
+    window.CI_LAST_NAME  = "<?php echo isset($_SESSION['last_name'])  ? addslashes($_SESSION['last_name'])  : ''; ?>";
+    window.CI_GENDER     = "<?php echo isset($_SESSION['gender'])     ? addslashes($_SESSION['gender'])     : ''; ?>";
+  </script>
 </head>
 <body>
 <div class="dashboard">
 
   <!-- ══ MAIN ══ -->
   <main class="main-content">
-    <header class="header">
-      <h1 class="header-title">Dashboard</h1>
-      <div class="search-container">
-        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <label for="search-input" class="visually-hidden">Search</label>
-        <input type="search" id="search-input" placeholder="Search students, lessons, resources…"/>
+
+    <!-- ══ HERO GREETING BANNER ══ -->
+    <div class="hero-banner">
+
+      <!-- TOP ROW: Search + Avatars + Button -->
+      <div class="hero-top-row">
+        <div class="search-container">
+          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <label for="search-input" class="visually-hidden">Search</label>
+          <input type="search" id="search-input" placeholder="Search students, lessons, resources…"/>
+        </div>
+        <div class="hero-team-row">
+          <button class="hero-manage-btn" onclick="location.href='student/Student.html'">Manage Class</button>
+        </div>
       </div>
-      <div class="header-brand">ClassInstruct</div>
-    </header>
+
+      <!-- BOTTOM ROW: Greeting + Stat Cards -->
+      <div class="hero-bottom-row">
+
+        <!-- Greeting -->
+        <div class="hero-left">
+          <h1 class="hero-title" id="dashGreeting">Good morning!</h1>
+          <p class="hero-subtitle" id="dashGreetingSub">You have 3 pending tasks reaching deadlines today.</p>
+        </div>
+
+        <!-- Stat Metric Cards -->
+        <div class="hero-stats">
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change hero-stat-change--up">+2.1%</span>
+              <span class="hero-stat-label">Total Students</span>
+              <span class="hero-stat-val" id="heroTotalStudents">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--pink">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change hero-stat-change--up">+8.2%</span>
+              <span class="hero-stat-label">Avg Attendance</span>
+              <span class="hero-stat-val" id="heroAvgAtt">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change" style="color:var(--primary)">Active</span>
+              <span class="hero-stat-label">Sections</span>
+              <span class="hero-stat-val" id="heroSections">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change hero-stat-change--down">-1.3%</span>
+              <span class="hero-stat-label">Passing Rate</span>
+              <span class="hero-stat-val" id="heroPassRate">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /hero-bottom-row -->
+
+    </div><!-- /hero-banner -->
 
     <section class="content-grid" style="grid-template-columns: 1fr 1fr;">
 
@@ -73,16 +146,12 @@
               <select class="filter" id="attMonthFilter" onchange="loadAttendanceCal()"></select>
             </div>
           </div>
-
-          <!-- Summary pills -->
           <div class="att-summary-row">
             <div class="att-stat-pill"><span class="att-stat-label">Present</span><span class="att-stat-val green"  id="attPresent">—</span></div>
             <div class="att-stat-pill"><span class="att-stat-label">Late</span>   <span class="att-stat-val orange" id="attLate">—</span></div>
             <div class="att-stat-pill"><span class="att-stat-label">Absent</span> <span class="att-stat-val red"    id="attAbsent">—</span></div>
             <div class="att-stat-pill"><span class="att-stat-label">Avg Rate</span><span class="att-stat-val"      id="attAvg">—</span></div>
           </div>
-
-          <!-- Calendar grid wrapped in bg panel -->
           <div class="att-cal-wrap">
             <div class="att-cal-grid" id="attCalGrid">
               <div class="att-cal-weekday">Sun</div>
@@ -94,8 +163,6 @@
               <div class="att-cal-weekday">Sat</div>
             </div>
           </div>
-
-          <!-- Legend + link -->
           <div class="att-legend">
             <div class="att-legend-item"><div class="att-legend-dot" style="background:#10b981"></div>High ≥80%</div>
             <div class="att-legend-item"><div class="att-legend-dot" style="background:#f59e0b"></div>Mid 60–79%</div>
@@ -123,13 +190,10 @@
             </div>
           </div>
           <div class="performance-chart bar-chart-container" id="perfChartWrap">
-            <!-- Bar chart -->
             <div class="bar-chart" id="perfBarChart">
               <div style="width:100%;display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-3);font-size:.82rem">Loading...</div>
             </div>
-            <!-- Grade distribution horizontal bars -->
             <div class="grade-distribution" id="perfDistBars"></div>
-            <!-- Summary stats row -->
             <div class="perf-stats-row" id="perfStatsRow"></div>
           </div>
         </article>
@@ -217,7 +281,8 @@
         </article>
       </div>
 
-
+    </section>
+  </main>
 </div>
 
 <script src="dashboard.js"></script>

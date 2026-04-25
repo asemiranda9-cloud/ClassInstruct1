@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════
 const ATT_API    = '/dashboard/attendance/attedance_db.php';
 const STUD_API   = '/dashboard/api/db.php';
-const GRADES_API = '/dashboard/Student/grades_db.php';
+const GRADES_API = '/dashboard/Student/grades_db.php';   // serves ?action=grades|subjects|gpa_scales|summary|weights
 const CAL_KEY    = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -17,9 +17,63 @@ let _allStudents = [];
 let _sections    = [];
 
 // ════════════════════════════════════════════════
+//  GREETING
+// ════════════════════════════════════════════════
+function renderGreeting() {
+  const greetEl = document.getElementById('dashGreeting');
+  const subEl   = document.getElementById('dashGreetingSub');
+  if (!greetEl) return;
+
+  // ── Time-based salutation ──
+  const hour = new Date().getHours();
+  let salutation;
+  if      (hour >= 5  && hour < 12) salutation = 'Good morning';
+  else if (hour >= 12 && hour < 18) salutation = 'Good afternoon';
+  else                               salutation = 'Good evening';
+
+  // ── User data from sessionStorage (set by signin/register flow) ──
+  const firstName = sessionStorage.getItem('ci_first_name') || '';
+  const lastName  = sessionStorage.getItem('ci_last_name')  || '';
+  const gender    = sessionStorage.getItem('ci_gender')     || '';
+
+  // ── Honorific ──
+  const title = gender === 'Male' ? 'Sir' : gender === 'Female' ? "Ma'am" : '';
+
+  // ── Compose greeting — always include name if available ──
+  if (lastName || firstName) {
+    const namePart = title
+      ? `${title} ${lastName}${firstName ? ', ' + firstName : ''}`
+      : `${lastName}${firstName ? ', ' + firstName : ''}`;
+    greetEl.textContent = `${salutation}, ${namePart}!`;
+  } else {
+    // Fallback: check if PHP echoed any user data via a global var
+    const phpFirst = window.CI_FIRST_NAME || '';
+    const phpLast  = window.CI_LAST_NAME  || '';
+    const phpGender= window.CI_GENDER     || '';
+    if (phpFirst || phpLast) {
+      const t2 = phpGender === 'Male' ? 'Sir' : phpGender === 'Female' ? "Ma'am" : '';
+      const np = t2
+        ? `${t2} ${phpLast}${phpFirst ? ', ' + phpFirst : ''}`
+        : `${phpLast}${phpFirst ? ', ' + phpFirst : ''}`;
+      greetEl.textContent = `${salutation}, ${np}!`;
+    } else {
+      greetEl.textContent = `${salutation}!`;
+    }
+  }
+
+  // ── Date subtitle ──
+  if (subEl) {
+    subEl.textContent = new Date().toLocaleDateString('en-PH', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+}
+
+// ════════════════════════════════════════════════
 //  BOOT
 // ════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  renderGreeting();
   initAttMonthFilter();
   renderMiniCalendar();
   renderUpcomingEvents();
@@ -62,6 +116,44 @@ async function loadStudents() {
   // Charts
   renderGenderChart(_allStudents);
   renderRecentStudents([..._allStudents].slice(-5).reverse());
+
+  // Hero banner stats — Total Students & Sections
+  setEl('heroTotalStudents', _allStudents.length || '—');
+  setEl('heroSections', _sections.length || '—');
+
+  // Hero banner — Avg Attendance from attendance summary API
+  try {
+    const attRes = await fetch(ATT_API + '?action=summary');
+    if (attRes.ok) {
+      const attData = await attRes.json();
+      const pct = attData.overall ? attData.overall.present_pct : null;
+      setEl('heroAvgAtt', pct !== null ? pct + '%' : '—');
+    }
+  } catch(e) { /* leave as — */ }
+
+  // Hero banner — Passing Rate from grades API
+  // NOTE: heroPassRate is also updated by loadPerformanceChart() once the full
+  //       grade distribution is known; this is just an early rough estimate.
+  try {
+    const gradeRes = await fetch(GRADES_API + '?action=grades&quarter=Q1');
+    if (gradeRes.ok) {
+      const gradeData = await gradeRes.json();
+      const grades = (Array.isArray(gradeData) ? gradeData : [])
+        .filter(r => r.written_works !== null || r.performance_tasks !== null || r.quarterly_assessment !== null)
+        .map(r => {
+          const ww = r.written_works        !== null ? parseFloat(r.written_works)        : 0;
+          const pt = r.performance_tasks    !== null ? parseFloat(r.performance_tasks)    : 0;
+          const qa = r.quarterly_assessment !== null ? parseFloat(r.quarterly_assessment) : 0;
+          return Math.round((ww * 0.30 + pt * 0.50 + qa * 0.20) * 100) / 100;
+        })
+        .filter(g => !isNaN(g) && g > 0);
+      if (grades.length > 0) {
+        const passing  = grades.filter(g => g >= 75).length;
+        const passRate = Math.round((passing / grades.length) * 100);
+        setEl('heroPassRate', passRate + '%');
+      }
+    }
+  } catch(e) { /* leave as — */ }
 }
 
 function populateDropdown(id) {
@@ -278,6 +370,7 @@ function setAttStats(p, l, a, avg) {
   setEl('attLate',    l);
   setEl('attAbsent',  a);
   setEl('attAvg',     avg ? avg + '%' : '—');
+  setEl('heroAvgAtt', avg ? avg + '%' : '—');
 }
 
 // ════════════════════════════════════════════════
@@ -555,6 +648,7 @@ async function loadPerformanceChart() {
     const avg     = (grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1);
     const passing = grades.filter(g => g >= 75).length;
     const passRate= Math.round((passing/grades.length)*100);
+    setEl('heroPassRate', passRate + '%');
     statsEl.innerHTML = `
       <div class="perf-stat"><span class="perf-stat-label">Avg Grade</span><span class="perf-stat-val" style="color:var(--primary)">${avg}</span></div>
       <div class="perf-stat"><span class="perf-stat-label">Graded</span><span class="perf-stat-val">${grades.length}</span></div>

@@ -71,6 +71,11 @@ const BASE = window.location.hostname === 'localhost'
       document.getElementById('btnRegister'),
       stepEmail.querySelector('.modal-footer-note'),
     ].forEach(el => { if (el) el.style.display = ''; });
+    // Restore forgot link, hide unlock link
+    const forgotLink = document.getElementById('linkForgotPassword');
+    const unlockLink = document.getElementById('linkUnlockAccount');
+    if (forgotLink) forgotLink.style.display = '';
+    if (unlockLink) unlockLink.style.display = 'none';
     btnSendOtp.disabled = false;
   }
 
@@ -284,6 +289,10 @@ const BASE = window.location.hostname === 'localhost'
       if (data.success) {
         clearInterval(timerInterval);
         if (data.token) sessionStorage.setItem('ci_token', data.token);
+        // Save user info for dashboard greeting
+        sessionStorage.setItem('ci_first_name', data.first_name || '');
+        sessionStorage.setItem('ci_last_name',  data.last_name  || '');
+        sessionStorage.setItem('ci_gender',     data.gender     || '');
         showStep(stepSuccess);
         setTimeout(() => { window.location.href = '/dashboard/sidebar.html'; }, 1500);
       } else {
@@ -437,6 +446,12 @@ const BASE = window.location.hostname === 'localhost'
     hideFieldError(emailError, emailInput);
     hideFieldError(passwordError, passwordInput);
 
+    // In the top link row: hide "Forgot password?", show "Unlock account"
+    const forgotLink = document.getElementById('linkForgotPassword');
+    const unlockLink = document.getElementById('linkUnlockAccount');
+    if (forgotLink) forgotLink.style.display = 'none';
+    if (unlockLink) unlockLink.style.display = '';
+
     // Hide normal form elements
     stepEmail.querySelectorAll('.form-group, #btnSendOtp, .divider, #btnRegister, .modal-footer-note')
       .forEach(el => el.style.display = 'none');
@@ -492,15 +507,6 @@ const BASE = window.location.hostname === 'localhost'
             Unlock My Account
           </button>
 
-          <!-- Forgot password subtle link -->
-          <p style="margin-top:12px;margin-bottom:0;font-size:12px;color:#9ca3af;">
-            Forgot your password?
-            <button id="ciForgotBtn" style="
-              background:none;border:none;padding:0;
-              color:#b8860b;font-size:12px;font-weight:500;
-              cursor:pointer;">Reset it here</button>
-          </p>
-
           <!-- Help text -->
           <p style="margin-top:20px;font-size:12px;color:#9ca3af;line-height:1.5;">
             Need help?
@@ -516,9 +522,6 @@ const BASE = window.location.hostname === 'localhost'
 
       document.getElementById('ciUnlockBtn').addEventListener('click', () => {
         window.location.href = `${BASE}/unlock_account.php?email=${encodeURIComponent(emailInput.value.trim())}`;
-      });
-      document.getElementById('ciForgotBtn').addEventListener('click', () => {
-        window.location.href = `${BASE}/forgot_password.php?email=${encodeURIComponent(emailInput.value.trim())}`;
       });
     }
     panel.style.display = 'block';

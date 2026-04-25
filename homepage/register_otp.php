@@ -87,11 +87,15 @@ if ($resend) {
     // ── Validate inputs ──────────────────────────────────────────────────────
     $firstName = trim($body['firstName'] ?? '');
     $lastName  = trim($body['lastName']  ?? '');
+    $gender    = trim($body['gender']    ?? '');
     $email     = trim($body['email']     ?? '');
     $password  = $body['password']       ?? '';
 
     if (empty($firstName) || empty($lastName)) {
         json_fail('Please enter your first and last name.');
+    }
+    if (empty($gender) || !in_array($gender, ['Male', 'Female', 'Other'], true)) {
+        json_fail('Please select a valid gender.');
     }
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_fail('Invalid email address.');
@@ -114,6 +118,7 @@ if ($stmt->num_rows > 0) {
     $_SESSION[REG_SESSION_KEY] = [
         'firstName'    => $firstName,
         'lastName'     => $lastName,
+        'gender'       => $gender,
         'email'        => $email,
         'passwordHash' => password_hash($password, PASSWORD_BCRYPT),
         'registeredAt' => time(),

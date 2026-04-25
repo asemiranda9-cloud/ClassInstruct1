@@ -1306,7 +1306,7 @@
               🔑 Forgot password?
             </a>
             <a id="linkUnlockAccount"
-               style="font-size:0.8125rem;color:var(--gray-500);font-weight:500;cursor:pointer;text-decoration:none;"
+               style="font-size:0.8125rem;color:var(--gray-500);font-weight:500;cursor:pointer;text-decoration:none;display:none;"
                onmouseover="this.style.color='var(--primary)';this.style.textDecoration='underline'"
                onmouseout="this.style.color='var(--gray-500)';this.style.textDecoration='none'">
               🔓 Unlock account
@@ -1427,6 +1427,20 @@
               <input class="form-input" type="text" id="regLastName" placeholder="dela Cruz" autocomplete="family-name">
             </div>
             <span class="field-error" id="regLastNameError">Please enter your last name.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="regGender">Gender</label>
+            <div class="input-wrap">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;z-index:1;">⚧</span>
+              <select class="form-input" id="regGender" autocomplete="sex" style="padding-left:2.5rem;cursor:pointer;background:var(--white);">
+                <option value="">Select your gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Prefer not to say</option>
+              </select>
+            </div>
+            <span class="field-error" id="regGenderError">Please select your gender.</span>
           </div>
 
           <div class="form-group">

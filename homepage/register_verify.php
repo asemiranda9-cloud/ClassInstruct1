@@ -69,6 +69,7 @@ unset($_SESSION[REG_SESSION_KEY]);   // single-use
 
 $firstName    = $pending['firstName'];
 $lastName     = $pending['lastName'];
+$gender       = $pending['gender'] ?? 'Other';
 $email        = $pending['email'];
 $passwordHash = $pending['passwordHash'];
 
@@ -78,10 +79,10 @@ require __DIR__ . '/db.php';
 
 try {
     $stmt = $conn->prepare(
-        'INSERT INTO users (first_name, last_name, email, password_hash, created_at)
-         VALUES (?, ?, ?, ?, NOW())'
+        'INSERT INTO users (first_name, last_name, gender, email, password_hash, created_at)
+         VALUES (?, ?, ?, ?, ?, NOW())'
     );
-    $stmt->bind_param('ssss', $firstName, $lastName, $email, $passwordHash);
+    $stmt->bind_param('sssss', $firstName, $lastName, $gender, $email, $passwordHash);
     $stmt->execute();
 } catch (mysqli_sql_exception $e) {
     if ($e->getCode() === 1062) {
@@ -99,6 +100,7 @@ $_SESSION['ci_user'] = [
     'name'        => $firstName . ' ' . $lastName,
     'first_name'  => $firstName,
     'last_name'   => $lastName,
+    'gender'      => $gender,
     'auth_method' => 'otp_register',
     'authed_at'   => time(),
 ];
@@ -109,6 +111,7 @@ echo json_encode([
     'success'  => true,
     'email'    => $email,
     'name'     => $firstName . ' ' . $lastName,
+    'gender'   => $gender,
     'token'    => $token,
     'redirect' => '/dashboard',
 ]);

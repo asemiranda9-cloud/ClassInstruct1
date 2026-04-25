@@ -61,22 +61,44 @@ unset($_SESSION[OTP_SESSION_KEY]);   // single-use: clear OTP immediately
 
 $email = $data['email'];
 
+// ── Fetch user details from DB ────────────────────────────────────────────────
+require __DIR__ . '/db.php';
+$firstName = '';
+$lastName  = '';
+$gender    = '';
+
+$uStmt = $conn->prepare('SELECT first_name, last_name, gender FROM users WHERE email = ? AND is_active = 1 LIMIT 1');
+$uStmt->bind_param('s', $email);
+$uStmt->execute();
+$uRow = $uStmt->get_result()->fetch_assoc();
+$uStmt->close();
+
+if ($uRow) {
+    $firstName = $uRow['first_name'] ?? '';
+    $lastName  = $uRow['last_name']  ?? '';
+    $gender    = $uRow['gender']     ?? '';
+}
+
 // Start authenticated session
 $_SESSION['ci_user'] = [
-    'email'      => $email,
-    'auth_method'=> 'otp',
-    'authed_at'  => time(),
+    'email'       => $email,
+    'first_name'  => $firstName,
+    'last_name'   => $lastName,
+    'gender'      => $gender,
+    'auth_method' => 'otp',
+    'authed_at'   => time(),
 ];
 
-// Optional: return a short-lived signed token (JWT-style) for SPA use
-// Replace with a real JWT library (firebase/php-jwt) in production
 $token = generateSimpleToken($email);
 
 echo json_encode([
-    'success' => true,
-    'email'   => $email,
-    'token'   => $token,
-    'redirect'=> '/dashboard',     // adjust to your dashboard route
+    'success'    => true,
+    'email'      => $email,
+    'first_name' => $firstName,
+    'last_name'  => $lastName,
+    'gender'     => $gender,
+    'token'      => $token,
+    'redirect'   => '/dashboard',
 ]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

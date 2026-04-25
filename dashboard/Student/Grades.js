@@ -99,6 +99,9 @@ async function loadAllStudents() {
     }));
     filtered = [...students];
 
+    // ── Dynamically populate Grade & Section dropdowns ──────────────────────────
+    populateGradeSectionFilters(data);
+
     if (loadEl) loadEl.style.display = 'none';
     if (wrapEl) wrapEl.style.display = 'block';
     renderTable();
@@ -108,6 +111,41 @@ async function loadAllStudents() {
     if (subject) mergeGradesForSubject(subject, quarter);
   } catch (err) {
     if (loadEl) { loadEl.style.display = 'block'; loadEl.textContent = 'Could not load students — is XAMPP running? (' + err.message + ')'; }
+  }
+}
+
+// Populate grade and section <select> dropdowns from live student data
+function populateGradeSectionFilters(data) {
+  const gradeSet   = new Set();
+  const sectionSet = new Set();
+  data.forEach(r => {
+    if (r.grade)   gradeSet.add(r.grade);
+    if (r.section) sectionSet.add(r.section);
+  });
+
+  const gradeSel   = document.getElementById('gradeSel');
+  const sectionSel = document.getElementById('sectionSel');
+
+  if (gradeSel) {
+    const prev = gradeSel.value;
+    while (gradeSel.options.length > 1) gradeSel.remove(1);
+    [...gradeSet].sort().forEach(g => {
+      const o = document.createElement('option');
+      o.value = g; o.textContent = g;
+      if (g === prev) o.selected = true;
+      gradeSel.appendChild(o);
+    });
+  }
+
+  if (sectionSel) {
+    const prev = sectionSel.value;
+    while (sectionSel.options.length > 1) sectionSel.remove(1);
+    [...sectionSet].sort().forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === prev) o.selected = true;
+      sectionSel.appendChild(o);
+    });
   }
 }
 

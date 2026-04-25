@@ -41,15 +41,11 @@
         </select>
         <select id="gradeSel" onchange="refresh()">
           <option value="">All Grades</option>
-          <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
-          <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
-          <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
-          <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+          <!-- populated dynamically by Grades.js → populateGradeSectionFilters() -->
         </select>
         <select id="sectionSel" onchange="refresh()">
           <option value="">All Sections</option>
-          <option>Section A</option><option>Section B</option>
-          <option>Section C</option><option>Section D</option>
+          <!-- populated dynamically by Grades.js → populateGradeSectionFilters() -->
         </select>
       </div>
       <div class="filters-right">

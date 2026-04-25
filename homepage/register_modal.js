@@ -333,6 +333,11 @@
 
       if (data.success) {
         clearInterval(regTimerInterval);
+        // Save user info for dashboard greeting
+        if (data.token) sessionStorage.setItem('ci_token', data.token);
+        sessionStorage.setItem('ci_first_name', data.first_name || data.name?.split(' ')[0] || '');
+        sessionStorage.setItem('ci_last_name',  data.last_name  || data.name?.split(' ').slice(1).join(' ') || '');
+        sessionStorage.setItem('ci_gender',     data.gender     || '');
         showStep(regStepSuccess);
         setTimeout(() => {
           closeRegModal();
