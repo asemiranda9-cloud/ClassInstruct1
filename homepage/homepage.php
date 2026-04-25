@@ -1063,6 +1063,7 @@
     }
 
     .btn-google:hover { border-color: var(--gray-300); background: var(--gray-50); box-shadow: var(--shadow-md); }
+    #btnRegister:hover { background: var(--primary-dark) !important; border-color: var(--primary-dark) !important; box-shadow: var(--shadow-md); }
     .btn-google svg { flex-shrink: 0; }
 
     .modal-footer-note { margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--gray-400); }
@@ -1265,18 +1266,51 @@
           <p class="modal-subtitle">Enter your Gmail address to continue. We'll send a one-time code to verify it's you.</p>
 
           <div class="form-group">
-            <label for="emailInput">Gmail address</label>
+            <label for="emailInput">Email address</label>
             <div class="input-wrap">
               <input
                 class="form-input"
                 type="email"
                 id="emailInput"
-                placeholder="✉ you@gmail.com"
+                placeholder="✉ you@example.com"
                 autocomplete="email"
                 inputmode="email"
               >
             </div>
-            <span class="field-error" id="emailError">Please enter a valid Gmail address.</span>
+            <span class="field-error" id="emailError">Please enter a valid email address.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <div class="input-wrap" style="position:relative;">
+              <input
+                class="form-input"
+                type="password"
+                id="passwordInput"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                style="padding-left:2.5rem;"
+              >
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
+              
+            </div>
+            <span class="field-error" id="passwordError">Please enter your password.</span>
+          </div>
+
+          <!-- Forgot / Unlock links -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;margin-top:-0.25rem;">
+            <a id="linkForgotPassword"
+               style="font-size:0.8125rem;color:var(--primary);font-weight:500;cursor:pointer;text-decoration:none;"
+               onmouseover="this.style.textDecoration='underline'"
+               onmouseout="this.style.textDecoration='none'">
+              🔑 Forgot password?
+            </a>
+            <a id="linkUnlockAccount"
+               style="font-size:0.8125rem;color:var(--gray-500);font-weight:500;cursor:pointer;text-decoration:none;"
+               onmouseover="this.style.color='var(--primary)';this.style.textDecoration='underline'"
+               onmouseout="this.style.color='var(--gray-500)';this.style.textDecoration='none'">
+              🔓 Unlock account
+            </a>
           </div>
 
           <button class="btn-primary" id="btnSendOtp">
@@ -1286,18 +1320,18 @@
 
           <div class="divider">
             <div class="divider-line"></div>
-            <span class="divider-text">or continue with</span>
+            <span class="divider-text">or</span>
             <div class="divider-line"></div>
           </div>
 
-          <button class="btn-google" id="btnGoogle">
-            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          <button class="btn-google" id="btnRegister" style="background:var(--primary);color:#fff;border-color:var(--primary);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="19" y1="8" x2="19" y2="14"></line>
+              <line x1="22" y1="11" x2="16" y2="11"></line>
             </svg>
-            Continue with Google
+            Register
           </button>
 
           <p class="modal-footer-note">
@@ -1355,6 +1389,143 @@
       </div><!-- /.modal-inner -->
     </div><!-- /.modal-box -->
   </div><!-- /.modal-overlay -->
+
+  <!-- ===== REGISTER MODAL ===== -->
+  <div class="modal-overlay" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="reg-modal-title">
+    <div class="modal-backdrop" id="regModalBackdrop"></div>
+
+    <div class="modal-box" style="max-width:460px;">
+      <div class="modal-accent"></div>
+      <button class="modal-close" id="closeRegModal" aria-label="Close register">✕</button>
+
+      <div class="modal-inner">
+
+        <!-- Brand -->
+        <div class="modal-brand">
+          <div class="modal-brand-icon">🎓</div>
+          <span class="modal-brand-name">ClassInstruct</span>
+        </div>
+
+        <!-- STEP REG-1 : Registration Form -->
+        <div class="step active" id="regStepForm">
+          <h2 class="modal-title" id="reg-modal-title">Create your account</h2>
+          <p class="modal-subtitle">Join thousands of educators. It's completely free.</p>
+
+          <div class="form-group">
+            <label for="regFirstName">First Name</label>
+            <div class="input-wrap">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">👤</span>
+              <input class="form-input" type="text" id="regFirstName" placeholder="Juan" autocomplete="given-name">
+            </div>
+            <span class="field-error" id="regFirstNameError">Please enter your first name.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="regLastName">Last Name</label>
+            <div class="input-wrap">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">👤</span>
+              <input class="form-input" type="text" id="regLastName" placeholder="dela Cruz" autocomplete="family-name">
+            </div>
+            <span class="field-error" id="regLastNameError">Please enter your last name.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="regEmail">Email address</label>
+            <div class="input-wrap">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">✉</span>
+              <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" inputmode="email">
+            </div>
+            <span class="field-error" id="regEmailError">Please enter a valid email address.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <div class="input-wrap" style="position:relative;">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
+              <input class="form-input" type="password" id="regPassword" placeholder="At least 8 characters" autocomplete="new-password">
+              
+            </div>
+            <span class="field-error" id="regPasswordError">Password must be at least 8 characters.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="regPasswordConfirm">Confirm Password</label>
+            <div class="input-wrap" style="position:relative;">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
+              <input class="form-input" type="password" id="regPasswordConfirm" placeholder="Re-enter your password" autocomplete="new-password">
+              
+            </div>
+            <span class="field-error" id="regPasswordConfirmError">Passwords do not match.</span>
+          </div>
+
+          <!-- Password strength bar -->
+          <div style="margin-bottom:1.25rem;">
+            <div style="height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden;">
+              <div id="regStrengthBar" style="height:100%;width:0%;border-radius:2px;transition:width 0.3s,background 0.3s;"></div>
+            </div>
+            <span id="regStrengthLabel" style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;display:block;"></span>
+          </div>
+
+          <button class="btn-primary" id="btnRegisterSubmit">
+            <span class="btn-label">Create Account & Send Code</span>
+            <div class="spinner"></div>
+          </button>
+
+          <p class="modal-footer-note" style="margin-top:1rem;">
+            Already have an account? <a id="linkBackToSignIn">Sign in</a>
+          </p>
+        </div>
+
+        <!-- STEP REG-2 : OTP Verification -->
+        <div class="step" id="regStepOtp">
+          <button class="btn-back" id="regBtnBack">← Back</button>
+
+          <h2 class="modal-title">Verify your email</h2>
+          <p class="modal-subtitle">We sent a 6-digit code to</p>
+          <div class="otp-email-display" id="regOtpEmailDisplay">✉ you@gmail.com</div>
+
+          <div class="otp-inputs" id="regOtpInputs" role="group" aria-label="6-digit verification code">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 1">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 2">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 3">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 4">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 5">
+            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 6">
+          </div>
+
+          <div class="otp-error" id="regOtpError"></div>
+
+          <div class="otp-meta">
+            <span class="otp-timer">
+              ⏱ Code expires in <span class="otp-timer-count" id="regTimerCount">2:00</span>
+            </span>
+            <button class="btn-resend" id="regBtnResend" disabled>Resend code</button>
+          </div>
+
+          <button class="btn-primary" id="regBtnVerifyOtp">
+            <span class="btn-label">Verify & Complete Registration</span>
+            <div class="spinner"></div>
+          </button>
+
+          <p class="modal-footer-note">Didn't receive it? Check your spam folder or <a id="regLinkResend2">resend</a>.</p>
+        </div>
+
+        <!-- STEP REG-3 : Success -->
+        <div class="step" id="regStepSuccess">
+          <div class="success-step">
+            <div class="success-icon">🎉</div>
+            <h2 class="success-title">Account Created!</h2>
+            <p class="success-msg">Welcome to <strong>ClassInstruct</strong>!<br>Your account is ready. Please sign in to continue.</p>
+            <button class="btn-primary" id="regBtnGoToDashboard">
+              <span class="btn-label">Sign In →</span>
+              <div class="spinner"></div>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /.modal-inner -->
+    </div><!-- /.modal-box -->
+  </div><!-- /#registerModal -->
 
   <!-- ===== MAIN CONTENT ===== -->
   <main id="main-content">
@@ -1706,6 +1877,28 @@
 
   <script src="scripts.js"></script>
   <script src="signin_modal_wired.js"></script>
+  <script src="register_modal.js"></script>
+  <script>
+    // ── Forgot Password & Unlock Account link handlers ──────────────────────
+    (function () {
+      function getEmailValue() {
+        const el = document.getElementById('emailInput');
+        return el ? el.value.trim() : '';
+      }
+
+      document.getElementById('linkForgotPassword').addEventListener('click', function () {
+        const email = getEmailValue();
+        window.location.href = BASE + '/forgot_password.php'
+          + (email ? '?email=' + encodeURIComponent(email) : '');
+      });
+
+      document.getElementById('linkUnlockAccount').addEventListener('click', function () {
+        const email = getEmailValue();
+        window.location.href = BASE + '/unlock_account.php'
+          + (email ? '?email=' + encodeURIComponent(email) : '');
+      });
+    })();
+  </script>
 
 </body>
 </html>

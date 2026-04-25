@@ -1,51 +1,56 @@
 <?php
-
-
-/**
- * send_otp.php
- * ClassInstruct — Real OTP Email Sender
- *
- * POST body (JSON): { "email": "user@gmail.com" }
- * Response (JSON):  { "success": true } | { "success": false, "error": "..." }
- *
- * Requirements:
- *   composer require phpmailer/phpmailer
- */
-
 declare(strict_types=1);
 
+/**
+ * send_otp.php — ClassInstruct OTP sender with login-attempt lockout
+ *
+ * Lockout rules:
+ *   Attempts 1-3  → show remaining count
+ *   Attempt  3    → 30-min soft lockout
+ *   Attempts 4-6  → after cooldown, show remaining count again
+ *   Attempt  6    → permanent lock (perm_locked = 1)
+ */
+
+error_reporting(0);
+ini_set('display_errors', '0');
+
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');           // tighten in production
+header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST')    { json_fail('Method not allowed.', 405); }
 
-// ─── Load Composer autoloader ───────────────────────────────────────────────
 $autoload = __DIR__ . '/vendor/autoload.php';
-if (!file_exists($autoload)) {
-    json_fail('Server error: PHPMailer not installed. Run: composer require phpmailer/phpmailer', 500);
-}
+if (!file_exists($autoload)) json_fail('Server error: run composer install.', 500);
 require $autoload;
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as MailException;
 
-// ─── Config (move to .env in production) ────────────────────────────────────
-const SMTP_HOST     = 'smtp.gmail.com';     // or smtp.sendgrid.net, etc.
-const SMTP_PORT     = 587;
-const SMTP_USER     = 'asemiranda9@gmail.com'; // ← change
-const SMTP_PASS     = 'yovy xovh axwy rtzx';  // ← use App Password if Gmail
-const SMTP_FROM     = 'your-app@gmail.com';
-const SMTP_FROM_NAME = 'ClassInstruct';
-const OTP_EXPIRY_SEC = 120;                 // 2 minutes (matches frontend timer)
-const OTP_SESSION_KEY = 'ci_otp_data';
+$dotenvPath = __DIR__ . '/.env';
+if (file_exists($dotenvPath)) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+}
+
+$smtpHost     = $_ENV['SMTP_HOST']      ?? 'smtp.gmail.com';
+$smtpPort     = (int)($_ENV['SMTP_PORT'] ?? 587);
+$smtpUser     = $_ENV['SMTP_USER']      ?? 'asemiranda9@gmail.com';
+$smtpPass     = $_ENV['SMTP_PASS']      ?? 'yovy xovh axwy rtzx';
+$smtpFrom     = $_ENV['SMTP_FROM']      ?? 'asemiranda9@gmail.com';
+$smtpFromName = $_ENV['SMTP_FROM_NAME'] ?? 'ClassInstruct';
+
+define('OTP_EXPIRY_SEC',    120);
+define('OTP_SESSION_KEY',   'ci_otp_data');
+define('SOFT_LIMIT',        3);     // wrong passwords before 30-min wait
+define('PERM_LIMIT',        6);     // total wrong passwords before permanent lock
+define('SOFT_LOCKOUT_SECS', 10);  // 30 minutes
 
 session_start();
 
-// ─── Rate limiting (simple per-session) ─────────────────────────────────────
+// ─── Rate limiting (OTP resend) ───────────────────────────────────────────────
 if (!empty($_SESSION['ci_otp_last_sent'])) {
     $elapsed = time() - $_SESSION['ci_otp_last_sent'];
     if ($elapsed < 60) {
@@ -53,64 +58,140 @@ if (!empty($_SESSION['ci_otp_last_sent'])) {
     }
 }
 
-// ─── Parse & validate input ──────────────────────────────────────────────────
-$body  = json_decode(file_get_contents('php://input'), true);
-$email = trim($body['email'] ?? '');
+// ─── Parse input ─────────────────────────────────────────────────────────────
+$body     = json_decode(file_get_contents('php://input'), true) ?? [];
+$email    = trim($body['email']    ?? '');
+$password = $body['password']      ?? '';
 
-if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    json_fail('Invalid email address.');
+if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) json_fail('Invalid email address.');
+if (empty($password)) json_fail('Password is required.');
+
+// ─── DB ───────────────────────────────────────────────────────────────────────
+require __DIR__ . '/db.php';
+
+$stmt = $conn->prepare(
+    'SELECT id, password_hash, login_attempts, lockout_until, perm_locked
+     FROM users WHERE email = ? AND is_active = 1 LIMIT 1'
+);
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$user) json_fail('No account found with that email address.');
+
+if (empty($user['password_hash'])) {
+    json_fail("This account uses Google sign-in. Please use the 'Continue with Google' button.");
 }
 
-// ─── Generate OTP ────────────────────────────────────────────────────────────
+$userId   = (int) $user['id'];
+$attempts = (int) $user['login_attempts'];
+
+// ─── Permanent lock ───────────────────────────────────────────────────────────
+if ((int)$user['perm_locked'] === 1) {
+    json_fail(
+        'Your account has been locked due to too many failed attempts.',
+        403,
+        ['perm_locked' => true]
+    );
+}
+
+// ─── Soft lockout ─────────────────────────────────────────────────────────────
+if (!empty($user['lockout_until'])) {
+    $until = strtotime($user['lockout_until']);
+    if (time() < $until) {
+        $wait = $until - time();
+        $mins = (int) ceil($wait / 60);
+        json_fail(
+            "Too many failed attempts. Please try again in {$mins} minute" . ($mins === 1 ? '' : 's') . '.',
+            429,
+            ['temp_locked' => true, 'wait_seconds' => $wait]
+        );
+    }
+    // Cooldown passed — clear the lockout timestamp, keep attempt counter
+    $conn->query("UPDATE users SET lockout_until = NULL WHERE id = {$userId}");
+    $user['lockout_until'] = null;
+}
+
+// ─── Verify password ──────────────────────────────────────────────────────────
+if (!password_verify($password, $user['password_hash'])) {
+    $newAttempts = $attempts + 1;
+
+    if ($newAttempts >= PERM_LIMIT) {
+        $conn->query("UPDATE users SET login_attempts = {$newAttempts}, perm_locked = 1 WHERE id = {$userId}");
+        json_fail(
+            'Your account has been locked due to too many failed attempts.',
+            403,
+            ['perm_locked' => true]
+        );
+    }
+
+    if ($newAttempts >= SOFT_LIMIT && empty($user['lockout_until'])) {
+        $until = date('Y-m-d H:i:s', time() + SOFT_LOCKOUT_SECS);
+        $conn->query("UPDATE users SET login_attempts = {$newAttempts}, lockout_until = '{$until}' WHERE id = {$userId}");
+        json_fail(
+            'Too many failed attempts. Please try again in 30 minutes.',
+            429,
+            ['temp_locked' => true, 'wait_seconds' => SOFT_LOCKOUT_SECS]
+        );
+    }
+
+    $conn->query("UPDATE users SET login_attempts = {$newAttempts} WHERE id = {$userId}");
+
+    // How many attempts remain before the NEXT threshold
+    $nextThreshold = $newAttempts < SOFT_LIMIT ? SOFT_LIMIT : PERM_LIMIT;
+    $remaining     = $nextThreshold - $newAttempts;
+
+    json_fail(
+        "Incorrect password. {$remaining} attempt" . ($remaining === 1 ? '' : 's') . ' remaining before lockout.',
+        401,
+        ['attempts_remaining' => $remaining]
+    );
+}
+
+// ─── Correct password — reset counters ───────────────────────────────────────
+$conn->query("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE id = {$userId}");
+
+// ─── Generate & store OTP ─────────────────────────────────────────────────────
 $otp     = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 $expires = time() + OTP_EXPIRY_SEC;
 
-// Store in session (server-side — never expose OTP to the browser)
 $_SESSION[OTP_SESSION_KEY] = [
-    'otp'     => password_hash($otp, PASSWORD_BCRYPT),
-    'email'   => $email,
-    'expires' => $expires,
-    'attempts'=> 0,
+    'otp'      => password_hash($otp, PASSWORD_BCRYPT),
+    'email'    => $email,
+    'expires'  => $expires,
+    'attempts' => 0,
 ];
 $_SESSION['ci_otp_last_sent'] = time();
 
 // ─── Send email ───────────────────────────────────────────────────────────────
 $mail = new PHPMailer(true);
-
 try {
-    // Server settings
     $mail->isSMTP();
-    $mail->Host       = SMTP_HOST;
+    $mail->Host       = $smtpHost;
     $mail->SMTPAuth   = true;
-    $mail->Username   = SMTP_USER;
-    $mail->Password   = SMTP_PASS;
+    $mail->Username   = $smtpUser;
+    $mail->Password   = $smtpPass;
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = SMTP_PORT;
-
-    // Recipients
-    $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
+    $mail->Port       = $smtpPort;
+    $mail->setFrom($smtpFrom, $smtpFromName);
     $mail->addAddress($email);
-
-    // Content
     $mail->isHTML(true);
     $mail->Subject = 'Your ClassInstruct sign-in code: ' . $otp;
     $mail->Body    = buildHtmlEmail($otp, $email);
-    $mail->AltBody = "Your ClassInstruct sign-in code is: $otp\n\nThis code expires in 2 minutes. Do not share it with anyone.";
-
+    $mail->AltBody = "Your ClassInstruct sign-in code is: $otp\n\nExpires in 2 minutes. Do not share it.";
     $mail->send();
-
     echo json_encode(['success' => true]);
-
 } catch (MailException $e) {
     error_log('[ClassInstruct] Mailer error: ' . $mail->ErrorInfo);
     json_fail('Failed to send email. Please try again.', 500);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function json_fail(string $msg, int $code = 400): never
+function json_fail(string $msg, int $code = 400, array $extra = []): never
 {
     http_response_code($code);
-    echo json_encode(['success' => false, 'error' => $msg]);
+    echo json_encode(array_merge(['success' => false, 'error' => $msg], $extra));
     exit;
 }
 
@@ -120,50 +201,30 @@ function buildHtmlEmail(string $otp, string $email): string
         fn($d) => "<span style='display:inline-block;width:48px;height:56px;line-height:56px;text-align:center;font-size:28px;font-weight:700;background:#f3f4f6;border-radius:8px;margin:0 4px;color:#1f2937;'>$d</span>",
         str_split($otp)
     ));
-
     return <<<HTML
-    <!DOCTYPE html>
-    <html lang="en">
+    <!DOCTYPE html><html lang="en">
     <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;padding:0;background:#f9fafb;font-family:'Inter',-apple-system,sans-serif;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 16px;">
         <tr><td align="center">
           <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;max-width:480px;width:100%;">
-            <!-- Accent bar -->
             <tr><td style="height:4px;background:linear-gradient(90deg,#6366f1,#8b5cf6);"></td></tr>
-            <!-- Body -->
             <tr><td style="padding:40px 40px 32px;">
-              <!-- Logo -->
-              <div style="margin-bottom:28px;">
-                <span style="font-size:18px;font-weight:700;color:#111827;">ClassInstruct</span>
-              </div>
+              <div style="margin-bottom:28px;"><span style="font-size:18px;font-weight:700;color:#111827;">ClassInstruct</span></div>
               <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 8px;">Your sign-in code</h1>
-              <p style="font-size:14px;color:#6b7280;margin:0 0 28px;line-height:1.6;">
-                Enter this code to sign in to ClassInstruct. It expires in <strong>2 minutes</strong>.
-              </p>
-              <!-- OTP digits -->
-              <div style="text-align:center;margin:0 0 28px;">$digits</div>
-              <!-- Warning -->
+              <p style="font-size:14px;color:#6b7280;margin:0 0 28px;line-height:1.6;">Enter this code to sign in. It expires in <strong>2 minutes</strong>.</p>
+              <div style="text-align:center;margin:0 0 28px;">{$digits}</div>
               <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:28px;">
-                <p style="margin:0;font-size:13px;color:#92400e;">
-                  🔒 Never share this code with anyone. ClassInstruct staff will never ask for it.
-                </p>
+                <p style="margin:0;font-size:13px;color:#92400e;">🔒 Never share this code. ClassInstruct staff will never ask for it.</p>
               </div>
-              <p style="font-size:13px;color:#9ca3af;margin:0;">
-                If you didn't request this code, you can safely ignore this email.<br>
-                This request was made for: <strong>$email</strong>
-              </p>
+              <p style="font-size:13px;color:#9ca3af;margin:0;">Request made for: <strong>{$email}</strong></p>
             </td></tr>
-            <!-- Footer -->
             <tr><td style="padding:20px 40px;background:#f9fafb;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-                © 2024 ClassInstruct · AI-Powered Teaching Platform
-              </p>
+              <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">© 2025 ClassInstruct · AI-Powered Teaching Platform</p>
             </td></tr>
           </table>
         </td></tr>
       </table>
-    </body>
-    </html>
+    </body></html>
     HTML;
 }

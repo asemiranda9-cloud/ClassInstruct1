@@ -28,6 +28,11 @@
     <div class="filters-bar">
       <div class="filters-left">
         <select id="subjectSel" onchange="refresh()"><option value="">Loading subjects...</option></select>
+        <select id="gradingPeriodSel" onchange="onGradingPeriodChange()">
+          <option value="quarterly">Quarterly (Q1-Q4)</option>
+          <option value="sem2">2 Semesters</option>
+          <option value="sem3">3 Semesters</option>
+        </select>
         <select id="quarterSel" onchange="refresh()">
           <option value="Q1">Q1 — First Quarter</option>
           <option value="Q2">Q2 — Second Quarter</option>

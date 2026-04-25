@@ -1,4 +1,6 @@
-const BASE = '/ClassInstruct1/homepage';
+const BASE = window.location.hostname === 'localhost'
+  ? '/ClassInstruct1/homepage'
+  : '/homepage';
 
 (function () {
   /* ── Elements ── */
@@ -14,7 +16,9 @@ const BASE = '/ClassInstruct1/homepage';
   const emailInput   = document.getElementById('emailInput');
   const emailError   = document.getElementById('emailError');
   const btnSendOtp   = document.getElementById('btnSendOtp');
-  const btnGoogle    = document.getElementById('btnGoogle');
+  const btnRegister  = document.getElementById('btnRegister');
+  const passwordInput = document.getElementById('passwordInput');
+  const passwordError = document.getElementById('passwordError');
 
   const otpDigits    = document.querySelectorAll('.otp-digit');
   const otpEmailDisp = document.getElementById('otpEmailDisplay');
@@ -33,12 +37,9 @@ const BASE = '/ClassInstruct1/homepage';
   function openModal() {
     modal.classList.add('active');
     emailInput.focus();
-    // Show auth_error from Google OAuth redirect if present
     const params = new URLSearchParams(window.location.search);
     if (params.has('auth_error')) {
-      emailError.textContent = params.get('auth_error');
-      emailError.classList.add('show');
-      // Clean URL without reload
+      showFieldError(emailError, emailInput, params.get('auth_error'));
       history.replaceState(null, '', window.location.pathname);
     }
   }
@@ -51,28 +52,35 @@ const BASE = '/ClassInstruct1/homepage';
   function resetAll() {
     showStep(stepEmail);
     emailInput.value = '';
-    setEmailError(false);
+    emailInput.disabled = false;
+    if (passwordInput) { passwordInput.value = ''; passwordInput.disabled = false; }
+    hideFieldError(emailError, emailInput);
+    hideFieldError(passwordError, passwordInput);
     clearOtpDigits();
     otpError.textContent = '';
     clearInterval(timerInterval);
+
+    // Clean up lockout UI — restore all hidden elements
+    const tempBanner = document.getElementById('ciTempLockBanner');
+    if (tempBanner) tempBanner.style.display = 'none';
+    const lockedPanel = document.getElementById('ciLockedPanel');
+    if (lockedPanel) lockedPanel.style.display = 'none';
+    [
+      btnSendOtp,
+      stepEmail.querySelector('.divider'),
+      document.getElementById('btnRegister'),
+      stepEmail.querySelector('.modal-footer-note'),
+    ].forEach(el => { if (el) el.style.display = ''; });
+    btnSendOtp.disabled = false;
   }
 
-  openBtns.forEach(btn => {
-  btn.addEventListener('click', openModal);
-});
+  openBtns.forEach(btn => btn.addEventListener('click', openModal));
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+  });
 
-// Close logic
-closeBtn.addEventListener('click', closeModal);
-backdrop.addEventListener('click', closeModal);
-
-// Escape key closes modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modal.classList.contains('active')) {
-    closeModal();
-  }
-});
-
-  // Auto-open if Google redirected back with error
   window.addEventListener('DOMContentLoaded', () => {
     if (new URLSearchParams(window.location.search).has('auth_error')) openModal();
   });
@@ -83,50 +91,97 @@ document.addEventListener('keydown', e => {
     step.classList.add('active');
   }
 
-  /* ── Email validation (any valid email, not just Gmail) ── */
+  /* ── Error helpers ── */
+  function showFieldError(errorEl, inputEl, msg) {
+    if (inputEl)  inputEl.classList.add('error');
+    if (errorEl) { errorEl.textContent = msg; errorEl.classList.add('show'); }
+  }
+
+  function hideFieldError(errorEl, inputEl) {
+    if (inputEl)  inputEl.classList.remove('error');
+    if (errorEl)  errorEl.classList.remove('show');
+  }
+
+  /* ── Password show/hide toggle ── */
   function isValidEmail(v) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   }
 
-  function setEmailError(show, msg) {
-    emailInput.classList.toggle('error', show);
-    emailError.classList.toggle('show', show);
-    if (msg) emailError.textContent = msg;
+  emailInput.addEventListener('input', () => hideFieldError(emailError, emailInput));
+  if (passwordInput) {
+    passwordInput.addEventListener('input', () => hideFieldError(passwordError, passwordInput));
   }
 
-  emailInput.addEventListener('input', () => {
-    if (emailInput.value.trim()) setEmailError(false);
-  });
-
-  /* ── Send OTP (real API call) ── */
+  /* ── Send OTP ── */
   btnSendOtp.addEventListener('click', () => sendOtp());
   emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendOtp(); });
+  if (passwordInput) {
+    passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendOtp(); });
+  }
 
   async function sendOtp() {
-    const email = emailInput.value.trim();
+    const email    = emailInput.value.trim();
+    const password = passwordInput ? passwordInput.value : '';
+
+    hideFieldError(emailError, emailInput);
+    hideFieldError(passwordError, passwordInput);
+
     if (!isValidEmail(email)) {
-      setEmailError(true, 'Please enter a valid email address.');
+      showFieldError(emailError, emailInput, 'Please enter a valid email address.');
       emailInput.focus();
       return;
     }
+    if (!password) {
+      showFieldError(passwordError, passwordInput, 'Please enter your password.');
+      if (passwordInput) passwordInput.focus();
+      return;
+    }
 
-    setEmailError(false);
     setLoading(btnSendOtp, true);
 
     try {
-      const res = await fetch('/homepage/send_otp.php', {
+      const res = await fetch(`${BASE}/send_otp.php`, {
         method     : 'POST',
         headers    : { 'Content-Type': 'application/json' },
-        body       : JSON.stringify({ email }),
+        body       : JSON.stringify({ email, password }),
         credentials: 'include',
       });
-      const data = await res.json();
+
+      let data;
+      try { data = await res.json(); }
+      catch { showFieldError(emailError, emailInput, 'Server error. Please try again.'); return; }
 
       if (!data.success) {
-        setEmailError(true, data.error || 'Failed to send code. Please try again.');
+        const msg = data.error || 'Failed to send code. Please try again.';
+
+        // ── Permanent lock ────────────────────────────────────────────────────
+        if (data.perm_locked) {
+          showLockedState(msg);
+          return;
+        }
+
+        // ── Soft lockout (30-min cooldown) ────────────────────────────────────
+        if (data.temp_locked) {
+          const wait = data.wait_seconds || 1800;
+          showTempLocked(msg, wait);
+          return;
+        }
+
+        // ── Wrong password (with remaining count) ─────────────────────────────
+        const isPasswordError = msg.toLowerCase().includes('password') ||
+                                msg.toLowerCase().includes('incorrect') ||
+                                msg.toLowerCase().includes('attempt');
+        if (isPasswordError && passwordError && passwordInput) {
+          showFieldError(passwordError, passwordInput, msg);
+          passwordInput.focus();
+        } else {
+          showFieldError(emailError, emailInput, msg);
+          emailInput.focus();
+        }
         return;
       }
 
+      // ── Success: proceed to OTP step ─────────────────────────────────────────
       currentEmail = email;
       otpEmailDisp.textContent = `✉ ${email}`;
       showStep(stepOtp);
@@ -136,18 +191,22 @@ document.addEventListener('keydown', e => {
       otpDigits[0].focus();
 
     } catch (err) {
-      setEmailError(true, 'Network error. Please check your connection.');
+      console.error('[sendOtp]', err);
+      showFieldError(emailError, emailInput, 'Network error — could not reach the server.');
     } finally {
       setLoading(btnSendOtp, false);
     }
   }
-
-  /* ── Google OAuth — real redirect ── */
-  btnGoogle.addEventListener('click', () => {
-    window.location.href = '/homepage/google_oauth.php?action=redirect';
+  /* ── Register button ── */
+  btnRegister.addEventListener('click', () => {
+    closeModal();
+    setTimeout(() => {
+      document.getElementById('registerModal').classList.add('active');
+      document.getElementById('regFirstName').focus();
+    }, 200);
   });
 
-  /* ── OTP digit input handling (unchanged from original) ── */
+  /* ── OTP digit input handling ── */
   otpDigits.forEach((input, i) => {
     input.addEventListener('keydown', e => {
       if (e.key === 'Backspace') {
@@ -200,7 +259,7 @@ document.addEventListener('keydown', e => {
     otpDigits.forEach(d => { d.value = ''; d.classList.remove('filled', 'error-shake'); });
   }
 
-  /* ── Verify OTP (real API call) ── */
+  /* ── Verify OTP ── */
   btnVerify.addEventListener('click', verifyOtp);
 
   async function verifyOtp() {
@@ -214,7 +273,7 @@ document.addEventListener('keydown', e => {
     setLoading(btnVerify, true);
 
     try {
-      const res = await fetch('/homepage/verify_otp.php', {
+      const res = await fetch(`${BASE}/verify_otp.php`, {
         method     : 'POST',
         headers    : { 'Content-Type': 'application/json' },
         body       : JSON.stringify({ otp: entered }),
@@ -226,7 +285,6 @@ document.addEventListener('keydown', e => {
         clearInterval(timerInterval);
         if (data.token) sessionStorage.setItem('ci_token', data.token);
         showStep(stepSuccess);
-        // Auto-redirect after 1.5s
         setTimeout(() => { window.location.href = '/dashboard/sidebar.html'; }, 1500);
       } else {
         otpError.textContent = data.error || 'Incorrect code. Please try again.';
@@ -273,7 +331,7 @@ document.addEventListener('keydown', e => {
     clearOtpDigits();
 
     try {
-      const res = await fetch('/homepage/send_otp.php', {
+      const res = await fetch(`${BASE}/send_otp.php`, {
         method     : 'POST',
         headers    : { 'Content-Type': 'application/json' },
         body       : JSON.stringify({ email: currentEmail }),
@@ -306,10 +364,167 @@ document.addEventListener('keydown', e => {
     window.location.href = '/dashboard/sidebar.html';
   });
 
-  /* ── Sign Up link ── */
+  /* ── Sign Up link → open register modal ── */
   document.getElementById('linkSignUp').addEventListener('click', () => {
-    window.location.href = '/homepage/homepage.php';
+    closeModal();
+    setTimeout(() => {
+      const regModal = document.getElementById('registerModal');
+      if (regModal) {
+        regModal.classList.add('active');
+        const firstInput = regModal.querySelector('input');
+        if (firstInput) firstInput.focus();
+      }
+    }, 200);
   });
+
+  /* ── Lockout helpers ── */
+
+  // Temp lock: hide button + divider + register + footer, show countdown banner only
+  function showTempLocked(msg, waitSeconds) {
+    hideFieldError(emailError, emailInput);
+    hideFieldError(passwordError, passwordInput);
+
+    if (passwordInput) passwordInput.disabled = true;
+    emailInput.disabled = true;
+
+    // Hide send button and everything below it
+    const toHide = [
+      document.getElementById('btnSendOtp'),
+      stepEmail.querySelector('.divider'),
+      document.getElementById('btnRegister'),
+      stepEmail.querySelector('.modal-footer-note'),
+    ];
+    toHide.forEach(el => { if (el) el.style.display = 'none'; });
+
+    // Show or reuse banner (inserted before the button, so it sits in correct flow)
+    let banner = document.getElementById('ciTempLockBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'ciTempLockBanner';
+      banner.style.cssText = [
+        'background:#fff7ed','border:1px solid #fed7aa','border-radius:10px',
+        'padding:16px','font-size:14px','color:#92400e',
+        'line-height:1.6','text-align:center'
+      ].join(';');
+      btnSendOtp.insertAdjacentElement('beforebegin', banner);
+    }
+    banner.style.display = 'block';
+
+    let remaining = waitSeconds;
+    function tick() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      banner.innerHTML =
+        `\u23F3 <strong>Too many failed attempts.</strong><br>` +
+        `Try again in <strong>${m}:${String(s).padStart(2,'0')}</strong>`;
+      if (remaining <= 0) {
+        clearInterval(lockTimer);
+        banner.style.display = 'none';
+        toHide.forEach(el => { if (el) el.style.display = ''; });
+        btnSendOtp.disabled = false;
+        if (passwordInput) passwordInput.disabled = false;
+        emailInput.disabled = false;
+        if (passwordInput) passwordInput.focus();
+      }
+      remaining--;
+    }
+    tick();
+    const lockTimer = setInterval(tick, 1000);
+  }
+
+  // Permanent lock: swap the form body for a modern "account locked" panel
+  function showLockedState(msg) {
+    hideFieldError(emailError, emailInput);
+    hideFieldError(passwordError, passwordInput);
+
+    // Hide normal form elements
+    stepEmail.querySelectorAll('.form-group, #btnSendOtp, .divider, #btnRegister, .modal-footer-note')
+      .forEach(el => el.style.display = 'none');
+
+    // Show or reuse locked panel
+    let panel = document.getElementById('ciLockedPanel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'ciLockedPanel';
+      panel.innerHTML = `
+        <div style="text-align:center;padding:4px 0 8px;">
+
+          <!-- Icon badge -->
+          <div style="
+            width:72px;height:72px;border-radius:50%;
+            background:linear-gradient(135deg,#fef3c7,#fde68a);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 20px;
+            box-shadow:0 0 0 8px rgba(184,134,11,0.08);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                 stroke="#b8860b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+
+          <!-- Heading -->
+          <h3 style="font-size:18px;font-weight:700;color:#111827;margin:0 0 8px;letter-spacing:-0.3px;">
+            Account Locked
+          </h3>
+
+          <!-- Body text -->
+          <p style="font-size:13px;color:#6b7280;margin:0 0 24px;line-height:1.65;max-width:280px;margin-left:auto;margin-right:auto;">
+            Too many failed sign-in attempts. Unlock your account or reset your password to continue.
+          </p>
+
+          <!-- Unlock button -->
+          <button id="ciUnlockBtn" style="
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            width:100%;padding:13px;margin-bottom:10px;
+            background:linear-gradient(135deg,#b8860b,#a07609);
+            color:#fff;border:none;border-radius:10px;
+            font-size:14px;font-weight:600;cursor:pointer;
+            box-shadow:0 4px 12px rgba(184,134,11,0.3);
+            transition:opacity 0.2s,transform 0.2s;"
+            onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+            </svg>
+            Unlock My Account
+          </button>
+
+          <!-- Forgot password subtle link -->
+          <p style="margin-top:12px;margin-bottom:0;font-size:12px;color:#9ca3af;">
+            Forgot your password?
+            <button id="ciForgotBtn" style="
+              background:none;border:none;padding:0;
+              color:#b8860b;font-size:12px;font-weight:500;
+              cursor:pointer;">Reset it here</button>
+          </p>
+
+          <!-- Help text -->
+          <p style="margin-top:20px;font-size:12px;color:#9ca3af;line-height:1.5;">
+            Need help?
+            <a href="mailto:support@classinstruct.com"
+               style="color:#b8860b;font-weight:500;text-decoration:none;"
+               onmouseover="this.style.textDecoration='underline'"
+               onmouseout="this.style.textDecoration='none'">
+              support@classinstruct.com
+            </a>
+          </p>
+        </div>`;
+      stepEmail.appendChild(panel);
+
+      document.getElementById('ciUnlockBtn').addEventListener('click', () => {
+        window.location.href = `${BASE}/unlock_account.php?email=${encodeURIComponent(emailInput.value.trim())}`;
+      });
+      document.getElementById('ciForgotBtn').addEventListener('click', () => {
+        window.location.href = `${BASE}/forgot_password.php?email=${encodeURIComponent(emailInput.value.trim())}`;
+      });
+    }
+    panel.style.display = 'block';
+  }
+
+  // Clean up lockout UI when modal resets
 
   /* ── Loading helper ── */
   function setLoading(btn, loading) {

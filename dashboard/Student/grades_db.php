@@ -34,7 +34,7 @@ $conn->query("
         id INT AUTO_INCREMENT PRIMARY KEY,
         student_id INT NOT NULL,
         subject VARCHAR(100) NOT NULL,
-        quarter ENUM('Q1','Q2','Q3','Q4') NOT NULL DEFAULT 'Q1',
+        quarter VARCHAR(10) NOT NULL DEFAULT 'Q1',
         written_works DECIMAL(5,2) DEFAULT NULL,
         performance_tasks DECIMAL(5,2) DEFAULT NULL,
         quarterly_assessment DECIMAL(5,2) DEFAULT NULL,
@@ -43,6 +43,24 @@ $conn->query("
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY unique_grade (student_id, subject, quarter),
+        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+");
+
+// grade_item_scores table for per-student per-item scores
+$conn->query("
+    CREATE TABLE IF NOT EXISTS grade_item_scores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        student_id INT NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        quarter VARCHAR(10) NOT NULL,
+        component_key VARCHAR(10) NOT NULL,
+        item_name VARCHAR(100) NOT NULL,
+        item_max_score DECIMAL(5,2) DEFAULT 100,
+        score DECIMAL(5,2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_item_score (student_id, subject, quarter, component_key, item_name),
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     )
 ");
@@ -139,6 +157,7 @@ switch ($method) {
             case 'weights':     getWeights($conn);     break;
             case 'gpa_scales':  getGpaScales($conn);   break;
             case 'summary':     getSummary($conn);     break;
+            case 'item_scores': getItemScores($conn);   break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
@@ -365,6 +384,40 @@ function getSummary($conn) {
     ]);
 }
 
+// ── GET item_scores for a subject+quarter ──
+function getItemScores($conn) {
+    $subject = $_GET['subject'] ?? '';
+    $quarter = $_GET['quarter'] ?? 'Q1';
+    $grade   = $_GET['grade']   ?? '';
+    $section = $_GET['section'] ?? '';
+
+    if (!$subject) {
+        echo json_encode(['error' => 'Subject required']); return;
+    }
+
+    $subjectEsc = $conn->real_escape_string($subject);
+    $quarterEsc = $conn->real_escape_string($quarter);
+
+    $studentWhere = "WHERE 1=1";
+    if ($grade)   $studentWhere .= " AND grade='"   . $conn->real_escape_string($grade)   . "'";
+    if ($section) $studentWhere .= " AND section='" . $conn->real_escape_string($section) . "'";
+
+    $sql = "
+        SELECT s.id as student_id, gis.component_key, gis.item_name, gis.item_max_score, gis.score
+        FROM students s
+        LEFT JOIN grade_item_scores gis ON gis.student_id = s.id AND gis.subject='$subjectEsc' AND gis.quarter='$quarterEsc'
+        $studentWhere
+        ORDER BY s.full_name ASC, gis.component_key ASC, gis.item_name ASC
+    ";
+
+    $result = $conn->query($sql);
+    if (!$result) { http_response_code(500); echo json_encode(['error' => $conn->error]); return; }
+
+    $rows = [];
+    while ($r = $result->fetch_assoc()) $rows[] = $r;
+    echo json_encode($rows);
+}
+
 // ── POST save_grades (bulk upsert) ──
 function saveGrades($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -397,6 +450,34 @@ function saveGrades($conn) {
         if ($stmt->execute()) $saved++;
     }
     $stmt->close();
+
+    // Also save item scores if provided
+    $itemStmt = $conn->prepare("
+        INSERT INTO grade_item_scores (student_id, subject, quarter, component_key, item_name, item_max_score, score)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE score=VALUES(score), item_max_score=VALUES(item_max_score)
+    ");
+    foreach ($records as $rec) {
+        $sid = (int)$rec['student_id'];
+        $itemScores = $rec['item_scores'] ?? [];
+        if (is_array($itemScores)) {
+            foreach ($itemScores as $compKey => $items) {
+                if (is_array($items)) {
+                    foreach ($items as $itemName => $scoreData) {
+                        if (is_array($scoreData) && isset($scoreData['score'])) {
+                            $itemNameEsc = $conn->real_escape_string($itemName);
+                            $maxScore = isset($scoreData['maxScore']) ? (float)$scoreData['maxScore'] : 100;
+                            $score = (float)$scoreData['score'];
+                            $itemStmt->bind_param('issssdd', $sid, $subject, $quarter, $compKey, $itemNameEsc, $maxScore, $score);
+                            $itemStmt->execute();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    $itemStmt->close();
+
     echo json_encode(['success' => true, 'saved' => $saved]);
 }
 

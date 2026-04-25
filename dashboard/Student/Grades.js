@@ -27,6 +27,9 @@ let allSubjects      = [];
 let subjectIdCounter = 1;
 let editingSubjectId = null;
 let subjectFilter    = '';
+let gradingMode      = 'quarterly'; // 'quarterly' | 'sem2' | 'sem3'
+// Per-student per-item scores: studentItemScores[studentId][componentKey][itemId] = score
+let studentItemScores = {};
 
 // ── Unsaved Changes Tracking ───────────────────────────────────────────────────
 let hasUnsavedGrades = false;
@@ -37,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadWeights();
   loadGpaScales();
   loadComponentItems();
+  loadStudentItemScores();
   renderWeights();
   loadAllStudents(); // Load students immediately — don't wait for subject selection
   const ov = document.getElementById('editOverlay');
@@ -140,9 +144,36 @@ async function mergeGradesForSubject(subject, quarter) {
       s.att = g ? g.att : null;
     });
     filtered = [...students];
+
+    // Also load item scores from server
+    await loadItemScoresForSubject(subject, quarter, grade, section);
+
     renderTable();
   } catch (err) {
     toast('Could not load grades for this subject: ' + err.message, 'error');
+  }
+}
+
+// Load item scores from server for a subject+quarter
+async function loadItemScoresForSubject(subject, quarter, grade, section) {
+  try {
+    const params = new URLSearchParams({ action: 'item_scores', subject, quarter });
+    if (grade)   params.append('grade',   grade);
+    if (section) params.append('section', section);
+    const res = await fetch(API + '?' + params);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Build studentItemScores from server data
+    data.forEach(r => {
+      if (r.student_id && r.component_key && r.item_name && r.score !== null) {
+        setStudentItemScore(r.student_id, r.component_key, r.item_name, parseFloat(r.score));
+      }
+    });
+  } catch (err) {
+    // Silently fail - item scores are optional
+    console.log('Could not load item scores:', err.message);
   }
 }
 
@@ -445,18 +476,98 @@ async function refresh() {
   }
 }
 
+// ── Grading Period Toggle ─────────────────────────────────────────────────
+function onGradingPeriodChange() {
+  const modeSel = document.getElementById('gradingPeriodSel');
+  const quarterSel = document.getElementById('quarterSel');
+  gradingMode = modeSel.value;
+
+  const options = {
+    quarterly: [
+      { value: 'Q1', label: 'Q1 — First Quarter' },
+      { value: 'Q2', label: 'Q2 — Second Quarter' },
+      { value: 'Q3', label: 'Q3 — Third Quarter' },
+      { value: 'Q4', label: 'Q4 — Fourth Quarter' },
+    ],
+    sem2: [
+      { value: 'Sem1', label: 'Sem 1 — First Semester' },
+      { value: 'Sem2', label: 'Sem 2 — Second Semester' },
+    ],
+    sem3: [
+      { value: 'Sem1', label: 'Sem 1 — First Semester' },
+      { value: 'Sem2', label: 'Sem 2 — Second Semester' },
+      { value: 'Sem3', label: 'Sem 3 — Third Semester' },
+    ],
+  };
+
+  const selected = quarterSel.value;
+  quarterSel.innerHTML = '';
+  (options[gradingMode] || options.quarterly).forEach(opt => {
+    const optEl = document.createElement('option');
+    optEl.value = opt.value;
+    optEl.textContent = opt.label;
+    if (opt.value === selected) optEl.selected = true;
+    quarterSel.appendChild(optEl);
+  });
+
+  refresh();
+}
+
 // ── Computed ──────────────────────────────────────────────────────────────────
 function computeFinal(s) {
   const total = components.reduce((a,c)=>a+c.pct,0);
   if (total <= 0) return 0;
   const raw = components.reduce((sum,c) => {
-    const v = s[c.key] !== null && s[c.key] !== undefined ? Math.min(100,Math.max(0,parseFloat(s[c.key])||0)) : 0;
+    let v = 0;
+    if (c.items && c.items.length > 0) {
+      // Compute from item scores
+      const scoredItems = c.items.filter(it => {
+        const score = getStudentItemScore(s._id, c.key, it.id);
+        return score !== null;
+      });
+      if (scoredItems.length > 0) {
+        const totalPct = scoredItems.reduce((sum, it) => {
+          const score = getStudentItemScore(s._id, c.key, it.id);
+          const max = it.maxScore || 100;
+          return sum + (parseFloat(score) / max) * 100;
+        }, 0);
+        v = totalPct / scoredItems.length;
+      }
+    } else {
+      v = s[c.key] !== null && s[c.key] !== undefined ? Math.min(100,Math.max(0,parseFloat(s[c.key])||0)) : 0;
+    }
     return sum + v * (c.pct/100);
   },0);
   // Normalize in case total ≠ 100
   return Math.round((raw / (total/100)) * 100) / 100;
 }
-function hasAnyGrade(s) { return components.some(c => s[c.key] !== null && s[c.key] !== undefined); }
+
+function hasAnyGrade(s) {
+  return components.some(c => {
+    if (c.items && c.items.length > 0) {
+      // Check if any item has a score for this student
+      return c.items.some(it => getStudentItemScore(s._id, c.key, it.id) !== null);
+    }
+    return s[c.key] !== null && s[c.key] !== undefined;
+  });
+}
+
+// Compute just the component average from items (for display in grade sheet)
+function computeComponentAvgFromItems(studentId, componentKey) {
+  const c = components.find(c => c.key === componentKey);
+  if (!c || !c.items || c.items.length === 0) return null;
+  const scoredItems = c.items.filter(it => {
+    const score = getStudentItemScore(studentId, c.key, it.id);
+    return score !== null;
+  });
+  if (scoredItems.length === 0) return null;
+  const totalPct = scoredItems.reduce((sum, it) => {
+    const score = getStudentItemScore(studentId, c.key, it.id);
+    const max = it.maxScore || 100;
+    return sum + (parseFloat(score) / max) * 100;
+  }, 0);
+  return totalPct / scoredItems.length;
+}
 
 // ── Render Grade Sheet ────────────────────────────────────────────────────────
 function renderTable() {
@@ -471,19 +582,44 @@ function renderTable() {
     }
   }
 
+  // Build column configuration: for each component, either single column or multiple item columns
+  const colConfig = []; // { key, label, pct, isItem, itemId, itemName, itemMaxScore, colspan }
+  components.forEach(c => {
+    if (c.items && c.items.length > 0) {
+      // Add parent cell with colspan = number of items
+      colConfig.push({ key: c.key, label: c.label, pct: c.pct, isItem: false, colspan: c.items.length });
+      // Add item cells
+      c.items.forEach(it => {
+        colConfig.push({ key: c.key, label: it.name || ('Item ' + it.id), pct: null, isItem: true, itemId: it.id, itemName: it.name, itemMaxScore: it.maxScore || 100, colspan: 1 });
+      });
+    } else {
+      colConfig.push({ key: c.key, label: c.label, pct: c.pct, isItem: false, colspan: 1 });
+    }
+  });
+
   // Update column headers dynamically from components
   const thead = document.querySelector('#gradeBody')?.closest('table')?.querySelector('thead tr');
   if (thead) {
-    // Rebuild thead: #, Student, [components...], Attendance, Final, Descriptor, GPA, Letter
-    thead.innerHTML = `
-      <th style="width:36px;">#</th>
-      <th style="width:180px;">Student</th>
-      ${components.map(c=>`<th style="width:90px;">${esc(c.label)}<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;">${c.pct}%</small></th>`).join('')}
-      <th style="width:100px;">Attendance</th>
-      <th style="width:70px;">Final</th>
-      <th style="width:140px;">Descriptor</th>
-      <th style="width:65px;">GPA</th>
-      <th style="width:70px;">Letter</th>`;
+    const hasItems = components.some(c => c.items && c.items.length > 0);
+
+    const vb = hasItems ? 'vertical-align:bottom;' : '';
+    let theadHTML = `
+      <th style="width:36px;white-space:nowrap;${vb}">#</th>
+      <th style="min-width:160px;max-width:200px;${vb}">Student</th>
+      ${colConfig.map(col => {
+        if (col.isItem) {
+          return `<th style="min-width:52px;width:60px;max-width:80px;font-size:9px;font-weight:500;color:var(--gray-600);text-align:center;word-break:break-word;white-space:normal;padding:4px 4px 6px;" title="${esc(col.itemName || 'Unnamed')}">${esc(truncate(col.itemName || ('Item ' + col.itemId), 7))}<br><small style="font-weight:400;color:var(--gray-400);">/${col.itemMaxScore}</small></th>`;
+        } else {
+          return `<th style="min-width:70px;white-space:nowrap;${vb}" colspan="${col.colspan}">${esc(col.label)}<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;">${col.pct}%</small></th>`;
+        }
+      }).join('')}
+      <th style="min-width:100px;${vb}">Att.</th>
+      <th style="min-width:55px;white-space:nowrap;${vb}">Final</th>
+      <th style="min-width:110px;${vb}">Descriptor</th>
+      <th style="min-width:45px;white-space:nowrap;${vb}">GPA</th>
+      <th style="min-width:45px;white-space:nowrap;${vb}">Letter</th>`;
+
+    thead.innerHTML = theadHTML;
   }
 
   // Populate descriptor filter — deduplicated, sorted high to low
@@ -507,7 +643,9 @@ function renderTable() {
 
   const body = document.getElementById('gradeBody');
   body.innerHTML = '';
-  const totalCols = 4 + components.length; // #, Student, [comps], Attendance, Final, Desc, GPA, Letter
+
+  // Calculate total columns for the "no students" message
+  let totalCols = 2 + colConfig.length + 4; // #, Student, [colConfig], Attendance, Final, Desc, GPA, Letter
 
   if (!filtered.length) {
     body.innerHTML = `<tr><td colspan="${totalCols}" style="text-align:center;padding:30px;color:var(--gray-400);">No students found.</td></tr>`;
@@ -520,11 +658,20 @@ function renderTable() {
     const info     = f !== null ? getGpaInfo(f) : null;
     const attVal   = s.att !== null ? s.att : 0;
     const tr       = document.createElement('tr');
-    const compCells = components.map(c => {
-      const val = s[c.key] !== null && s[c.key] !== undefined ? s[c.key] : '';
-      return `<td><input class="grade-input" type="number" min="0" max="100" step="0.01"
-        value="${val}" placeholder="—"
-        oninput="updateGrade(${students.indexOf(s)},'${c.key}',this.value)"></td>`;
+
+    // Build component cells using colConfig
+    const compCells = colConfig.map(col => {
+      if (col.isItem) {
+        const val = getStudentItemScore(s._id, col.key, col.itemId);
+        return `<td style="text-align:center;padding:4px 3px;"><input class="grade-input grade-input-sm" type="number" min="0" max="${col.itemMaxScore}" step="0.01"
+          value="${val !== null ? val : ''}" placeholder="—"
+          oninput="updateItemScore(${students.indexOf(s)},'${col.key}',${col.itemId},this.value,'${col.itemMaxScore}')"></td>`;
+      } else {
+        const val = s[col.key] !== null && s[col.key] !== undefined ? s[col.key] : '';
+        return `<td><input class="grade-input" type="number" min="0" max="100" step="0.01"
+          value="${val}" placeholder="—"
+          oninput="updateGrade(${students.indexOf(s)},'${col.key}',this.value)"></td>`;
+      }
     }).join('');
     tr.innerHTML = `
       <td style="color:var(--gray-400);font-size:12px;">${i + 1}</td>
@@ -547,6 +694,32 @@ function renderTable() {
       <td style="font-weight:700;color:${f !== null ? progColor(f) : 'var(--gray-400)'};font-size:14px;" id="ltr-${i}">${info ? info.letter : '—'}</td>`;
     body.appendChild(tr);
   });
+  renderStats();
+}
+
+function updateItemScore(idx, componentKey, itemId, val, maxScore) {
+  const s = students[idx];
+  const score = val === '' ? null : Math.min(parseFloat(maxScore) || 100, Math.max(0, parseFloat(val) || 0));
+  setStudentItemScore(s._id, componentKey, itemId, score);
+  hasUnsavedGrades = true;
+  markUnsavedIndicator(true);
+
+  const fIdx = filtered.indexOf(s);
+  if (fIdx < 0) return;
+
+  const f    = hasAnyGrade(s) ? computeFinal(s) : null;
+  const info = f !== null ? getGpaInfo(f) : null;
+
+  const fgEl   = document.getElementById('fg-'    + fIdx);
+  const descEl = document.getElementById('desc-'  + fIdx);
+  const gpaEl  = document.getElementById('gpa-'   + fIdx);
+  const ltrEl  = document.getElementById('ltr-'   + fIdx);
+
+  if (fgEl)   { fgEl.textContent = f !== null ? f.toFixed(1) : '—'; fgEl.style.color = f !== null ? progColor(f) : 'var(--gray-400)'; }
+  if (descEl) descEl.innerHTML  = info ? '<span class="badge ' + badgeClass(info.descriptor) + '">' + esc(info.descriptor) + '</span>' : '—';
+  if (gpaEl)  gpaEl.textContent = info ? info.gpa    : '—';
+  if (ltrEl)  { ltrEl.textContent = info ? info.letter : '—'; ltrEl.style.color = f !== null ? progColor(f) : 'var(--gray-400)'; }
+
   renderStats();
 }
 
@@ -618,10 +791,20 @@ async function saveGrades() {
   const subject = document.getElementById('subjectSel').value;
   const quarter = document.getElementById('quarterSel').value;
   if (!subject) { toast('Select a subject first.', 'error'); return; }
+
+  // Build item scores map for this save session
+  const itemScoresMap = {};
+  students.forEach(s => {
+    if (studentItemScores[s._id]) {
+      itemScoresMap[s._id] = studentItemScores[s._id];
+    }
+  });
+
   const records = students.map(s => ({
     student_id: s._id, written_works: s.ww, performance_tasks: s.pt,
     quarterly_assessment: s.qa, attendance: s.att,
     final_grade: hasAnyGrade(s) ? computeFinal(s) : null,
+    item_scores: studentItemScores[s._id] || {},
   }));
   try {
     const res  = await fetch(API + '?action=save_grades', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
@@ -629,6 +812,7 @@ async function saveGrades() {
     if (data.error) { toast('Error: ' + data.error, 'error'); return; }
     hasUnsavedGrades = false;         // ← clear dirty flag
     markUnsavedIndicator(false);      // ← update UI indicator
+    saveStudentItemScores();          // Also persist item scores to localStorage
     toast('Grades saved! (' + data.saved + ' records)', 'success');
   } catch { toast('Network error — is XAMPP running?', 'error'); }
 }
@@ -816,12 +1000,12 @@ async function renderSummary() {
       <div class="stat-value">${parseFloat(avg).toFixed(2)}</div>
       <div class="stat-sub">${getGpaInfo(parseFloat(avg)).descriptor}</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card clickable" onclick="showStudentList('passing')">
       <div class="stat-label">Passing</div>
       <div class="stat-value" style="color:var(--success);">${passing}</div>
       <div class="stat-sub">${passRate}% pass rate</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card clickable" onclick="showStudentList('failing')">
       <div class="stat-label">Needs Support</div>
       <div class="stat-value" style="color:var(--danger);">${failing}</div>
       <div class="stat-sub">below 75</div>
@@ -866,9 +1050,94 @@ async function renderSummary() {
   }).join('');
 }
 
-// ════════════════════════════════════════
-//  IMPORT / EXPORT
-// ════════════════════════════════════════
+// ── Student List Modal ───────────────────────────────────────────────────
+function showStudentList(type) {
+  const graded = students.filter(s => hasAnyGrade(s));
+  const list = graded.filter(s => {
+    const f = computeFinal(s);
+    return type === 'passing' ? f >= 75 : f < 75;
+  });
+
+  const title = type === 'passing' ? 'Passing Students' : 'Needs Support';
+  const titleColor = type === 'passing' ? 'var(--success)' : 'var(--danger)';
+  const borderColor = type === 'passing' ? 'var(--success)' : 'var(--danger)';
+
+  let html = `
+    <div id="studentListModal" style="
+      position:fixed;inset:0;z-index:10000;
+      background:rgba(17,24,39,0.55);
+      display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(2px);" onclick="closeStudentListModal(event)">
+      <div style="
+        background:#fff;border-radius:14px;
+        padding:0;max-width:600px;width:calc(100% - 2rem);
+        max-height:80vh;overflow:hidden;
+        box-shadow:0 20px 60px rgba(0,0,0,.18);" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-200);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:${borderColor};"></div>
+            <span style="font-size:16px;font-weight:700;color:var(--gray-900);">${title}</span>
+            <span style="font-size:12px;color:var(--gray-400);font-weight:400;">(${list.length} student${list.length !== 1 ? 's' : ''})</span>
+          </div>
+          <button onclick="closeStudentListModal()" style="
+            background:none;border:none;font-size:18px;color:var(--gray-400);cursor:pointer;padding:4px;
+            display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all 0.15s;">
+            ✕
+          </button>
+        </div>
+        <div style="overflow-y:auto;max-height:calc(80vh - 70px);">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">#</th>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Student</th>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Section</th>
+                <th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Final</th>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.4px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+  `;
+
+  if (!list.length) {
+    html += `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-400);">No students found.</td></tr>`;
+  } else {
+    list.forEach((s, i) => {
+      const f = computeFinal(s);
+      const info = getGpaInfo(f);
+      const statusClass = type === 'passing' ? 'badge-s' : 'badge-dnm';
+      const statusLabel = type === 'passing' ? info.descriptor : 'Needs Support';
+      html += `
+        <tr style="border-bottom:1px solid var(--gray-100);">
+          <td style="padding:10px 16px;color:var(--gray-400);font-size:12px;">${i + 1}</td>
+          <td style="padding:10px 16px;">
+            <div style="font-weight:600;color:var(--gray-900);font-size:13px;">${esc(s.name)}</div>
+            <div style="font-size:11px;color:var(--gray-400);">${esc(s.id || '')}</div>
+          </td>
+          <td style="padding:10px 16px;color:var(--gray-600);font-size:13px;">${s._grade ? esc(s._grade + ' - ' + s._section) : '—'}</td>
+          <td style="padding:10px 16px;text-align:center;font-family:'DM Mono',monospace;font-weight:600;font-size:14px;color:${type === 'passing' ? 'var(--success)' : 'var(--danger)'};">${f.toFixed(1)}</td>
+          <td style="padding:10px 16px;"><span class="badge ${statusClass}">${esc(statusLabel)}</span></td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeStudentListModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  const modal = document.getElementById('studentListModal');
+  if (modal) modal.remove();
+}
 function toggleImport() { document.getElementById('importZone').classList.toggle('show'); }
 
 function handleImport(input) {
@@ -1023,13 +1292,18 @@ function saveComponentItems() {
   const hasUnnamed = components.some(c => (c.items||[]).some(it => !it.name.trim()));
   if (hasUnnamed) { toast('Some items are missing names — please fill them in.', 'error'); return; }
   try { localStorage.setItem('classinstruct_components', JSON.stringify(components)); } catch {}
+  saveStudentItemScores();
+  if (students.length) renderTable();
   toast('Component items saved!', 'success');
 }
 
 function resetComponentItems() {
   if (!confirm('Clear all component items?')) return;
   components.forEach(c => { c.items = []; });
+  studentItemScores = {};
+  try { localStorage.removeItem('classinstruct_student_items'); } catch {}
   renderComponentItems();
+  if (students.length) renderTable();
   toast('Component items reset.', 'success');
 }
 
@@ -1046,6 +1320,36 @@ function loadComponentItems() {
   } catch {}
 }
 
+// ── Student Item Scores ────────────────────────────────────────────────────
+function loadStudentItemScores() {
+  try {
+    const raw = localStorage.getItem('classinstruct_student_items');
+    if (raw) {
+      studentItemScores = JSON.parse(raw);
+    } else {
+      studentItemScores = {};
+    }
+  } catch {
+    studentItemScores = {};
+  }
+}
+
+function saveStudentItemScores() {
+  try {
+    localStorage.setItem('classinstruct_student_items', JSON.stringify(studentItemScores));
+  } catch {}
+}
+
+function getStudentItemScore(studentId, componentKey, itemId) {
+  return studentItemScores[studentId]?.[componentKey]?.[itemId] ?? null;
+}
+
+function setStudentItemScore(studentId, componentKey, itemId, score) {
+  if (!studentItemScores[studentId]) studentItemScores[studentId] = {};
+  if (!studentItemScores[studentId][componentKey]) studentItemScores[studentId][componentKey] = {};
+  studentItemScores[studentId][componentKey][itemId] = score;
+}
+
 // ════════════════════════════════════════
 //  TOAST + HELPERS
 // ════════════════════════════════════════
@@ -1058,6 +1362,11 @@ function toast(msg, type = 'success') {
 }
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function truncate(str, maxLen) {
+  str = String(str || '');
+  return str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
 }
 
 // ════════════════════════════════════════

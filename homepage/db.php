@@ -2,28 +2,29 @@
 declare(strict_types=1);
 
 /**
- * db.php — Shared MySQLi database connection using .env credentials
+ * db.php — Shared MySQLi connection for ClassInstruct auth
+ * (send_otp.php, verify_otp.php, register_otp.php, etc.)
  */
 
-$dotenvPath = __DIR__ . '/.env';
-if (file_exists($dotenvPath)) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
-}
+error_reporting(0);
+ini_set('display_errors', '0');
 
-$host     = $_ENV['DB_HOST']     ?? '127.0.0.1';
-$port     = $_ENV['DB_PORT']     ?? '3306';
-$database = $_ENV['DB_DATABASE'] ?? 'classinstructdb';
-$username = $_ENV['DB_USERNAME'] ?? 'root';
-$password = $_ENV['DB_PASSWORD'] ?? '';
+// Hard-coded credentials — change these to match your Laragon MySQL
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'classinstructdb');
 
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
-try {
-    $conn = new mysqli($host, $username, $password, $database, (int) $port);
-    $conn->set_charset('utf8mb4');
-} catch (mysqli_sql_exception $e) {
+if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed', 'details' => $e->getMessage()]);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Database connection failed. Please try again later.',
+    ]);
     exit;
 }
+
+$conn->set_charset('utf8mb4');
