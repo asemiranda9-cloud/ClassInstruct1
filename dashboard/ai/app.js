@@ -6,9 +6,12 @@ let isSending = false;
 let chatHistory = [];
 let pendingLessonPlanMeta = null; // set when a lesson plan is being generated
 
-async function sendMessageToGemini(message) {
+// Streams the AI reply chunk-by-chunk into a live message bubble.
+// Returns the full accumulated text when done.
+async function streamMessageFromGemini(message, onChunk) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  // Hard timeout: abort if no response at all within 15s
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const response = await fetch("http://localhost:3000/chat", {
@@ -20,16 +23,63 @@ async function sendMessageToGemini(message) {
 
     clearTimeout(timeoutId);
 
-    let data = {};
-    try { data = await response.json(); } catch { throw new Error("Server returned an invalid response."); }
-    if (!response.ok) throw new Error(data.reply || "Server error");
-    return data.reply;
+    if (!response.ok) {
+      let data = {};
+      try { data = await response.json(); } catch {}
+      throw new Error(data.reply || `Server error (${response.status})`);
+    }
+
+    if (!response.body) {
+      throw new Error("Server did not return a stream. Restart the server with the updated server.js.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let fullText = "";
+    let firstChunkTimer = setTimeout(() => {
+      reader.cancel();
+      throw new Error("No response from AI after 10 seconds. Check your GEMINI_API_KEY and restart the server.");
+    }, 10000);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      clearTimeout(firstChunkTimer);
+      firstChunkTimer = null;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr) continue;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.error) throw new Error(parsed.error);
+          if (parsed.chunk) {
+            fullText += parsed.chunk;
+            onChunk(fullText);
+          }
+        } catch (e) {
+          if (e.message !== "Unexpected end of JSON input") throw e;
+        }
+      }
+    }
+
+    return fullText;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === 'AbortError') throw new Error("Request timed out. Please try again.");
+    if (error.name === "AbortError") throw new Error("Request timed out. Make sure the server is running on localhost:3000.");
     throw error;
   }
 }
+
+
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -38,7 +88,19 @@ function escapeHtml(text) {
 }
 
 function formatMessage(text) {
-  let formatted = escapeHtml(text);
+  // Strip common markdown symbols the AI might still produce
+  let cleaned = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')         // bold
+    .replace(/\*(.*?)\*/g, '$1')              // italic
+    .replace(/__(.*?)__/g, '$1')              // bold alt
+    .replace(/_(.*?)_/g, '$1')               // italic alt
+    .replace(/~~(.*?)~~/g, '$1')             // strikethrough
+    .replace(/^#{1,6}\s+/gm, '')             // headings
+    .replace(/`{1,3}([\s\S]*?)`{1,3}/g, '$1') // inline/block code
+    .replace(/^\s*[-*+]\s+/gm, '')           // unordered list markers
+    .replace(/^\s*>\s+/gm, '');              // blockquotes
+
+  let formatted = escapeHtml(cleaned);
   formatted = formatted.replace(/\n/g, '<br>');
   return formatted;
 }
@@ -64,15 +126,15 @@ function addAiMessage(text, isError = false) {
   if (lpMeta && !isError) {
     pdfBtnHTML = `
       <div class="pdf-download-bar">
-        <span class="pdf-label">📄 Lesson Plan Ready</span>
-        <button class="pdf-download-btn" onclick="downloadLessonPlanPDF(this)" 
+        <span class="pdf-label">Lesson Plan Ready</span>
+        <button class="pdf-download-btn" onclick="downloadLessonPlanPDF(this)"
           data-text="${escapeAttr(text)}"
           data-subject="${escapeAttr(lpMeta.subject)}"
           data-grade="${escapeAttr(lpMeta.grade)}"
           data-topic="${escapeAttr(lpMeta.topic)}"
           data-framework="${escapeAttr(lpMeta.frameworkLabel)}"
           data-duration="${escapeAttr(lpMeta.duration)}">
-          ⬇ Download PDF
+          Download PDF
         </button>
       </div>`;
   }
@@ -99,16 +161,55 @@ async function handleSendMessage() {
   addUserMessage(userMessage);
   chatInput.value = "";
 
+  // Show typing indicator while waiting for the first chunk
   const typingDiv = document.createElement("div");
   typingDiv.className = "ai-message typing-message";
   typingDiv.innerHTML = '<div class="message-content"><span class="typing-dots">● ● ●</span> Thinking...</div>';
   chatMessages.appendChild(typingDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  // Create the live AI message bubble (hidden until first chunk arrives)
+  const messageDiv = document.createElement("div");
+  messageDiv.className = "ai-message";
+  const contentDiv = document.createElement("div");
+  contentDiv.className = "message-content";
+  messageDiv.appendChild(contentDiv);
+
+  let firstChunk = true;
+
   try {
-    const aiReply = await sendMessageToGemini(userMessage);
-    typingDiv.remove();
-    addAiMessage(aiReply);
+    const fullText = await streamMessageFromGemini(userMessage, (accumulated) => {
+      if (firstChunk) {
+        typingDiv.remove();
+        chatMessages.appendChild(messageDiv);
+        firstChunk = false;
+      }
+      contentDiv.innerHTML = formatMessage(accumulated);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
+    // After streaming is done, attach PDF button if this was a lesson plan
+    const lpMeta = pendingLessonPlanMeta;
+    pendingLessonPlanMeta = null;
+    if (lpMeta && fullText) {
+      const pdfBar = document.createElement("div");
+      pdfBar.className = "pdf-download-bar";
+      pdfBar.innerHTML = `
+        <span class="pdf-label">Lesson Plan Ready</span>
+        <button class="pdf-download-btn" onclick="downloadLessonPlanPDF(this)"
+          data-text="${escapeAttr(fullText)}"
+          data-subject="${escapeAttr(lpMeta.subject)}"
+          data-grade="${escapeAttr(lpMeta.grade)}"
+          data-topic="${escapeAttr(lpMeta.topic)}"
+          data-framework="${escapeAttr(lpMeta.frameworkLabel)}"
+          data-duration="${escapeAttr(lpMeta.duration)}">
+          Download PDF
+        </button>`;
+      messageDiv.appendChild(pdfBar);
+    }
+
+    if (fullText) chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() });
+
   } catch (error) {
     typingDiv.remove();
     let errorMessage = error.message;
@@ -131,6 +232,178 @@ chatInput.addEventListener("keydown", (event) => {
     handleSendMessage();
   }
 });
+
+// ============================================
+// FILE ATTACHMENT
+// ============================================
+let attachedFile = null;
+let attachedFileContent = null;
+
+const fileInput = document.getElementById('file-input');
+const attachBtn = document.getElementById('attach-btn');
+const attachmentPreview = document.getElementById('attachment-preview');
+const attachmentName = document.getElementById('attachment-name');
+
+if (attachBtn && fileInput) {
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      showToast('File too large. Maximum size is 5MB.', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    attachedFile = file;
+    attachmentName.textContent = file.name;
+    attachmentPreview.style.display = 'flex';
+    attachBtn.style.color = 'var(--primary-color)';
+
+    // Read file content as text (for text-based files)
+    const reader = new FileReader();
+    const textTypes = ['text/plain', 'application/json', 'text/csv', 'text/html'];
+    const isText = textTypes.includes(file.type) || file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.json');
+
+    if (isText) {
+      reader.onload = (e) => {
+        attachedFileContent = e.target.result;
+        showToast(`File attached: ${file.name}`);
+      };
+      reader.readAsText(file);
+    } else {
+      // For PDFs, Word docs, images — just note the filename and type
+      attachedFileContent = null;
+      showToast(`File attached: ${file.name} (name will be included in your message)`);
+    }
+  });
+}
+
+function clearAttachment() {
+  attachedFile = null;
+  attachedFileContent = null;
+  if (fileInput) fileInput.value = '';
+  if (attachmentPreview) attachmentPreview.style.display = 'none';
+  if (attachBtn) attachBtn.style.color = '';
+}
+
+// Override handleSendMessage to prepend file content when a file is attached
+const _originalHandleSend = handleSendMessage;
+
+// Patch: prepend file info to the user message if a file is attached
+const _baseSendMessage = handleSendMessage;
+window.handleSendMessageWithFile = async function() {
+  if (attachedFile) {
+    const fileName = attachedFile.name;
+    let prefix = `[Attached file: ${fileName}]\n\n`;
+    if (attachedFileContent) {
+      const preview = attachedFileContent.length > 3000
+        ? attachedFileContent.substring(0, 3000) + '\n... (content truncated)'
+        : attachedFileContent;
+      prefix += `File contents:\n${preview}\n\n`;
+    }
+    const currentVal = chatInput.value.trim();
+    chatInput.value = prefix + (currentVal || `Please review the attached file: ${fileName}`);
+    clearAttachment();
+  }
+  await handleSendMessage();
+};
+
+// Re-wire send button to use file-aware version
+sendBtn.removeEventListener("click", handleSendMessage);
+sendBtn.addEventListener("click", window.handleSendMessageWithFile);
+chatInput.removeEventListener("keydown", handleSendMessage);
+chatInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    window.handleSendMessageWithFile();
+  }
+});
+
+// ============================================
+// VOICE / MIC (Speech Recognition)
+// ============================================
+const micBtn = document.getElementById('mic-btn');
+let isListening = false;
+let recognition = null;
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (micBtn) {
+  if (!SpeechRecognition) {
+    micBtn.title = 'Voice input not supported in this browser';
+    micBtn.style.opacity = '0.4';
+    micBtn.style.cursor = 'not-allowed';
+  } else {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.style.color = '#ef4444';
+      micBtn.style.background = '#fef2f2';
+      micBtn.title = 'Listening... Click to stop';
+      chatInput.placeholder = 'Listening...';
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      chatInput.value = finalTranscript || interimTranscript;
+    };
+
+    recognition.onerror = (event) => {
+      const messages = {
+        'not-allowed': 'Microphone access denied. Please allow microphone access in your browser settings.',
+        'no-speech': 'No speech detected. Please try again.',
+        'network': 'Network error during voice recognition.',
+      };
+      showToast(messages[event.error] || `Voice error: ${event.error}`, 'error');
+      stopListening();
+    };
+
+    recognition.onend = () => {
+      stopListening();
+      // Auto-send if something was captured
+      if (chatInput.value.trim()) {
+        setTimeout(() => window.handleSendMessageWithFile(), 300);
+      }
+    };
+
+    micBtn.addEventListener('click', () => {
+      if (isListening) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          showToast('Could not start microphone. Try again.', 'error');
+        }
+      }
+    });
+
+    function stopListening() {
+      isListening = false;
+      micBtn.style.color = '';
+      micBtn.style.background = '';
+      micBtn.title = 'Voice input';
+      chatInput.placeholder = 'Ask or search for anything...';
+    }
+  }
+}
 
 // ============================================
 // SIDEBAR BUTTON FUNCTIONS
@@ -159,14 +432,13 @@ function newChat() {
   chatHistory = [];
   chatMessages.innerHTML = `
     <div class="welcome-message">
-      <div class="welcome-icon">🎓</div>
       <h2>Welcome to ClassInstruct AI</h2>
       <p>Ask me anything about your classes, students, or attendance.</p>
       <div class="quick-prompts">
-        <button class="quick-prompt-btn" onclick="useQuickPrompt('Help me create a lesson plan for Grade 5 Math')">📚 Create a lesson plan</button>
-        <button class="quick-prompt-btn" onclick="useQuickPrompt('Generate a quiz on the water cycle for Grade 3')">📝 Generate a quiz</button>
-        <button class="quick-prompt-btn" onclick="useQuickPrompt('Give me tips for classroom management')">💡 Classroom tips</button>
-        <button class="quick-prompt-btn" onclick="useQuickPrompt('How do I track student attendance effectively?')">📋 Track attendance</button>
+        <button class="quick-prompt-btn" onclick="useQuickPrompt('Help me create a lesson plan for Grade 5 Math')">Create a lesson plan</button>
+        <button class="quick-prompt-btn" onclick="useQuickPrompt('Generate a quiz on the water cycle for Grade 3')">Generate a quiz</button>
+        <button class="quick-prompt-btn" onclick="useQuickPrompt('Give me tips for classroom management')">Classroom tips</button>
+        <button class="quick-prompt-btn" onclick="useQuickPrompt('How do I track student attendance effectively?')">Track attendance</button>
       </div>
     </div>
   `;
@@ -184,43 +456,70 @@ function useQuickPrompt(text) {
 const LP_FRAMEWORKS = {
   '5e': {
     label: '5E Model',
-    emoji: '🔬',
     color: '#6366f1',
     bg: '#eef2ff',
-    tagline: 'Engage → Explore → Explain → Elaborate → Evaluate',
+    tagline: 'Engage, Explore, Explain, Elaborate, Evaluate',
     description: 'Inquiry-based science/STEM model guiding students through 5 phases of discovery.',
     prompt: (subject, grade, topic, duration) =>
-      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the 5E Instructional Model. Structure it with these exact 5 phases (include time allocation for each):\n\n1. ENGAGE – Hook activity to spark curiosity and activate prior knowledge\n2. EXPLORE – Hands-on investigation or activity where students discover concepts\n3. EXPLAIN – Teacher-guided discussion to formalize understanding and vocabulary\n4. ELABORATE – Application activity extending learning to new contexts\n5. EVALUATE – Assessment strategy to check student understanding\n\nAlso include: Learning Objectives, Materials Needed, and Standards Alignment. Format clearly with section headers.`
+      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the 5E Instructional Model. Structure it with these exact 5 phases (include time allocation for each):
+
+1. ENGAGE - Hook activity to spark curiosity and activate prior knowledge
+2. EXPLORE - Hands-on investigation or activity where students discover concepts
+3. EXPLAIN - Teacher-guided discussion to formalize understanding and vocabulary
+4. ELABORATE - Application activity extending learning to new contexts
+5. EVALUATE - Assessment strategy to check student understanding
+
+Also include: Learning Objectives, Materials Needed, and Standards Alignment. Format clearly with section headers.`
   },
   '4a': {
     label: '4A Framework',
-    emoji: '🎯',
     color: '#0891b2',
     bg: '#ecfeff',
-    tagline: 'Activate → Acquire → Apply → Assess',
+    tagline: 'Activate, Acquire, Apply, Assess',
     description: 'Simple 4-phase cycle balancing prior knowledge, new content, practice, and feedback.',
     prompt: (subject, grade, topic, duration) =>
-      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the 4A Lesson Planning Framework. Structure it with these 4 phases (include time allocation for each):\n\n1. ACTIVATE – Warm-up to activate prior knowledge and connect to new learning\n2. ACQUIRE – Direct instruction or guided discovery to introduce new content/skills\n3. APPLY – Student practice activities applying the new knowledge\n4. ASSESS – Formative or summative assessment to evaluate understanding\n\nAlso include: Learning Objectives, Materials Needed, and Differentiation Strategies. Format clearly with section headers.`
+      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the 4A Lesson Planning Framework. Structure it with these 4 phases (include time allocation for each):
+
+1. ACTIVATE - Warm-up to activate prior knowledge and connect to new learning
+2. ACQUIRE - Direct instruction or guided discovery to introduce new content/skills
+3. APPLY - Student practice activities applying the new knowledge
+4. ASSESS - Formative or summative assessment to evaluate understanding
+
+Also include: Learning Objectives, Materials Needed, and Differentiation Strategies. Format clearly with section headers.`
   },
   'dld': {
     label: 'DLD Model',
-    emoji: '🧠',
     color: '#7c3aed',
     bg: '#f5f3ff',
-    tagline: 'Direct → Link → Do',
+    tagline: 'Direct, Link, Do',
     description: 'Structured model emphasizing explicit instruction, connection-making, and active practice.',
     prompt: (subject, grade, topic, duration) =>
-      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the DLD (Direct-Link-Do) Lesson Plan Model. Structure it with these 3 phases (include time allocation for each):\n\n1. DIRECT – Explicit, clear instruction where the teacher models and demonstrates the concept or skill. Include: Learning Objective statement, key vocabulary, and teacher modeling steps.\n2. LINK – Guided practice where students connect new learning to prior knowledge through worked examples and collaborative discussion.\n3. DO – Independent or group practice where students apply the skill on their own. Include task description and success criteria.\n\nAlso include: Materials Needed, Differentiation for struggling and advanced learners, and Assessment strategy. Format clearly with section headers.`
+      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the DLD (Direct-Link-Do) Lesson Plan Model. Structure it with these 3 phases (include time allocation for each):
+
+1. DIRECT - Explicit, clear instruction where the teacher models and demonstrates the concept or skill. Include: Learning Objective statement, key vocabulary, and teacher modeling steps.
+2. LINK - Guided practice where students connect new learning to prior knowledge through worked examples and collaborative discussion.
+3. DO - Independent or group practice where students apply the skill on their own. Include task description and success criteria.
+
+Also include: Materials Needed, Differentiation for struggling and advanced learners, and Assessment strategy. Format clearly with section headers.`
   },
   'pisa': {
     label: 'PISA-Based',
-    emoji: '🌍',
     color: '#059669',
     bg: '#ecfdf5',
-    tagline: 'Real-world · Critical Thinking · Problem Solving',
+    tagline: 'Real-world, Critical Thinking, Problem Solving',
     description: 'Globally-benchmarked tasks using real-world contexts to develop 21st century competencies.',
     prompt: (subject, grade, topic, duration) =>
-      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using a PISA-inspired lesson planning approach. PISA focuses on real-world application, critical thinking, and problem-solving competencies.\n\nStructure the lesson with (include time allocation for each):\n\n1. CONTEXT SETTING – Introduce a real-world scenario or global issue related to the topic that makes the learning relevant and meaningful\n2. STIMULUS & INQUIRY – Present authentic materials (data, text, image, case study) and pose open-ended inquiry questions\n3. COLLABORATIVE PROBLEM SOLVING – Group task where students analyze the stimulus and apply subject knowledge to solve a real-world problem\n4. CRITICAL REFLECTION – Students present reasoning, evaluate solutions, and reflect on the process\n5. ASSESSMENT – PISA-style task with complex, multi-step questions requiring reasoning and justification\n\nAlso include: Learning Objectives (21st century skills focus), Materials/Resources, and Cross-curricular Connections. Format clearly with section headers.`
+      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using a PISA-inspired lesson planning approach. PISA focuses on real-world application, critical thinking, and problem-solving competencies.
+
+Structure the lesson with (include time allocation for each):
+
+1. CONTEXT SETTING - Introduce a real-world scenario or global issue related to the topic that makes the learning relevant and meaningful
+2. STIMULUS AND INQUIRY - Present authentic materials (data, text, image, case study) and pose open-ended inquiry questions
+3. COLLABORATIVE PROBLEM SOLVING - Group task where students analyze the stimulus and apply subject knowledge to solve a real-world problem
+4. CRITICAL REFLECTION - Students present reasoning, evaluate solutions, and reflect on the process
+5. ASSESSMENT - PISA-style task with complex, multi-step questions requiring reasoning and justification
+
+Also include: Learning Objectives (21st century skills focus), Materials/Resources, and Cross-curricular Connections. Format clearly with section headers.`
   }
 };
 
@@ -232,12 +531,11 @@ function openLessonPlan() {
   modal.innerHTML = `
     <div class="modal-panel modal-panel-wide">
       <div class="modal-header">
-        <div class="modal-header-icon">📋</div>
         <div>
           <h2 class="modal-title">Lesson Plan Generator</h2>
           <p class="modal-subtitle">Choose a framework and fill in the details</p>
         </div>
-        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">✕</button>
+        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">X</button>
       </div>
       <div class="modal-body">
 
@@ -246,7 +544,6 @@ function openLessonPlan() {
           <div class="framework-grid">
             ${Object.entries(LP_FRAMEWORKS).map(([key, fw], i) => `
               <button class="framework-card ${i === 0 ? 'active' : ''}" data-value="${key}" onclick="selectFramework(this)">
-                <div class="fw-emoji">${fw.emoji}</div>
                 <div class="fw-label" style="color:${fw.color}">${fw.label}</div>
                 <div class="fw-tagline">${fw.tagline}</div>
                 <div class="fw-desc">${fw.description}</div>
@@ -291,7 +588,7 @@ function openLessonPlan() {
       <div class="modal-footer">
         <button class="modal-cancel-btn" onclick="closeAllModals()">Cancel</button>
         <button class="modal-action-btn" onclick="generateLessonPlan()">
-          <span>✨ Generate Lesson Plan</span>
+          <span>Generate Lesson Plan</span>
         </button>
       </div>
     </div>
@@ -345,12 +642,11 @@ function openQuiz() {
   modal.innerHTML = `
     <div class="modal-panel">
       <div class="modal-header">
-        <div class="modal-header-icon">📝</div>
         <div>
           <h2 class="modal-title">Quiz Generator</h2>
           <p class="modal-subtitle">Build engaging quizzes for your students</p>
         </div>
-        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">✕</button>
+        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">X</button>
       </div>
       <div class="modal-body">
         <div class="form-row">
@@ -402,7 +698,7 @@ function openQuiz() {
       <div class="modal-footer">
         <button class="modal-cancel-btn" onclick="closeAllModals()">Cancel</button>
         <button class="modal-action-btn" onclick="generateQuiz()">
-          <span>✨ Generate Quiz</span>
+          <span>Generate Quiz</span>
         </button>
       </div>
     </div>
@@ -441,7 +737,6 @@ function openHistory() {
   if (chatHistory.length === 0) {
     historyHTML = `
       <div class="history-empty">
-        <div style="font-size:3rem;margin-bottom:12px">💬</div>
         <p>No conversation history yet.</p>
         <p style="color:var(--text-light);font-size:0.85rem;margin-top:4px">Start chatting to see your messages here.</p>
       </div>
@@ -453,7 +748,7 @@ function openHistory() {
       return `
         <div class="history-item ${msg.role}">
           <div class="history-item-meta">
-            <span class="history-role">${msg.role === 'user' ? '👤 You' : '🤖 AI'}</span>
+            <span class="history-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
             <span class="history-time">${time}</span>
           </div>
           <div class="history-text">${escapeHtml(preview)}</div>
@@ -465,18 +760,17 @@ function openHistory() {
   modal.innerHTML = `
     <div class="modal-panel modal-panel-wide">
       <div class="modal-header">
-        <div class="modal-header-icon">🕐</div>
         <div>
           <h2 class="modal-title">Chat History</h2>
           <p class="modal-subtitle">${chatHistory.length} message${chatHistory.length !== 1 ? 's' : ''} in this session</p>
         </div>
-        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">✕</button>
+        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">X</button>
       </div>
       <div class="modal-body history-scroll">
         ${historyHTML}
       </div>
       <div class="modal-footer">
-        ${chatHistory.length > 0 ? `<button class="modal-cancel-btn danger" onclick="clearHistory()">🗑 Clear History</button>` : ''}
+        ${chatHistory.length > 0 ? `<button class="modal-cancel-btn danger" onclick="clearHistory()">Clear History</button>` : ''}
         <button class="modal-action-btn" onclick="closeAllModals()">Close</button>
       </div>
     </div>
@@ -560,7 +854,7 @@ async function downloadLessonPlanPDF(btn) {
   const duration = btn.dataset.duration;
 
   const original = btn.innerHTML;
-  btn.innerHTML = '⏳ Generating...';
+  btn.innerHTML = 'Generating...';
   btn.disabled = true;
 
   try {

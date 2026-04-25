@@ -449,50 +449,59 @@ body {
    RIGHT SIDEBAR / QUICK ACTIONS
    ============================================ */
 .right-sidebar {
-  width: 80px;
+  width: 110px;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .sidebar-actions {
   background-color: var(--bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .sidebar-actions .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 90px;
+  height: 80px;
   border-radius: var(--radius-md);
   border: none;
   background-color: var(--bg-input);
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   transition: all var(--transition-fast);
+  font-family: inherit;
 }
 
 .sidebar-actions .icon-button:hover {
   background-color: var(--primary-light);
   color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
-.sidebar-actions .icon-button img {
-  width: 22px;
-  height: 22px;
+.sidebar-actions .icon-button .icon-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
 }
 
 /* Collapsed Sidebar */
 .right-sidebar.collapsed {
-  width: 50px;
+  width: 60px;
 }
 
 .right-sidebar.collapsed .sidebar-actions {
@@ -501,8 +510,12 @@ body {
 }
 
 .right-sidebar.collapsed .icon-button {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+}
+
+.right-sidebar.collapsed .icon-label {
+  display: none;
 }
 
 /* ============================================
@@ -624,4 +637,3 @@ input:focus-visible {
 .action-button.send-btn:active {
   animation: pulse 0.2s ease;
 }
-
