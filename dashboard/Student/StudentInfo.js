@@ -246,14 +246,13 @@ function shiftHeatmapMonth(delta) {
 }
 
 function updateAttSummary() {
-  const counts = { present: 0, late: 0, excused: 0, absent: 0 };
+  const counts = { present: 0, late: 0, absent: 0 };
   for (const [dateStr, status] of Object.entries(studentAttMap)) {
     if (!dateStr.startsWith(String(hmYear))) continue;
     if (counts[status] !== undefined) counts[status]++;
   }
   setText('attPresent', counts.present);
   setText('attLate',    counts.late);
-  setText('attExcused', counts.excused);
   setText('attAbsent',  counts.absent);
 }
 
@@ -478,7 +477,7 @@ function updateGauge(avg) {
       arcEl.setAttribute('d', `M 10 65 A 50 50 0 0 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`);
     }
     // Color by grade
-    const color = score >= 90 ? '#16a34a' : score >= 85 ? '#2563eb' : score >= 80 ? '#b8860b' : score >= 75 ? '#ca8a04' : '#dc2626';
+    const color = score >= 90 ? '#6c63ff' : score >= 85 ? '#6c63ff' : score >= 80 ? '#6c63ff' : score >= 75 ? '#6c63ff' : '#dc2626';
     arcEl.setAttribute('stroke', color);
     const gaugeScoreColor = document.getElementById('gaugeScore');
     if (gaugeScoreColor) gaugeScoreColor.style.color = color;
@@ -548,7 +547,7 @@ async function renderQuarterBars(subject) {
     if (avg !== null) {
       const pct    = Math.min(100, Math.max(0, avg)) / 100;
       const height = Math.max(4, Math.round(pct * maxBarHeight));
-      const color  = avg >= 90 ? '#16a34a' : avg >= 85 ? '#2563eb' : avg >= 80 ? '#b8860b' : avg >= 75 ? '#ca8a04' : '#dc2626';
+      const color  = avg >= 90 ? '#6c63ff' : avg >= 85 ? '#6c63ff' : avg >= 80 ? '#6c63ff' : avg >= 75 ? '#6c63ff' : '#dc2626';
       if (fillEl) {
         fillEl.style.height     = height + 'px';
         fillEl.style.background = color;
@@ -636,7 +635,7 @@ function renderCompBreakdown(ww, pt, qa) {
   }
 
   const comps = [
-    { label: 'Written Works',     val: ww, color: '#b8860b' },
+    { label: 'Written Works',     val: ww, color: '#6c63ff' },
     { label: 'Performance Tasks', val: pt, color: '#2563eb' },
     { label: 'Quarterly Assess.', val: qa, color: '#16a34a' },
   ];
@@ -690,10 +689,7 @@ function gradeDescriptor(score) {
 
 function gradeClass(score) {
   if (score === null) return { cls: '', label: '—' };
-  if (score >= 90) return { cls: 'grade-outstanding', label: 'Outstanding' };
-  if (score >= 85) return { cls: 'grade-satisfactory', label: 'Very Satisfactory' };
-  if (score >= 80) return { cls: 'grade-satisfactory', label: 'Satisfactory' };
-  if (score >= 75) return { cls: 'grade-fairly', label: 'Fairly Satisfactory' };
+  if (score >= 75) return { cls: 'grade-passing', label: score >= 90 ? 'Outstanding' : score >= 85 ? 'Very Satisfactory' : score >= 80 ? 'Satisfactory' : 'Fairly Satisfactory' };
   return { cls: 'grade-fail', label: 'Did Not Meet' };
 }
 

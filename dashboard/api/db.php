@@ -51,8 +51,21 @@ $method = $_SERVER['REQUEST_METHOD'];
 $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 switch ($method) {
-    case 'GET':    getStudents($conn); break;
-    case 'POST':   addStudent($conn);  break;
+    case 'GET':
+        if (isset($_GET['action']) && $_GET['action'] === 'sections') {
+            getSections($conn);
+        } else {
+            getStudents($conn);
+        }
+        break;
+    case 'POST':
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (isset($data['_action']) && $data['_action'] === 'add_section') {
+            addSection($conn, $data['name']);
+        } else {
+            addStudent($conn);
+        }
+        break;
     case 'PUT':    updateStudent($conn, $id); break;
     case 'DELETE': deleteStudent($conn, $id); break;
     default:
@@ -78,6 +91,24 @@ function getStudents($conn) {
         $students[] = mapRow($row);
     }
     echo json_encode($students);
+}
+
+// ═══════════════════════════════════
+//  GET — List distinct sections from student data
+// ═══════════════════════════════════
+function getSections($conn) {
+    $sql = "SELECT DISTINCT section FROM students WHERE section IS NOT NULL AND section != '' ORDER BY section ASC";
+    $result = $conn->query($sql);
+    if (!$result) {
+        http_response_code(500);
+        echo json_encode(['error' => $conn->error]);
+        return;
+    }
+    $sections = [];
+    while ($row = $result->fetch_assoc()) {
+        $sections[] = $row['section'];
+    }
+    echo json_encode($sections);
 }
 
 // ═══════════════════════════════════
@@ -204,6 +235,21 @@ function updateStudent($conn, $id) {
         echo json_encode(['error' => $stmt->error]);
     }
     $stmt->close();
+}
+
+// ═══════════════════════════════════
+//  POST — Add new section (free-text)
+// ═══════════════════════════════════
+function addSection($conn, $name) {
+    $name = isset($name) ? trim((string)$name) : '';
+    if ($name === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Section name is required']);
+        return;
+    }
+    // Sections are stored per-student, so we just return success.
+    // The section becomes available once a student is assigned to it.
+    echo json_encode(['success' => true, 'section' => $name]);
 }
 
 // ═══════════════════════════════════

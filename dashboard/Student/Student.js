@@ -40,6 +40,7 @@ let filtered    = [];
 let editingId   = null;
 let currentPage = 1;
 const PAGE_SIZE = 10;
+let localSections = []; // sections added via the + button before any student has one
 
 async function init() {
   try {
@@ -48,9 +49,109 @@ async function init() {
     applyFilters();
   } catch (e) {
     toast('Could not connect to database. Is XAMPP running and db.php in the right folder?', 'danger');
-    // Still show empty state so the page is usable
     applyFilters();
   }
+  initFlatpickr();
+  populateSections();
+}
+
+function initFlatpickr() {
+  flatpickr('#f-dob', {
+    dateFormat: 'Y-m-d',
+    minDate: '1990-01-01',
+    defaultDate: '1990-01-01',
+    altInput: true,
+    altFormat: 'Y-m-d',
+  });
+  flatpickr('#f-enrollDate', {
+    dateFormat: 'Y-m-d',
+    defaultDate: new Date(),
+    altInput: true,
+    altFormat: 'Y-m-d',
+  });
+}
+
+// ═══════════════════════════════════════════
+//  SECTION HELPERS
+// ═══════════════════════════════════════════
+function openAddSectionModal() {
+  document.getElementById('newSectionName').value = '';
+  document.getElementById('addSectionOverlay').classList.add('open');
+  buildSectionRemoveList();
+}
+function closeAddSectionModal() {
+  document.getElementById('addSectionOverlay').classList.remove('open');
+}
+async function saveAddSection() {
+  const name = document.getElementById('newSectionName').value.trim();
+  if (!name) return;
+  await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _action: 'add_section', name })
+  });
+  if (!localSections.includes(name)) localSections.push(name);
+  closeAddSectionModal();
+  populateSections();
+  toast('Section "' + name + '" added', 'success');
+}
+function populateSections() {
+  const studentSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
+  const allSections = [...new Set([...localSections, ...studentSections])].sort();
+  refreshSectionDropdowns(allSections);
+}
+function refreshSectionDropdowns(sections) {
+  ['filterSection', 'f-section'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const selected = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    sections.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+    if (sections.includes(selected)) sel.value = selected;
+  });
+}
+function removeSection(name) {
+  localSections = localSections.filter(s => s !== name);
+  populateSections();
+  buildSectionRemoveList();
+}
+function buildSectionRemoveList() {
+  const wrap = document.getElementById('sectionRemoveList');
+  if (!wrap) return;
+  const all = getAllSections();
+  wrap.innerHTML = '';
+  if (all.length === 0) {
+    wrap.innerHTML = '<span style="font-size:13px;color:var(--text-light)">No sections yet.</span>';
+    return;
+  }
+  all.forEach(s => {
+    const row = document.createElement('div');
+    row.style = 'display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bg-input)';
+    const nameSpan = document.createElement('span');
+    nameSpan.style = 'font-size:13px;color:var(--text-primary)';
+    nameSpan.textContent = s;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style = 'background:none;border:none;cursor:pointer;color:var(--accent-danger);font-size:12px;font-weight:500';
+    btn.textContent = 'Remove';
+    btn.onclick = () => removeSection(s);
+    row.appendChild(nameSpan);
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  });
+}
+function getAllSections() {
+  const studentSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
+  return [...new Set([...localSections, ...studentSections])].sort();
+}
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 // ═══════════════════════════════════════════
@@ -304,7 +405,6 @@ function validate(data) {
   if (!data.lastName)  { setErr('lastName',  'Last name is required');  ok = false; }
   if (!data.gender)    { setErr('gender',    'Please select a gender'); ok = false; }
   if (!data.grade)     { setErr('grade',      'Grade level is required'); ok = false; }
-  if (!data.section)   { setErr('section',   'Section is required');    ok = false; }
   return ok;
 }
 
@@ -452,10 +552,120 @@ document.getElementById('confirmDeleteBtn').onclick = async function() {
 };
 
 // ═══════════════════════════════════════════
-//  IMPORT MODAL (stub)
+//  OCR / IMPORT
 // ═══════════════════════════════════════════
-function openImportModal()  { document.getElementById('importOverlay').classList.add('open'); }
-function closeImportModal() { document.getElementById('importOverlay').classList.remove('open'); }
+let _importStudents = [];
+
+function setStep(step) {
+  document.getElementById('importStep1').style.display = step === 1 ? 'block' : 'none';
+  document.getElementById('importStep2').style.display = step === 2 ? 'block' : 'none';
+  document.getElementById('importStep3').style.display = step === 3 ? 'block' : 'none';
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('importPreviewImg').src = e.target.result;
+    document.getElementById('importPreviewWrap').style.display = 'block';
+    const btn = document.getElementById('importActionBtn');
+    if (btn) btn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImportImage() {
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importPreviewWrap').style.display = 'none';
+  document.getElementById('importPreviewImg').src = '';
+  const btn = document.getElementById('importActionBtn');
+  if (btn) btn.disabled = true;
+}
+
+async function runImportAction() {
+  const img = document.getElementById('importPreviewImg');
+  if (!img || !img.src) return;
+  setStep(2);
+  const pBar = document.getElementById('ocrProgressBar');
+  const pLbl = document.getElementById('ocrProgressLabel');
+  const msg  = document.getElementById('importLoadingMsg');
+
+  try {
+    const result = await Tesseract.recognize(img.src, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          pBar.style.width = pct + '%';
+          pLbl.textContent = pct + '%';
+        } else if (m.status === 'loading language') {
+          msg.textContent = 'Loading language model…';
+          pBar.style.width = Math.round(m.progress * 50) + '%';
+          pLbl.textContent = Math.round(m.progress * 50) + '%';
+        }
+      }
+    });
+    msg.textContent = 'Parsing student names…';
+    pBar.style.width = '100%';
+    pLbl.textContent = 'Done';
+
+    const lines = result.data.text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+    const context = document.getElementById('importContext').value.trim();
+    _importStudents = lines.map(name => ({
+      firstName: name.split(' ')[0] || name,
+      lastName: name.split(' ').slice(1).join(' ') || name,
+      gender: '',
+      grade: '',
+      section: '',
+      dob: '',
+      selected: true
+    }));
+
+    const count = document.getElementById('importFoundCount');
+    if (count) count.textContent = _importStudents.length + ' students found';
+    setStep(3);
+    renderImportPreview();
+  } catch (e) {
+    msg.textContent = 'OCR failed: ' + e.message;
+    setTimeout(() => setStep(1), 2000);
+  }
+}
+
+function renderImportPreview() {
+  const body = document.getElementById('importPreviewBody');
+  if (!body) return;
+  body.innerHTML = _importStudents.map((s, i) => `
+    <tr class="import-row" data-i="${i}">
+      <td><input type="checkbox" checked onchange="toggleImportRow(${i})"></td>
+      <td><input type="text" value="${s.lastName}" onchange="updateImportField(${i},'lastName',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%"></td>
+      <td><input type="text" value="${s.firstName}" onchange="updateImportField(${i},'firstName',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%"></td>
+      <td>
+        <select onchange="updateImportField(${i},'gender',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem">
+          <option value="">—</option><option>Male</option><option>Female</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="updateImportField(${i},'grade',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem">
+          <option value="">—</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+        </select>
+      </td>
+    </tr>`).join('');
+}
+
+function toggleImportRow(i) {
+  _importStudents[i].selected = !_importStudents[i].selected;
+}
+function updateImportField(i, field, val) {
+  _importStudents[i][field] = val;
+}
+function importSelectAll(v) {
+  _importStudents.forEach(s => s.selected = v);
+  renderImportPreview();
+}
+function applyBulkField(field, val) {
+  _importStudents.forEach(s => { if (s.selected) s[field] = val; });
+  renderImportPreview();
+}
 
 // ═══════════════════════════════════════════
 //  TOAST

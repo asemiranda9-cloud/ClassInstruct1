@@ -422,3 +422,43 @@ tr:hover td { background: #fafbff; }
 
 /* Empty state */
 [data-theme="dark"] .empty-state { color: var(--text-secondary); }
+
+/* ── Add Section Modal dark mode overrides ── */
+[data-theme="dark"] .section-modal-box {
+  background: var(--bg-card);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+[data-theme="dark"] .section-list-wrap {
+  border-color: var(--bg-input);
+}
+
+/* ── Add Section Modal (shared) ── */
+.section-modal-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.section-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.section-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--bg-input);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 80px;
+}
+.section-list-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}

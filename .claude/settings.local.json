@@ -30,7 +30,11 @@
       "Bash(export PATH=\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64:$PATH\")",
       "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" composer *)",
       "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" /c/laragon/bin/composer.phar install)",
-      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" \"/c/laragon/bin/composer.phar\" install)"
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" \"/c/laragon/bin/composer.phar\" install)",
+      "PowerShell(Set-Content *)",
+      "PowerShell(Set-Content *')",
+      "Bash(python3 *)",
+      "Bash(node *)"
     ]
   }
 }

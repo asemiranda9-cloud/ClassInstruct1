@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../sidebar.css" />
   <link rel="stylesheet" href="AddStudent.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
   </script>
@@ -80,10 +83,10 @@
           </select>
           <select id="filterSection" onchange="applyFilters()">
             <option value="">All Sections</option>
-            <option value="Section A">Section A</option><option value="Section B">Section B</option>
-            <option value="Section C">Section C</option><option value="Section D">Section D</option>
-            <option value="Section E">Section E</option>
           </select>
+          <button type="button" class="btn btn-sm" style="padding:4px 8px" onclick="openAddSectionModal()" title="Add section">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
           <select id="filterGender" onchange="applyFilters()">
             <option value="">All Genders</option>
             <option value="Male">Male</option><option value="Female">Female</option>
@@ -240,7 +243,6 @@
               <label style="font-size:0.72rem;font-weight:600;color:var(--text-secondary)">Section</label>
               <select id="bulkSection" onchange="applyBulkField('section', this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.8rem;background:#fff;cursor:pointer;min-width:110px">
                 <option value="">— Section —</option>
-                <option>Section A</option><option>Section B</option><option>Section C</option><option>Section D</option><option>Section E</option>
               </select>
             </div>
             <div style="display:flex;flex-direction:column;gap:3px">
@@ -359,7 +361,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="f-dob">Date of Birth</label>
-            <input type="date" id="f-dob" class="form-input" min="1990-01-01">
+            <input type="text" id="f-dob" class="form-input" placeholder="YYYY-MM-DD" data-flatpickr>
           </div>
           <div class="form-group">
             <label class="form-label">Gender <span class="req">*</span></label>
@@ -391,12 +393,15 @@
             <span class="error-msg" id="err-grade"></span>
           </div>
           <div class="form-group">
-            <label class="form-label" for="f-section">Section <span class="req">*</span></label>
-            <select id="f-section" class="form-select">
-              <option value="">Select Section</option>
-              <option>Section A</option><option>Section B</option><option>Section C</option>
-              <option>Section D</option><option>Section E</option>
-            </select>
+            <label class="form-label" for="f-section">Section</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="f-section" class="form-select">
+                <option value="">Select Section</option>
+              </select>
+              <button type="button" class="btn" style="padding:6px 10px;flex-shrink:0" onclick="openAddSectionModal()" title="Add new section">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
             <span class="error-msg" id="err-section"></span>
           </div>
           <div class="form-group">
@@ -518,6 +523,25 @@
     <div class="confirm-actions">
       <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
       <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Section Modal -->
+<div class="overlay" id="addSectionOverlay">
+  <div class="section-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span class="section-modal-title">Add New Section</span>
+      <button onclick="closeAddSectionModal()" style="background:var(--bg-input);border:none;cursor:pointer;font-size:16px;color:var(--text-secondary);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input type="text" id="newSectionName" class="form-input" placeholder="e.g. Section A" style="flex:1">
+      <button class="btn btn-primary" onclick="saveAddSection()" style="flex-shrink:0">Add</button>
+    </div>
+    <div class="section-list-label">EXISTING SECTIONS</div>
+    <div id="sectionRemoveList" class="section-list-wrap"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" onclick="closeAddSectionModal()">Done</button>
     </div>
   </div>
 </div>
