@@ -459,3 +459,263 @@ input[type=range]::-webkit-slider-thumb{
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(108,99,255,.1);
 }
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE
+   Override :root vars on html[data-theme="dark"] so that ALL
+   inline styles using var(--gray-*) / var(--white) etc. in the
+   JS-generated HTML automatically pick up dark colours too.
+══════════════════════════════════════════════════════════════ */
+html[data-theme="dark"] {
+  /* Remap every CSS variable to dark equivalents */
+  --primary:        #7c74ff;
+  --primary-dark:   #6c63ff;
+  --primary-light:  rgba(108,99,255,0.15);
+  --success:        #10b981;
+  --success-light:  rgba(16,185,129,0.12);
+  --warning:        #f59e0b;
+  --warning-light:  rgba(245,158,11,0.12);
+  --danger:         #ef4444;
+  --danger-light:   rgba(239,68,68,0.12);
+
+  /* All gray scale → dark equivalents */
+  --gray-50:  #13131f;
+  --gray-100: #1a1a2e;
+  --gray-200: rgba(255,255,255,0.09);
+  --gray-300: rgba(255,255,255,0.14);
+  --gray-400: #55556e;
+  --gray-500: #8888aa;
+  --gray-600: #a0a0c0;
+  --gray-700: #c0c0d8;
+  --gray-800: #e8e8f4;
+  --gray-900: #f0f0f8;
+
+  /* --white is used everywhere as card/panel bg */
+  --white:    #17172a;
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
+  --shadow:    0 4px 16px rgba(0,0,0,0.4);
+  --transition: 180ms ease;
+}
+
+/* ── Base ── */
+html[data-theme="dark"] body {
+  background: #0b0b15 !important;
+  color: #e8e8f4;
+}
+
+/* ── Topbar ── */
+html[data-theme="dark"] .topbar {
+  background: #17172a !important;
+  border-bottom-color: rgba(255,255,255,0.07);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.45);
+}
+html[data-theme="dark"] .topbar-search input {
+  background: #1a1a2e;
+  border-color: rgba(108,99,255,0.22);
+  color: #e8e8f4;
+}
+html[data-theme="dark"] .topbar-search input:focus { background: #1e1e35; border-color: #6c63ff; }
+html[data-theme="dark"] .topbar-search input::placeholder { color: #55556e; }
+
+/* ── Filters bar ── */
+html[data-theme="dark"] .filters-bar {
+  background: #13131f !important;
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+/* ── All selects + text/number inputs ── */
+html[data-theme="dark"] select,
+html[data-theme="dark"] input[type=text],
+html[data-theme="dark"] input[type=number] {
+  background: #1a1a2e;
+  border-color: rgba(255,255,255,0.10);
+  color: #e8e8f4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888aa' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] input[type=text]:focus,
+html[data-theme="dark"] input[type=number]:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+
+/* ── Buttons ── */
+html[data-theme="dark"] .btn {
+  background: #1a1a2e;
+  border-color: rgba(255,255,255,0.10);
+  color: #c0c0d8;
+}
+html[data-theme="dark"] .btn:hover { background: #1e1e35; border-color: rgba(255,255,255,0.16); color: #e8e8f4; }
+html[data-theme="dark"] .btn-primary { background: #6c63ff; color: #fff; border-color: #6c63ff; }
+html[data-theme="dark"] .btn-primary:hover { background: #5a52e0; border-color: #5a52e0; }
+html[data-theme="dark"] .btn-success { background: #10b981; color: #fff; border-color: #10b981; }
+
+/* ── Tabs ── */
+html[data-theme="dark"] .tabs {
+  background: #17172a !important;
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] .tab            { color: #8888aa; }
+html[data-theme="dark"] .tab:hover      { color: #e8e8f4; }
+html[data-theme="dark"] .tab.active     { color: #7c74ff; border-bottom-color: #7c74ff; }
+
+/* ── Content area ── */
+html[data-theme="dark"] .content { background: transparent; }
+
+/* ── Stat cards ── */
+html[data-theme="dark"] .stat-card {
+  background: #17172a !important;
+  border-color: rgba(255,255,255,0.07);
+}
+
+/* ── Import zone ── */
+html[data-theme="dark"] .import-zone {
+  background: #17172a !important;
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* ── Table card & toolbar ── */
+html[data-theme="dark"] .table-card {
+  background: #17172a !important;
+  border-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] .table-toolbar { border-bottom-color: rgba(255,255,255,0.07); }
+
+/* ── Table rows ── */
+html[data-theme="dark"] th {
+  background: #13131f !important;
+  color: #8888aa;
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] td { border-bottom-color: rgba(255,255,255,0.04); }
+html[data-theme="dark"] tbody tr:hover td { background: rgba(108,99,255,0.06); }
+
+/* ── Grade inputs ── */
+html[data-theme="dark"] .grade-input {
+  background: #1a1a2e;
+  border-color: rgba(255,255,255,0.10);
+  color: #e8e8f4;
+}
+html[data-theme="dark"] .grade-input:focus {
+  border-color: #6c63ff;
+  background: #1e1e35;
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+
+/* ── Progress bar ── */
+html[data-theme="dark"] .prog-bar { background: rgba(255,255,255,0.08); }
+
+/* ── Weight cards ── */
+html[data-theme="dark"] .weight-card {
+  background: #17172a !important;
+  border-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] input[type=range] { background: rgba(255,255,255,0.10); }
+html[data-theme="dark"] .weight-total {
+  background: #13131f !important;
+  border-color: rgba(255,255,255,0.07);
+}
+
+/* ── Component item cards ── */
+html[data-theme="dark"] .comp-item-card {
+  background: #17172a !important;
+  border-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] .comp-item-header { border-bottom-color: rgba(255,255,255,0.06); }
+html[data-theme="dark"] .comp-item-avg {
+  background: #13131f !important;
+  border-top-color: rgba(255,255,255,0.06);
+}
+html[data-theme="dark"] .comp-item-add {
+  border-color: rgba(255,255,255,0.12);
+}
+html[data-theme="dark"] .comp-item-add:hover {
+  border-color: #6c63ff;
+  background: rgba(108,99,255,0.10);
+}
+
+/* ── Edit subject modal (inline style uses var(--white)) ── */
+html[data-theme="dark"] #editOverlay > div {
+  background: #17172a !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+
+/* ── Unsaved modal box ── */
+html[data-theme="dark"] #unsavedModalBox {
+  background: #17172a !important;
+}
+html[data-theme="dark"] #unsavedModalBox h3 { color: #e8e8f4 !important; }
+html[data-theme="dark"] #unsavedModalBox p  { color: #8888aa !important; }
+html[data-theme="dark"] #unsavedModalBox button:last-child {
+  background: #1a1a2e !important;
+  border-color: rgba(255,255,255,0.10) !important;
+  color: #8888aa !important;
+}
+html[data-theme="dark"] #unsavedModalBox button:nth-child(2) {
+  background: #1a1a2e !important;
+  border-color: rgba(239,68,68,0.4) !important;
+  color: #fca5a5 !important;
+}
+
+/* ── Badges ── */
+html[data-theme="dark"] .badge-outstanding { background: rgba(29,78,216,0.18);   color: #93c5fd; }
+html[data-theme="dark"] .badge-vs          { background: rgba(16,185,129,0.15);  color: #6ee7b7; }
+html[data-theme="dark"] .badge-s           { background: rgba(4,120,87,0.15);    color: #6ee7b7; }
+html[data-theme="dark"] .badge-fs          { background: rgba(245,158,11,0.15);  color: #fcd34d; }
+html[data-theme="dark"] .badge-dnm         { background: rgba(153,27,27,0.18);   color: #fca5a5; }
+html[data-theme="dark"] .badge-active      { background: rgba(16,185,129,0.15);  color: #6ee7b7; }
+html[data-theme="dark"] .badge-inactive    { background: rgba(255,255,255,0.07); color: #8888aa; }
+
+/* ── Toast ── */
+html[data-theme="dark"] .toast {
+  background: #1e1e35 !important;
+  color: #e8e8f4;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* ── Assign Grades Modal (dynamically created) ── */
+html[data-theme="dark"] #assignGradesModal > div {
+  background: #17172a !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+
+/* ── Student List Modal (dynamically created) ── */
+html[data-theme="dark"] #studentListModal > div {
+  background: #17172a !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+
+/* ── Unsaved Modal ── */
+html[data-theme="dark"] #unsavedModalBox {
+  background: #17172a !important;
+}
+html[data-theme="dark"] #unsavedModalBox h3 { color: #e8e8f4 !important; }
+html[data-theme="dark"] #unsavedModalBox p  { color: #8888aa !important; }
+
+/* ── Universal dark-mode card/panel background override ──
+   Ensures sidebar.css cannot clobber --white back to #ffffff     */
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .table-card,
+html[data-theme="dark"] .weight-card,
+html[data-theme="dark"] .comp-item-card,
+html[data-theme="dark"] .import-zone {
+  background-color: #17172a !important;
+}
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .tabs {
+  background-color: #17172a !important;
+}
+html[data-theme="dark"] .filters-bar,
+html[data-theme="dark"] th,
+html[data-theme="dark"] .comp-item-avg,
+html[data-theme="dark"] .weight-total {
+  background-color: #13131f !important;
+}
+html[data-theme="dark"] .content {
+  background-color: #0b0b15 !important;
+}

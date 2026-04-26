@@ -620,7 +620,7 @@ async function openAssignGradesModal(subjectId) {
   overlay.id = 'assignGradesModal';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(17,24,39,0.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;padding:0;max-width:480px;width:calc(100% - 2rem);
+    <div style="background:var(--white);border-radius:14px;padding:0;max-width:480px;width:calc(100% - 2rem);
                 box-shadow:0 20px 60px rgba(0,0,0,.18);" onclick="event.stopPropagation()">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-200);">
         <div>
@@ -1285,7 +1285,7 @@ function showStudentList(type) {
       display:flex;align-items:center;justify-content:center;
       backdrop-filter:blur(2px);" onclick="closeStudentListModal(event)">
       <div style="
-        background:#fff;border-radius:14px;
+        background:var(--white);border-radius:14px;
         padding:0;max-width:600px;width:calc(100% - 2rem);
         max-height:80vh;overflow:hidden;
         box-shadow:0 20px 60px rgba(0,0,0,.18);" onclick="event.stopPropagation()">
@@ -1629,7 +1629,7 @@ function showUnsavedModal(href) {
 
     overlay.innerHTML = `
       <div id="unsavedModalBox" style="
-        background:#fff;border-radius:14px;
+        background:var(--white);border-radius:14px;
         padding:2rem 2rem 1.5rem;
         max-width:400px;width:calc(100% - 2rem);
         box-shadow:0 20px 60px rgba(0,0,0,.18);
@@ -1649,10 +1649,10 @@ function showUnsavedModal(href) {
           </svg>
         </div>
 
-        <h3 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 .5rem;">
+        <h3 style="font-size:17px;font-weight:700;color:var(--gray-900);margin:0 0 .5rem;">
           Unsaved grades
         </h3>
-        <p style="font-size:13px;color:#6b7588;margin:0 0 1.5rem;line-height:1.6;">
+        <p style="font-size:13px;color:var(--gray-500);margin:0 0 1.5rem;line-height:1.6;">
           You have grade changes that haven't been saved yet.<br>
           What would you like to do?
         </p>
@@ -1675,7 +1675,7 @@ function showUnsavedModal(href) {
 
           <button onclick="unsavedModalDiscardAndExit()"
             style="padding:10px 18px;border-radius:8px;
-                   border:1px solid #fca5a5;background:#fff;color:#dc2626;
+                   border:1px solid #fca5a5;background:var(--white);color:#dc2626;
                    font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
                    cursor:pointer;transition:background 160ms ease;">
             Discard changes &amp; exit
@@ -1683,7 +1683,7 @@ function showUnsavedModal(href) {
 
           <button onclick="unsavedModalCancel()"
             style="padding:10px 18px;border-radius:8px;
-                   border:1px solid #e4e8f0;background:#fff;color:#6b7588;
+                   border:1px solid var(--gray-200);background:var(--white);color:var(--gray-500);
                    font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
                    cursor:pointer;transition:background 160ms ease;">
             Cancel — keep editing

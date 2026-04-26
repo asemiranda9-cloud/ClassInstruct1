@@ -1,11 +1,23 @@
 <?php session_start(); ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grades — ClassInstruct</title>
+<link rel="stylesheet" href="../sidebar.css" />
 <link rel="stylesheet" href="Grades.css" />
+<script>
+  // Apply saved theme immediately to prevent flash
+  (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  // Listen for theme sync messages from sidebar iframe parent
+  window.addEventListener('message', function(e) {
+    if (e.data && (e.data.type === 'CI_THEME' || e.data.type === 'CI_SET_THEME')) {
+      document.documentElement.setAttribute('data-theme', e.data.theme);
+      localStorage.setItem('theme', e.data.theme);
+    }
+  });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

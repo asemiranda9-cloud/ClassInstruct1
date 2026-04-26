@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
     <title>ClassInstruct - Calendar</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../sidebar.css" />
     <link rel="stylesheet" href="Calendarr.css" />
+    <script>(function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();</script>
   </head>
-  <body>
+  <body data-page="calendar" onload="applyTheme(localStorage.getItem('theme') || 'light')">
     <div class="app">
 
-      
-
-      <!-- ── Main ── -->
       <main class="main-content">
         <header class="header">
           <h1 class="header-title">Calendar</h1>
@@ -21,7 +20,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <label for="search-input" class="sr-only">Search</label>
-            <input type="search" id="search-input" placeholder="Search events, schedules…" />
+            <input type="search" id="search-input" placeholder="Search events, schedules&hellip;" />
           </div>
           <div class="header-brand">ClassInstruct</div>
         </header>
@@ -32,22 +31,22 @@
             <div class="cal-header">
               <div class="cal-month-year" id="calMonthYear">January 2026</div>
               <div class="cal-nav">
-                <!-- TODAY button -->
                 <button class="btn-today" onclick="goToday()" title="Go to today">Today</button>
-                <!-- PREV button -->
                 <button class="cal-nav-btn" onclick="changeMonth(-1)" aria-label="Previous month">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </button>
-                <!-- NEXT button -->
                 <button class="cal-nav-btn" onclick="changeMonth(1)" aria-label="Next month">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </button>
               </div>
             </div>
-            <div class="cal-weekdays">
-              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            <!-- Inner well: same pattern as dashboard's att-cal-wrap -->
+            <div class="cal-grid-well">
+              <div class="cal-weekdays">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-days" id="calDays"></div>
             </div>
-            <div class="cal-days" id="calDays"></div>
           </div>
 
           <!-- Schedule Sidebar -->
@@ -59,7 +58,7 @@
       </main>
     </div>
 
-    <!-- ── Day Modal ── -->
+    <!-- Day Modal -->
     <div class="modal-overlay" id="dayModal" role="dialog" aria-modal="true" aria-labelledby="modalDayBig">
       <div class="day-modal">
         <div class="modal-hdr">
@@ -67,25 +66,25 @@
             <div class="modal-day-big" id="modalDayBig">1</div>
             <div class="modal-month-lbl" id="modalMonthLbl">January 2026</div>
           </div>
-          <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">✕</button>
+          <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">&#x2715;</button>
         </div>
 
         <div class="add-form">
           <h4>Add to this day</h4>
           <div class="type-chips" id="typeChips">
-            <button class="chip selected" data-type="holiday">🌿 Holiday</button>
-            <button class="chip" data-type="event">📅 Event</button>
-            <button class="chip" data-type="meeting">🤝 Meeting</button>
-            <button class="chip" data-type="note">📝 Note</button>
-            <button class="chip" data-type="exam">📋 Exam</button>
-            <button class="chip" data-type="activity">🎯 Activity</button>
-            <button class="chip" data-type="quiz">❓ Quiz</button>
+            <button class="chip selected" data-type="holiday">&#127807; Holiday</button>
+            <button class="chip" data-type="event">&#128197; Event</button>
+            <button class="chip" data-type="meeting">&#129309; Meeting</button>
+            <button class="chip" data-type="note">&#128221; Note</button>
+            <button class="chip" data-type="exam">&#128203; Exam</button>
+            <button class="chip" data-type="activity">&#127919; Activity</button>
+            <button class="chip" data-type="quiz">&#10067; Quiz</button>
           </div>
           <div class="input-row">
             <input type="text" id="entryTitle" placeholder="Title (e.g. Science Exam)" maxlength="60" />
             <input type="time" id="entryTime" class="input-time" />
           </div>
-          <textarea class="input-note" id="entryNote" placeholder="Add a note or description (optional)…" maxlength="300"></textarea>
+          <textarea class="input-note" id="entryNote" placeholder="Add a note or description (optional)&hellip;" maxlength="300"></textarea>
           <button class="btn-add" onclick="addEntry()">+ Add Entry</button>
         </div>
 
@@ -95,6 +94,8 @@
         </div>
       </div>
     </div>
+
+    <script src="../shared.js"></script>
     <script src="calendar.js"></script>
   </body>
 </html>

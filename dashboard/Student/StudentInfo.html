@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Info — ClassInstruct</title>
   <link rel="stylesheet" href="StudentInfo.css" />
+  <script>
+    // Apply saved theme immediately to prevent flash
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+    // Listen for theme sync messages from sidebar
+    window.addEventListener('message', function(e) {
+      if (e.data && (e.data.type === 'CI_THEME' || e.data.type === 'CI_SET_THEME')) {
+        document.documentElement.setAttribute('data-theme', e.data.theme);
+        localStorage.setItem('theme', e.data.theme);
+      }
+    });
+  </script>
 </head>
 <body>
 <div class="page">

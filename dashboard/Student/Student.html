@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
   <title>Student Database - ClassInstruct</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../sidebar.css" />
   <link rel="stylesheet" href="AddStudent.css">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  </script>
 </head>
-<body>
+<body onload="applyTheme(localStorage.getItem('theme') || 'light')">
 <div class="app">
 
   
@@ -521,6 +525,7 @@
 <!-- Toasts -->
 <div class="toast-wrap" id="toastWrap"></div>
 
+<script src="../shared.js"></script>
 <script src="Student.js"></script>
 </body>
 </html>

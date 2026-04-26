@@ -1,22 +1,24 @@
 <?php session_start(); ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="utf-8" />
   <title>ClassInstruct - Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="dashboard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="dashboard.css">
   <script>
+    // Apply saved theme INSTANTLY before CSS renders — prevents white flash
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
     // PHP session → JS globals (used by renderGreeting as fallback)
     window.CI_FIRST_NAME = "<?php echo isset($_SESSION['first_name']) ? addslashes($_SESSION['first_name']) : ''; ?>";
     window.CI_LAST_NAME  = "<?php echo isset($_SESSION['last_name'])  ? addslashes($_SESSION['last_name'])  : ''; ?>";
     window.CI_GENDER     = "<?php echo isset($_SESSION['gender'])     ? addslashes($_SESSION['gender'])     : ''; ?>";
   </script>
-<script src="shared.js"></script>
+  <script src="shared.js"></script>
 </head>
-<body>
+<body data-page="dashboard">
 <div class="dashboard">
 
   <!-- ══ MAIN ══ -->

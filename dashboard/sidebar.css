@@ -43,7 +43,7 @@
   --toggle-bg: #e6e2f8;
   --toggle-knob: #6c63ff;
   --shadow: 0 2px 16px rgba(108,99,255,0.08);
-  --logo-bg: linear-gradient(135deg, #b8860b, #f5e9c0);
+  --logo-bg: linear-gradient(135deg, #6c63ff, #a78bfa);
   --avatar-bg: linear-gradient(135deg, #6c63ff, #a78bfa);
 }
 
@@ -87,7 +87,7 @@
   --toggle-bg: #1e1e35;
   --toggle-knob: #6c63ff;
   --shadow: 0 2px 16px rgba(0,0,0,0.35);
-  --logo-bg: linear-gradient(135deg, #b8860b, #f5e9c0);
+  --logo-bg: linear-gradient(135deg, #6c63ff, #a78bfa);
   --avatar-bg: linear-gradient(135deg, #6c63ff, #a78bfa);
 }
 
@@ -120,7 +120,7 @@ html, body {
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(184,134,11,0.3);
+  box-shadow: 0 2px 8px rgba(108,99,255,0.35);
 }
 .sb-logo-mark svg { width: 17px; height: 17px; }
 .sb-name { color: var(--sb-name); font-size: 14.5px; font-weight: 700; letter-spacing: 0.1px; transition: color 0.25s; }

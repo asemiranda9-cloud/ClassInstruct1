@@ -1,22 +1,27 @@
-=<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <title>ClassInstruct AI </title>
+    <title>ClassInstruct AI</title>
+    <link rel="stylesheet" href="../sidebar.css" />
     <link rel="stylesheet" href="styles.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Apply saved theme INSTANTLY before CSS renders — prevents flash
+      (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+    </script>
   </head>
-  <body>
+  <body data-page="classinstruct-ai" onload="applyTheme(localStorage.getItem('theme') || 'light')">
     <div class="classinstruct-AI">
-    
-      
+
       <!-- Main Content -->
       <main class="main-content">
+
         <!-- Header -->
         <header class="header">
           <h1 class="header-title">ClassInstruct AI</h1>
-          
+
           <div class="search-container">
             <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -24,29 +29,28 @@
             <label for="search-input" class="visually-hidden">Search</label>
             <input type="search" id="search-input" placeholder="Search for lessons, students, or resources..." aria-label="Search" />
           </div>
-          
+
           <div class="header-actions">
             <span class="header-brand">ClassInstruct AI</span>
           </div>
         </header>
-        
+
         <!-- Content Wrapper -->
         <div class="content-wrapper">
+
           <!-- Chat Area -->
           <div class="chat-area">
             <div class="chat-container">
               <div class="chat-messages">
-                <!-- Welcome Message -->
                 <div class="welcome-message">
                   <h2>Welcome to ClassInstruct AI</h2>
                   <p>Ask me anything about your classes, students, or attendance.</p>
                 </div>
               </div>
             </div>
-            
+
             <!-- Chat Input -->
             <div class="chat-input-wrapper">
-              <!-- Hidden file input -->
               <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.csv,.json,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.webm" style="display:none" />
 
               <div class="chat-input-container">
@@ -75,14 +79,14 @@
               </div>
 
               <!-- Attached file preview bar -->
-              <div id="attachment-preview" style="display:none; padding: 8px 12px; background:#f1f5f9; border-radius: 10px; margin-top: 8px; display:none; align-items:center; gap:10px; font-size:0.85rem; color:#475569;">
+              <div id="attachment-preview" style="display:none; padding: 8px 12px; border-radius: 10px; margin-top: 8px; align-items:center; gap:10px; font-size:0.85rem;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span id="attachment-name">file.pdf</span>
-                <button onclick="clearAttachment()" style="margin-left:auto; background:none; border:none; cursor:pointer; color:#94a3b8; font-size:1rem;" title="Remove file">✕</button>
+                <button onclick="clearAttachment()" style="margin-left:auto; background:none; border:none; cursor:pointer; font-size:1rem;" title="Remove file">✕</button>
               </div>
             </div>
           </div>
-          
+
           <!-- Right Sidebar - Quick Actions -->
           <aside class="right-sidebar">
             <div class="sidebar-actions">
@@ -124,9 +128,12 @@
 
             </div>
           </aside>
-        </div>
+
+        </div><!-- /content-wrapper -->
       </main>
     </div>
+
+    <script src="../shared.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
