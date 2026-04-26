@@ -8,7 +8,7 @@ let pendingLessonPlanMeta = null; // set when a lesson plan is being generated
 
 // Streams the AI reply chunk-by-chunk into a live message bubble.
 // Returns the full accumulated text when done.
-async function streamMessageFromGemini(message, onChunk) {
+async function streamMessageFromGemini(message, onChunk, { imageBase64, imageMimeType, docText, fileUri, fileMimeType } = {}) {
   const controller = new AbortController();
   // Hard timeout: abort if no response at all within 15s
   const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -17,7 +17,7 @@ async function streamMessageFromGemini(message, onChunk) {
     const response = await fetch("http://localhost:3000/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, imageBase64, imageMimeType, docText, fileUri, fileMimeType }),
       signal: controller.signal
     });
 
@@ -225,6 +225,7 @@ async function handleSendMessage() {
   }
 }
 
+// Initial event listeners — will be replaced by handleSendMessageWithFile below
 sendBtn.addEventListener("click", handleSendMessage);
 chatInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
@@ -234,90 +235,414 @@ chatInput.addEventListener("keydown", (event) => {
 });
 
 // ============================================
-// FILE ATTACHMENT
+// FILE ATTACHMENT — images + documents + link review
 // ============================================
-let attachedFile = null;
-let attachedFileContent = null;
+let attachedFile      = null;   // File object
+let attachedImageB64  = null;   // base64 string (images only)
+let attachedImageMime = null;   // mime type (images only)
+let attachedDocText   = null;   // extracted plain text (PDF / DOCX / TXT)
 
-const fileInput = document.getElementById('file-input');
-const attachBtn = document.getElementById('attach-btn');
-const attachmentPreview = document.getElementById('attachment-preview');
-const attachmentName = document.getElementById('attachment-name');
+const fileInput          = document.getElementById('file-input');
+const attachBtn          = document.getElementById('attach-btn');
+const attachmentPreview  = document.getElementById('attachment-preview');
+const attachmentName     = document.getElementById('attachment-name');
 
+// Supported types
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm'];
+const TEXT_TYPES  = ['text/plain', 'text/csv', 'application/json', 'text/html'];
+
+// ── Read a file and populate the attachment state ──────────
+function readAttachedFile(file) {
+  return new Promise((resolve) => {
+    const isImage = IMAGE_TYPES.includes(file.type);
+    const isText  = TEXT_TYPES.includes(file.type)
+      || /\.(txt|csv|json|md)$/i.test(file.name);
+    const isPDF   = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const isDocx  = /\.(docx|doc)$/i.test(file.name);
+
+    const fr = new FileReader();
+
+    if (isImage) {
+      const isVideo = file.type.startsWith('video/');
+      fr.onload = (e) => {
+        // e.target.result = "data:image/png;base64,XXXX"
+        const [, data] = e.target.result.split(',');
+        attachedImageB64  = data;
+        attachedImageMime = file.type;
+        attachedDocText   = null;
+        if (isVideo) {
+          window._pendingVideoUpload = true; // flag: must go through Gemini File API
+        }
+        showToast(`${isVideo ? 'Video' : 'Image'} attached: ${file.name}`);
+        resolve();
+      };
+      fr.readAsDataURL(file);
+
+    } else if (isText) {
+      fr.onload = (e) => {
+        attachedDocText   = e.target.result;
+        attachedImageB64  = null;
+        attachedImageMime = null;
+        showToast(`File attached: ${file.name}`);
+        resolve();
+      };
+      fr.readAsText(file);
+
+    } else if (isPDF) {
+      // Load pdf.js dynamically then extract text
+      loadPdfJs().then(async (pdfjsLib) => {
+        try {
+          fr.onload = async (e) => {
+            const typedArray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+            let text = '';
+            for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              text += content.items.map(s => s.str).join(' ') + '\n';
+            }
+            attachedDocText   = text.trim() || '(Could not extract text from this PDF.)';
+            attachedImageB64  = null;
+            attachedImageMime = null;
+            showToast(`PDF attached: ${file.name} (${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''})`);
+            resolve();
+          };
+          fr.readAsArrayBuffer(file);
+        } catch (err) {
+          attachedDocText = `(PDF parse error: ${err.message})`;
+          resolve();
+        }
+      }).catch(() => {
+        attachedDocText = `(PDF.js could not be loaded. Make sure you are online.)`;
+        resolve();
+      });
+
+    } else if (isDocx) {
+      // Use mammoth.js to convert .docx → plain text
+      loadMammoth().then((mammoth) => {
+        fr.onload = async (e) => {
+          try {
+            const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+            attachedDocText   = result.value.trim() || '(No text found in document.)';
+            attachedImageB64  = null;
+            attachedImageMime = null;
+            showToast(`Document attached: ${file.name}`);
+          } catch (err) {
+            attachedDocText = `(DOCX parse error: ${err.message})`;
+          }
+          resolve();
+        };
+        fr.readAsArrayBuffer(file);
+      }).catch(() => {
+        attachedDocText = '(mammoth.js could not be loaded. Make sure you are online.)';
+        resolve();
+      });
+
+    } else {
+      // Unsupported — attach name only, send as plain text note
+      attachedDocText   = null;
+      attachedImageB64  = null;
+      attachedImageMime = null;
+      showToast(`Attached: ${file.name} (type not fully supported; filename will be noted)`, 'error');
+      resolve();
+    }
+  });
+}
+
+// ── Lazy-load PDF.js ──────────────────────────────────────
+function loadPdfJs() {
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) return resolve(window.pdfjsLib);
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+// ── Lazy-load mammoth.js ──────────────────────────────────
+function loadMammoth() {
+  return new Promise((resolve, reject) => {
+    if (window.mammoth) return resolve(window.mammoth);
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    script.onload = () => resolve(window.mammoth);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+// ── Wire up file input ────────────────────────────────────
 if (attachBtn && fileInput) {
   attachBtn.addEventListener('click', () => fileInput.click());
 
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 50 * 1024 * 1024; // 50 MB (videos need more room)
     if (file.size > maxSize) {
-      showToast('File too large. Maximum size is 5MB.', 'error');
+      showToast('File too large. Maximum size is 50 MB.', 'error');
       fileInput.value = '';
       return;
     }
 
     attachedFile = file;
-    attachmentName.textContent = file.name;
-    attachmentPreview.style.display = 'flex';
-    attachBtn.style.color = 'var(--primary-color)';
+    if (attachmentName)  attachmentName.textContent = file.name;
+    if (attachmentPreview) attachmentPreview.style.display = 'flex';
+    if (attachBtn) attachBtn.style.color = 'var(--primary-color, #4f46e5)';
 
-    // Read file content as text (for text-based files)
-    const reader = new FileReader();
-    const textTypes = ['text/plain', 'application/json', 'text/csv', 'text/html'];
-    const isText = textTypes.includes(file.type) || file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.json');
-
-    if (isText) {
-      reader.onload = (e) => {
-        attachedFileContent = e.target.result;
-        showToast(`File attached: ${file.name}`);
-      };
-      reader.readAsText(file);
-    } else {
-      // For PDFs, Word docs, images — just note the filename and type
-      attachedFileContent = null;
-      showToast(`File attached: ${file.name} (name will be included in your message)`);
-    }
+    await readAttachedFile(file);
   });
 }
 
 function clearAttachment() {
-  attachedFile = null;
-  attachedFileContent = null;
-  if (fileInput) fileInput.value = '';
-  if (attachmentPreview) attachmentPreview.style.display = 'none';
-  if (attachBtn) attachBtn.style.color = '';
+  attachedFile      = null;
+  attachedImageB64  = null;
+  attachedImageMime = null;
+  attachedDocText   = null;
+  if (fileInput)          fileInput.value = '';
+  if (attachmentPreview)  attachmentPreview.style.display = 'none';
+  if (attachBtn)          attachBtn.style.color = '';
 }
 
-// Override handleSendMessage to prepend file content when a file is attached
-const _originalHandleSend = handleSendMessage;
+// ── URL detector helper ───────────────────────────────────
+function extractUrl(text) {
+  const match = text.match(/https?:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
 
-// Patch: prepend file info to the user message if a file is attached
-const _baseSendMessage = handleSendMessage;
-window.handleSendMessageWithFile = async function() {
-  if (attachedFile) {
-    const fileName = attachedFile.name;
-    let prefix = `[Attached file: ${fileName}]\n\n`;
-    if (attachedFileContent) {
-      const preview = attachedFileContent.length > 3000
-        ? attachedFileContent.substring(0, 3000) + '\n... (content truncated)'
-        : attachedFileContent;
-      prefix += `File contents:\n${preview}\n\n`;
+// ── Extract YouTube video ID from any YT URL format ──────
+function extractYouTubeId(url) {
+  try {
+    const u = new URL(url);
+    // youtube.com/watch?v=ID
+    if (u.hostname.includes('youtube.com') && u.searchParams.get('v')) {
+      return u.searchParams.get('v');
     }
-    const currentVal = chatInput.value.trim();
-    chatInput.value = prefix + (currentVal || `Please review the attached file: ${fileName}`);
-    clearAttachment();
+    // youtu.be/ID
+    if (u.hostname === 'youtu.be') {
+      return u.pathname.slice(1).split('?')[0];
+    }
+    // youtube.com/shorts/ID
+    if (u.hostname.includes('youtube.com') && u.pathname.startsWith('/shorts/')) {
+      return u.pathname.split('/shorts/')[1].split('?')[0];
+    }
+  } catch {}
+  return null;
+}
+
+// ── Fetch YouTube video info via the backend ─────────────
+async function fetchYouTubeInfo(videoId) {
+  const res = await fetch('http://localhost:3000/fetch-youtube', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ videoId })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ── Fetch a generic URL's text via the backend ───────────
+async function fetchLinkText(url) {
+  const res = await fetch('http://localhost:3000/fetch-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.text || '';
+}
+
+// ── Main send handler (file + link aware) ─────────────────
+window.handleSendMessageWithFile = async function() {
+  if (isSending) return;
+  const rawInput = chatInput.value.trim();
+  if (!rawInput && !attachedFile) return;
+
+  isSending = true;
+  sendBtn.disabled  = true;
+  chatInput.disabled = true;
+
+  // Snapshot and clear attachment state before any async work
+  const imageB64  = attachedImageB64;
+  const imageMime = attachedImageMime;
+  const docText   = attachedDocText;
+  const fileName  = attachedFile ? attachedFile.name : null;
+  const isVideoFile = window._pendingVideoUpload && !!imageB64 && imageMime?.startsWith('video/');
+  window._pendingVideoUpload = false;
+  clearAttachment();
+  chatInput.value = '';
+
+  // Build the user-visible label and actual prompt
+  let displayText = rawInput;
+  let promptText  = rawInput || (fileName ? `Please review the attached file: ${fileName}` : '');
+
+  // If a file was attached, note it in display
+  if (fileName) {
+    displayText = rawInput
+      ? `[${fileName}] ${rawInput}`
+      : `[${fileName}] Please review this file.`;
   }
-  await handleSendMessage();
+
+  // ── Upload video via Gemini File API if needed ────────────
+  let fileUri = null;
+  let fileMimeType = null;
+  if (isVideoFile) {
+    const uploadingDiv = document.createElement('div');
+    uploadingDiv.className = 'ai-message typing-message';
+    uploadingDiv.innerHTML = '<div class="message-content"><span class="typing-dots">● ● ●</span> Uploading video to Gemini...</div>';
+    chatMessages.appendChild(uploadingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+      const upRes = await fetch('http://localhost:3000/upload-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoBase64: imageB64, mimeType: imageMime, fileName })
+      });
+      const upData = await upRes.json();
+      uploadingDiv.remove();
+      if (upData.error) throw new Error(upData.error);
+      fileUri = upData.fileUri;
+      fileMimeType = upData.mimeType;
+    } catch (err) {
+      uploadingDiv.remove();
+      showToast('Video upload failed: ' + err.message, 'error');
+      isSending = false;
+      sendBtn.disabled = false;
+      chatInput.disabled = false;
+      chatInput.focus();
+      return;
+    }
+  }
+
+  // Detect URLs in the message and fetch their content
+  let linkPageText = null;
+  const detectedUrl = extractUrl(promptText);
+  if (detectedUrl) {
+    const fetchingDiv = document.createElement('div');
+    fetchingDiv.className = 'ai-message typing-message';
+    chatMessages.appendChild(fetchingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    const youtubeId = extractYouTubeId(detectedUrl);
+
+    try {
+      if (youtubeId) {
+        // ── YouTube URL ──────────────────────────────────
+        fetchingDiv.innerHTML = '<div class="message-content">Fetching YouTube video info...</div>';
+        const yt = await fetchYouTubeInfo(youtubeId);
+        fetchingDiv.remove();
+
+        linkPageText =
+          `YouTube Video: ${yt.title}\n` +
+          `Channel: ${yt.channel}\n` +
+          (yt.tags ? `Tags: ${yt.tags}\n` : '') +
+          `\nDescription:\n${yt.description}\n` +
+          `\nNote: ${yt.captionNote}`;
+
+      } else {
+        // ── Generic URL ──────────────────────────────────
+        fetchingDiv.innerHTML = '<div class="message-content">Fetching link content...</div>';
+        linkPageText = await fetchLinkText(detectedUrl);
+        fetchingDiv.remove();
+      }
+    } catch (err) {
+      fetchingDiv.remove();
+      showToast(err.message, 'error');
+    }
+  }
+
+  // If we got link content, inject it into the prompt
+  if (linkPageText) {
+    promptText = `The teacher shared this link: ${detectedUrl}\n\nHere is the content:\n---\n${linkPageText}\n---\n\nTeacher's request: ${promptText}`;
+  }
+
+  // Show the user message bubble
+  addUserMessage(displayText);
+
+  // Typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'ai-message typing-message';
+  typingDiv.innerHTML = '<div class="message-content"><span class="typing-dots">● ● ●</span> Thinking...</div>';
+  chatMessages.appendChild(typingDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // Live AI message bubble
+  const messageDiv  = document.createElement('div');
+  messageDiv.className = 'ai-message';
+  const contentDiv  = document.createElement('div');
+  contentDiv.className = 'message-content';
+  messageDiv.appendChild(contentDiv);
+
+  let firstChunk = true;
+
+  try {
+    const fullText = await streamMessageFromGemini(
+      promptText,
+      (accumulated) => {
+        if (firstChunk) {
+          typingDiv.remove();
+          chatMessages.appendChild(messageDiv);
+          firstChunk = false;
+        }
+        contentDiv.innerHTML = formatMessage(accumulated);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      },
+      { imageBase64: isVideoFile ? null : imageB64, imageMimeType: isVideoFile ? null : imageMime, docText, fileUri, fileMimeType }
+    );
+
+    // Attach PDF download button if this was a lesson plan
+    const lpMeta = pendingLessonPlanMeta;
+    pendingLessonPlanMeta = null;
+    if (lpMeta && fullText) {
+      const pdfBar = document.createElement('div');
+      pdfBar.className = 'pdf-download-bar';
+      pdfBar.innerHTML = `
+        <span class="pdf-label">Lesson Plan Ready</span>
+        <button class="pdf-download-btn" onclick="downloadLessonPlanPDF(this)"
+          data-text="${escapeAttr(fullText)}"
+          data-subject="${escapeAttr(lpMeta.subject)}"
+          data-grade="${escapeAttr(lpMeta.grade)}"
+          data-topic="${escapeAttr(lpMeta.topic)}"
+          data-framework="${escapeAttr(lpMeta.frameworkLabel)}"
+          data-duration="${escapeAttr(lpMeta.duration)}">
+          Download PDF
+        </button>`;
+      messageDiv.appendChild(pdfBar);
+    }
+
+    if (fullText) chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() });
+
+  } catch (error) {
+    typingDiv.remove();
+    let errorMessage = error.message;
+    if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+      errorMessage = 'Cannot connect to server. Make sure the server is running on localhost:3000';
+    }
+    addAiMessage(errorMessage, true);
+  } finally {
+    isSending = false;
+    sendBtn.disabled   = false;
+    chatInput.disabled = false;
+    chatInput.focus();
+  }
 };
 
-// Re-wire send button to use file-aware version
-sendBtn.removeEventListener("click", handleSendMessage);
-sendBtn.addEventListener("click", window.handleSendMessageWithFile);
-chatInput.removeEventListener("keydown", handleSendMessage);
-chatInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
+// Re-wire send button and Enter key
+sendBtn.removeEventListener('click', handleSendMessage);
+sendBtn.addEventListener('click', window.handleSendMessageWithFile);
+chatInput.removeEventListener('keydown', handleSendMessage);
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault();
     window.handleSendMessageWithFile();
   }
