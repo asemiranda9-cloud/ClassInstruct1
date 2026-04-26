@@ -40,8 +40,18 @@ let filtered    = [];
 let editingId   = null;
 let currentPage = 1;
 const PAGE_SIZE = 10;
-let localSections = []; // sections added via the + button before any student has one
+let localSections = [];
 
+// ═══════════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════════
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme || 'light');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
 async function init() {
   try {
     const data = await apiGet();
@@ -56,6 +66,7 @@ async function init() {
 }
 
 function initFlatpickr() {
+  if (typeof flatpickr === 'undefined') return;
   flatpickr('#f-dob', {
     dateFormat: 'Y-m-d',
     minDate: '1990-01-01',
@@ -68,6 +79,21 @@ function initFlatpickr() {
     defaultDate: new Date(),
     altInput: true,
     altFormat: 'Y-m-d',
+  });
+}
+
+function initBulkDobPicker() {
+  if (typeof flatpickr === 'undefined') return;
+  const el = document.getElementById('bulkDob');
+  if (!el || el._flatpickr) return;
+  flatpickr(el, {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'F j, Y',
+    allowInput: false,
+    onChange(selectedDates, dateStr) {
+      applyBulkField('dob', dateStr);
+    },
   });
 }
 
@@ -99,6 +125,31 @@ function populateSections() {
   const studentSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
   const allSections = [...new Set([...localSections, ...studentSections])].sort();
   refreshSectionDropdowns(allSections);
+
+  // Refresh bulk section dropdown in import modal
+  const bulkSec = document.getElementById('bulkSection');
+  if (bulkSec) {
+    const bulkVal = bulkSec.value;
+    while (bulkSec.options.length > 1) bulkSec.remove(1);
+    allSections.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      bulkSec.appendChild(o);
+    });
+    if (allSections.includes(bulkVal)) bulkSec.value = bulkVal;
+  }
+
+  // If the import preview (step 3) is visible, re-render rows so
+  // per-row section dropdowns also reflect the new section list
+  const importStep3 = document.getElementById('importStep3');
+  const importOverlay = document.getElementById('importOverlay');
+  if (
+    importOverlay && importOverlay.classList.contains('open') &&
+    importStep3 && importStep3.style.display !== 'none' &&
+    typeof renderImportPreview === 'function'
+  ) {
+    renderImportPreview();
+  }
 }
 function refreshSectionDropdowns(sections) {
   ['filterSection', 'f-section'].forEach(id => {
@@ -323,7 +374,7 @@ function closeFormModal() {
 }
 
 // ═══════════════════════════════════════════
-//  FORM HELPERS  — field IDs match Student.html
+//  FORM HELPERS
 // ═══════════════════════════════════════════
 function clearForm() {
   const ids = [
@@ -337,7 +388,6 @@ function clearForm() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  // Clear gender radio
   document.querySelectorAll('input[name="f-gender"]').forEach(r => r.checked = false);
   clearErrors();
 }
@@ -345,9 +395,9 @@ function clearForm() {
 function fillForm(s) {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   set('f-studentId',        s.studentId        || '');
-  set('f-firstName',        s.firstName         || '');
-  set('f-middleName',       s.middleName        || '');
-  set('f-lastName',         s.lastName          || '');
+  set('f-firstName',        s.firstName        || '');
+  set('f-middleName',       s.middleName       || '');
+  set('f-lastName',         s.lastName         || '');
   set('f-dob',              s.dob              || '');
   set('f-grade',            s.grade            || '');
   set('f-section',          s.section          || '');
@@ -363,8 +413,6 @@ function fillForm(s) {
   set('f-guardianName',     s.guardianName     || '');
   set('f-guardianRelation', s.guardianRelation || '');
   set('f-guardianPhone',    s.guardianPhone    || '');
-
-  // Gender radio
   document.querySelectorAll('input[name="f-gender"]').forEach(r => {
     r.checked = (r.value === s.gender);
   });
@@ -394,7 +442,7 @@ function getFormData() {
     motherPhone:      get('f-motherPhone'),
     guardianName:     get('f-guardianName'),
     guardianRelation: get('f-guardianRelation'),
-    guardianPhone:   get('f-guardianPhone'),
+    guardianPhone:    get('f-guardianPhone'),
   };
 }
 
@@ -404,7 +452,7 @@ function validate(data) {
   if (!data.firstName) { setErr('firstName', 'First name is required'); ok = false; }
   if (!data.lastName)  { setErr('lastName',  'Last name is required');  ok = false; }
   if (!data.gender)    { setErr('gender',    'Please select a gender'); ok = false; }
-  if (!data.grade)     { setErr('grade',      'Grade level is required'); ok = false; }
+  if (!data.grade)     { setErr('grade',     'Grade level is required'); ok = false; }
   return ok;
 }
 
@@ -423,7 +471,6 @@ function clearErrors() {
 async function saveStudent() {
   const data = getFormData();
   if (!validate(data)) return;
-
   try {
     if (editingId) {
       const updated = await apiPut(editingId, data);
@@ -452,23 +499,19 @@ async function saveStudent() {
 function viewStudent(id) {
   const s = students.find(x => x.id === id);
   if (!s) return;
-
   const name     = buildFullName(s);
   const initials = getInitials(s);
   const colors   = ['#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
   const color    = colors[(name.charCodeAt(0)||0) % colors.length];
-
   const avatarEl = document.getElementById('viewAvatarBadge');
   if (avatarEl) { avatarEl.textContent = initials; avatarEl.style.background = `linear-gradient(135deg,${color},#7c3aed)`; }
   const nameEl = document.getElementById('viewModalName');
   if (nameEl) nameEl.textContent = name;
   const subEl = document.getElementById('viewModalSub');
   if (subEl) subEl.textContent = `${s.studentId||'No ID'}  •  ${s.grade||''} ${s.section||''}`;
-
   const v = val => val
     ? `<span class="view-value">${esc(val)}</span>`
     : '<span class="view-value empty">Not provided</span>';
-
   document.getElementById('viewBody').innerHTML = `
     <div class="view-section">
       <div class="view-section-title">Personal Information</div>
@@ -510,7 +553,6 @@ function viewStudent(id) {
         <div class="view-item"><div class="view-label">Guardian's Phone</div>${v(s.guardianPhone)}</div>
       </div>
     </div>`;
-
   document.getElementById('editFromViewBtn').onclick = () => openEditModal(id);
   document.getElementById('viewOverlay').classList.add('open');
 }
@@ -551,120 +593,957 @@ document.getElementById('confirmDeleteBtn').onclick = async function() {
   }
 };
 
-// ═══════════════════════════════════════════
-//  OCR / IMPORT
-// ═══════════════════════════════════════════
-let _importStudents = [];
+// ═══════════════════════════════════════════════════════════════════════
+//  IMPORT MODAL — IMAGE (Tesseract OCR) + EXCEL/CSV
+// ═══════════════════════════════════════════════════════════════════════
 
+let _importStudents  = [];
+let _importMode      = 'image'; // 'image' | 'excel'
+let _importStep      = 1;
+let _currentImgFile  = null;
+
+// ── Open / Close ──────────────────────────────────────────────────────
+function openImportModal() {
+  _importStudents = [];
+  _importMode     = 'image';
+  _importStep     = 1;
+  _currentImgFile = null;
+  resetImportUI();
+  populateSections(); // ensure section dropdowns are up-to-date
+  document.getElementById('importOverlay').classList.add('open');
+  setTimeout(initBulkDobPicker, 50);
+}
+
+function closeImportModal() {
+  document.getElementById('importOverlay').classList.remove('open');
+  resetImportUI();
+}
+
+function resetImportUI() {
+  setStep(1);
+  // Clear image side
+  const fi = document.getElementById('importFileInput');
+  if (fi) fi.value = '';
+  const pw = document.getElementById('importPreviewWrap');
+  if (pw) pw.style.display = 'none';
+  const pi = document.getElementById('importPreviewImg');
+  if (pi) pi.src = '';
+  const ctx = document.getElementById('importContext');
+  if (ctx) ctx.value = '';
+  // Clear excel side
+  const ef = document.getElementById('importExcelInput');
+  if (ef) ef.value = '';
+  const epw = document.getElementById('importExcelPreviewWrap');
+  if (epw) epw.style.display = 'none';
+  // Reset action button
+  const btn = document.getElementById('importActionBtn');
+  if (btn) { btn.disabled = true; document.getElementById('importActionLabel').textContent = 'Analyze Image'; }
+  // Reset step 4
+  const s4 = document.getElementById('importStep4');
+  if (s4) s4.style.display = 'none';
+  // Sync tab UI
+  _syncImportTabs();
+}
+
+function _syncImportTabs() {
+  document.querySelectorAll('.import-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === _importMode);
+  });
+  const imgPanel = document.getElementById('importImagePanel');
+  const xlsPanel = document.getElementById('importExcelPanel');
+  if (imgPanel) imgPanel.style.display = _importMode === 'image' ? 'block' : 'none';
+  if (xlsPanel) xlsPanel.style.display = _importMode === 'excel' ? 'block' : 'none';
+  const btn = document.getElementById('importActionBtn');
+  if (btn) {
+    const label = document.getElementById('importActionLabel');
+    if (_importMode === 'image') {
+      label.textContent = 'Analyze Image';
+      btn.disabled = !_currentImgFile;
+    } else {
+      label.textContent = 'Preview Data';
+      const ef = document.getElementById('importExcelInput');
+      btn.disabled = !(ef && ef.files && ef.files.length > 0);
+    }
+  }
+}
+
+function switchImportTab(mode) {
+  _importMode = mode;
+  _syncImportTabs();
+}
+
+// ── Step management ───────────────────────────────────────────────────
 function setStep(step) {
-  document.getElementById('importStep1').style.display = step === 1 ? 'block' : 'none';
-  document.getElementById('importStep2').style.display = step === 2 ? 'block' : 'none';
-  document.getElementById('importStep3').style.display = step === 3 ? 'block' : 'none';
+  _importStep = step;
+  ['importStep1','importStep2','importStep3','importStep4'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (idx + 1 === step) ? (step === 1 ? 'block' : step === 2 ? 'block' : 'block') : 'none';
+  });
+
+  const footer = document.getElementById('importFooter');
+  const btn    = document.getElementById('importActionBtn');
+  const lbl    = document.getElementById('importActionLabel');
+
+  if (step === 1) {
+    if (footer) footer.style.display = 'flex';
+    if (btn) { btn.style.display = 'inline-flex'; _syncImportTabs(); }
+  } else if (step === 2) {
+    if (footer) footer.style.display = 'flex';
+    if (btn) btn.style.display = 'none';
+  } else if (step === 3) {
+    if (footer) footer.style.display = 'flex';
+    if (btn) { btn.style.display = 'inline-flex'; btn.disabled = false; if (lbl) lbl.textContent = 'Import Students'; }
+  } else if (step === 4) {
+    if (footer) footer.style.display = 'flex';
+    if (btn) { btn.style.display = 'none'; }
+  }
+}
+
+// ── Drag & drop for IMAGE ─────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('importDropZone')?.classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  document.getElementById('importDropZone')?.classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('importDropZone')?.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    _loadImageFile(file);
+  } else {
+    toast('Please drop an image file (JPG, PNG, WEBP)', 'danger');
+  }
 }
 
 function handleImportFile(event) {
   const file = event.target.files[0];
   if (!file) return;
+  _loadImageFile(file);
+}
+
+function _loadImageFile(file) {
+  _currentImgFile = file;
   const reader = new FileReader();
   reader.onload = function(e) {
     document.getElementById('importPreviewImg').src = e.target.result;
     document.getElementById('importPreviewWrap').style.display = 'block';
-    const btn = document.getElementById('importActionBtn');
-    if (btn) btn.disabled = false;
+    _syncImportTabs();
   };
   reader.readAsDataURL(file);
 }
 
 function clearImportImage() {
+  _currentImgFile = null;
   document.getElementById('importFileInput').value = '';
   document.getElementById('importPreviewWrap').style.display = 'none';
   document.getElementById('importPreviewImg').src = '';
-  const btn = document.getElementById('importActionBtn');
-  if (btn) btn.disabled = true;
+  _syncImportTabs();
 }
 
+// ── Drag & drop for EXCEL panel ───────────────────────────────────────
+function handleExcelDragOver(e) {
+  e.preventDefault();
+  document.getElementById('importExcelDropZone')?.classList.add('drag-over');
+}
+function handleExcelDragLeave(e) {
+  document.getElementById('importExcelDropZone')?.classList.remove('drag-over');
+}
+function handleExcelDrop(e) {
+  e.preventDefault();
+  document.getElementById('importExcelDropZone')?.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) _loadExcelFile(file);
+}
+function handleExcelFile(event) {
+  const file = event.target.files[0];
+  if (file) _loadExcelFile(file);
+}
+function _loadExcelFile(file) {
+  const pw   = document.getElementById('importExcelPreviewWrap');
+  const name = document.getElementById('importExcelFileName');
+  if (name) name.textContent = file.name + ' (' + _fmtSize(file.size) + ')';
+  if (pw)   pw.style.display = 'block';
+  _syncImportTabs();
+}
+function clearImportExcel() {
+  document.getElementById('importExcelInput').value = '';
+  document.getElementById('importExcelPreviewWrap').style.display = 'none';
+  _syncImportTabs();
+}
+function _fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+// ── Main action dispatcher ────────────────────────────────────────────
 async function runImportAction() {
+  if (_importStep === 1) {
+    if (_importMode === 'image') await _runOcrImport();
+    else                         await _runExcelImport();
+  } else if (_importStep === 3) {
+    await _commitImport();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  IMAGE OCR IMPORT  — enhanced Tesseract pipeline
+// ═══════════════════════════════════════════════════════════════════════
+
+async function _runOcrImport() {
   const img = document.getElementById('importPreviewImg');
-  if (!img || !img.src) return;
+  if (!img || !img.src || img.src === window.location.href) {
+    toast('Please select an image first', 'danger'); return;
+  }
+
   setStep(2);
   const pBar = document.getElementById('ocrProgressBar');
   const pLbl = document.getElementById('ocrProgressLabel');
   const msg  = document.getElementById('importLoadingMsg');
+  const sub  = document.getElementById('importLoadingSub');
+
+  if (msg) msg.textContent = 'Initializing Tesseract OCR…';
+  if (sub) sub.textContent = 'Loading English language model — this takes a moment on first run';
+  if (pBar) pBar.style.width = '0%';
+  if (pLbl) pLbl.textContent = '0%';
 
   try {
-    const result = await Tesseract.recognize(img.src, 'eng', {
+    if (typeof Tesseract === 'undefined') throw new Error('Tesseract.js not loaded. Check your <script> tag.');
+
+    // Pre-process image through canvas for better OCR accuracy
+    const processedSrc = await _preprocessImageForOCR(img);
+
+    if (msg) msg.textContent = 'Running OCR on image…';
+    if (sub) sub.textContent = 'Reading text from your master list — please wait';
+
+    const result = await Tesseract.recognize(processedSrc, 'eng', {
       logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round(m.progress * 100);
-          pBar.style.width = pct + '%';
-          pLbl.textContent = pct + '%';
-        } else if (m.status === 'loading language') {
-          msg.textContent = 'Loading language model…';
-          pBar.style.width = Math.round(m.progress * 50) + '%';
-          pLbl.textContent = Math.round(m.progress * 50) + '%';
+        const pct = Math.round((m.progress || 0) * 100);
+        if (m.status === 'loading language traineddata') {
+          if (msg) msg.textContent = 'Loading language model…';
+          if (pBar) pBar.style.width = Math.min(30, pct * 0.3) + '%';
+          if (pLbl) pLbl.textContent = Math.min(30, pct * 0.3) + '%';
+        } else if (m.status === 'initializing api') {
+          if (msg) msg.textContent = 'Initializing OCR engine…';
+          if (pBar) pBar.style.width = '35%';
+          if (pLbl) pLbl.textContent = '35%';
+        } else if (m.status === 'recognizing text') {
+          const p = 35 + Math.round(pct * 0.65);
+          if (pBar) pBar.style.width = p + '%';
+          if (pLbl) pLbl.textContent = p + '%';
+          if (msg) msg.textContent = 'Recognizing text… ' + pct + '%';
         }
-      }
+      },
+      tessedit_pageseg_mode: Tesseract.PSM ? Tesseract.PSM.AUTO : 3,
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,\'-/',
+      preserve_interword_spaces: '1',
     });
-    msg.textContent = 'Parsing student names…';
-    pBar.style.width = '100%';
-    pLbl.textContent = 'Done';
 
-    const lines = result.data.text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-    const context = document.getElementById('importContext').value.trim();
-    _importStudents = lines.map(name => ({
-      firstName: name.split(' ')[0] || name,
-      lastName: name.split(' ').slice(1).join(' ') || name,
-      gender: '',
-      grade: '',
-      section: '',
-      dob: '',
-      selected: true
-    }));
+    if (msg) msg.textContent = 'Parsing student records…';
+    if (pBar) pBar.style.width = '100%';
+    if (pLbl) pLbl.textContent = '100%';
 
-    const count = document.getElementById('importFoundCount');
-    if (count) count.textContent = _importStudents.length + ' students found';
-    setStep(3);
-    renderImportPreview();
+    const rawText   = result.data.text;
+    const context   = (document.getElementById('importContext')?.value || '').trim();
+    _importStudents = _parseOcrText(rawText, context);
+
+    _showImportPreview();
+
   } catch (e) {
-    msg.textContent = 'OCR failed: ' + e.message;
-    setTimeout(() => setStep(1), 2000);
+    console.error('OCR error:', e);
+    if (msg) msg.textContent = '❌ OCR failed: ' + e.message;
+    if (sub) sub.textContent = 'Try a clearer, higher-resolution image';
+    setTimeout(() => setStep(1), 3000);
   }
 }
 
+// ── Canvas pre-processing for better OCR ─────────────────────────────
+async function _preprocessImageForOCR(imgEl) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    const img    = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Scale up small images; cap large ones
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      const MIN_W = 1800;
+      const MAX_W = 4000;
+      if (w < MIN_W) { const s = MIN_W / w; w = MIN_W; h = Math.round(h * s); }
+      if (w > MAX_W) { const s = MAX_W / w; w = MAX_W; h = Math.round(h * s); }
+
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Enhance contrast via pixel manipulation
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const data      = imageData.data;
+
+      // Convert to greyscale then apply threshold (binarise)
+      for (let i = 0; i < data.length; i += 4) {
+        const grey = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        // Adaptive-like threshold: anything below 160 → black, else white
+        const val = grey < 160 ? 0 : 255;
+        data[i] = data[i+1] = data[i+2] = val;
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(imgEl.src); // fallback to original
+    img.src = imgEl.src;
+  });
+}
+
+// ── OCR text parser — the heart of accurate extraction ───────────────
+function _parseOcrText(rawText, context) {
+  // --- Step 1: split into lines, clean each -------------------------
+  const lines = rawText
+    .split(/\r?\n/)
+    .map(l => l
+      .replace(/[|\\]/g, ' ')         // pipes/backslashes → space
+      .replace(/\s{2,}/g, ' ')        // collapse whitespace
+      .trim()
+    )
+    .filter(l => l.length >= 3);      // remove short junk
+
+  // --- Step 2: detect header / footer lines to skip ----------------
+  const SKIP_PATTERNS = [
+    /^(no\.?|#|num|sr\.?\s*no)/i,
+    /^(student|name|full\s*name|learner|pupil)/i,
+    /^(lrn|id|student\s*id|learner\s*ref)/i,
+    /^(grade|section|gender|sex|grd|grde)/i,
+    /^(date|school|year|sy|s\.y\.?|school\s*year)/i,
+    /^(page|total|list|masterlist|master\s*list|class\s*list|record)/i,
+    /^(republic|department|deped|division|district)/i,
+    /^[-=_*.#]{3,}$/,                 // separator lines
+    /^\d{1,3}\.?\s*$/,               // lone row numbers
+  ];
+  const isSkippable = l => SKIP_PATTERNS.some(p => p.test(l.trim()));
+
+  // --- Step 3: detect if line looks like a real name ---------------
+  // A real name: 2–5 words, each 2+ chars, mostly alpha + hyphens/apostrophes
+  const NAME_WORD = /^[A-ZÑa-zñ][A-Za-zÑña-z'\-\.]{1,}$/;
+  const NUMBER_HEAVY = /\d{4,}/; // 4+ digits = likely an LRN/ID, not a name part
+
+  function looksLikeName(str) {
+    if (NUMBER_HEAVY.test(str)) return false;
+    const words = str.trim().split(/\s+/);
+    if (words.length < 2 || words.length > 7) return false;
+    const validWords = words.filter(w => NAME_WORD.test(w) && w.length >= 2);
+    return validWords.length >= 2;
+  }
+
+  // --- Step 4: try to detect table columns -------------------------
+  // Many master lists follow "LRN   LAST NAME   FIRST NAME   ..." pattern.
+  // We detect if a line has a leading number / LRN so we can strip it.
+  const LRN_PREFIX = /^\d{6,12}\b/;
+  const ROW_NUM    = /^\d{1,3}[.\s]/;
+
+  // --- Step 5: parse context hint for grade/section ----------------
+  const ctxGrade   = _extractGradeFromText(context);
+  const ctxSection = _extractSectionFromText(context);
+
+  // --- Step 6: walk every line and extract student records ---------
+  const seen    = new Set();
+  const results = [];
+
+  for (const rawLine of lines) {
+    if (isSkippable(rawLine)) continue;
+
+    let line = rawLine;
+
+    // Strip leading row numbers like "1." or "1 "
+    line = line.replace(/^\d{1,3}[.\)]\s*/, '').trim();
+
+    // Try to extract LRN (12-digit number) from the line
+    let lrn = '';
+    const lrnMatch = line.match(/\b(\d{12})\b/);
+    if (lrnMatch) {
+      lrn  = lrnMatch[1];
+      line = line.replace(lrnMatch[0], '').replace(/\s{2,}/g,' ').trim();
+    }
+
+    // Try shorter LRN (6–11 digits)
+    if (!lrn) {
+      const shortLrn = line.match(/\b(\d{6,11})\b/);
+      if (shortLrn) {
+        lrn  = shortLrn[1];
+        line = line.replace(shortLrn[0], '').replace(/\s{2,}/g,' ').trim();
+      }
+    }
+
+    // Detect gender keyword in line
+    let gender = '';
+    const genderMatch = line.match(/\b(male|female|m|f)\b/i);
+    if (genderMatch) {
+      const g = genderMatch[1].toLowerCase();
+      gender  = (g === 'm' || g === 'male') ? 'Male' : 'Female';
+      line    = line.replace(genderMatch[0], '').replace(/\s{2,}/g,' ').trim();
+    }
+
+    // Detect grade in line
+    let grade = ctxGrade;
+    const gradeInLine = _extractGradeFromText(line);
+    if (gradeInLine) {
+      grade = gradeInLine;
+      // remove the grade text so it doesn't bleed into the name
+      line  = line.replace(/\b(grade|gr\.?|kinder(garten)?)\s*\d*/gi, '').replace(/\s{2,}/g,' ').trim();
+    }
+
+    // Detect section
+    let section = ctxSection;
+    const secInLine = _extractSectionFromText(line);
+    if (secInLine) {
+      section = secInLine;
+      line    = line.replace(/\b(section|sec\.?)\s*[A-Za-z0-9]*/gi, '').replace(/\s{2,}/g,' ').trim();
+    }
+
+    // --- Parse the name portion ---
+    // Many Philippine master lists use format: "LAST NAME, FIRST NAME MI."
+    // or "LAST NAME  FIRST NAME  MI"
+    let firstName = '', lastName = '', middleName = '';
+
+    const commaIdx = line.indexOf(',');
+    if (commaIdx > 0) {
+      // "DELA CRUZ, JUAN P." — last, first [mi]
+      const lastPart  = line.slice(0, commaIdx).trim();
+      const firstPart = line.slice(commaIdx + 1).trim();
+
+      // Middle initial / name is typically the last word of firstPart if it's 1–2 chars or ends with "."
+      const fpWords = firstPart.split(/\s+/).filter(Boolean);
+      if (fpWords.length >= 2) {
+        const lastWord = fpWords[fpWords.length - 1];
+        if (/^[A-Z]\.?$/.test(lastWord) || lastWord.length <= 3) {
+          middleName = fpWords.pop();
+        }
+      }
+      firstName = fpWords.join(' ');
+      lastName  = lastPart;
+    } else {
+      // No comma — try to split by spaces
+      // Common Philippine order: FIRST [MI] LAST  OR  LAST FIRST [MI]
+      // Heuristic: if all-caps and 2+ words, treat as last name first
+      const words = line.split(/\s+/).filter(w => NAME_WORD.test(w));
+      if (words.length === 0) continue;
+
+      if (words.length === 1) {
+        lastName = words[0];
+      } else if (words.length === 2) {
+        // Could be "FIRST LAST" or "LAST FIRST"
+        // If all uppercase, assume last-name-first convention of Phil. schools
+        if (line === line.toUpperCase()) {
+          lastName  = words[0];
+          firstName = words[1];
+        } else {
+          firstName = words[0];
+          lastName  = words[1];
+        }
+      } else {
+        // 3+ words
+        // Check middle-initial pattern (single letter, possibly with dot)
+        const miIdx = words.findIndex((w, i) => i > 0 && /^[A-Z]\.?$/.test(w));
+        if (miIdx !== -1) {
+          middleName = words[miIdx];
+          const rest = words.filter((_, i) => i !== miIdx);
+          if (line === line.toUpperCase()) {
+            // All caps → last first
+            lastName  = rest[0];
+            firstName = rest.slice(1).join(' ');
+          } else {
+            firstName = rest[0];
+            lastName  = rest.slice(1).join(' ');
+          }
+        } else {
+          // No MI detected
+          if (line === line.toUpperCase()) {
+            // All caps — last first middle pattern
+            lastName   = words[0];
+            firstName  = words.slice(1, words.length - 1).join(' ') || words[1];
+            middleName = words.length > 2 ? words[words.length - 1] : '';
+          } else {
+            firstName = words[0];
+            lastName  = words[words.length - 1];
+            if (words.length > 2) middleName = words.slice(1, -1).join(' ');
+          }
+        }
+      }
+    }
+
+    // Normalize casing: Title Case
+    firstName  = _toTitleCase(firstName);
+    lastName   = _toTitleCase(lastName);
+    middleName = _toTitleCase(middleName);
+
+    // Skip if we didn't get at least a last name with 2 chars
+    if (!lastName || lastName.length < 2) continue;
+
+    // Dedup by normalized full name
+    const key = (lastName + '|' + firstName).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    // Flag duplicates against existing DB students
+    const isDuplicate = students.some(s =>
+      s.lastName?.toLowerCase() === lastName.toLowerCase() &&
+      s.firstName?.toLowerCase() === firstName.toLowerCase()
+    );
+
+    results.push({
+      lastName,
+      firstName,
+      middleName,
+      studentId: lrn,
+      gender,
+      grade,
+      section,
+      dob: '',
+      selected: true,
+      _duplicate: isDuplicate,
+      _rawLine: rawLine,
+    });
+  }
+
+  return results;
+}
+
+// ── Helper: extract grade from free text ─────────────────────────────
+function _extractGradeFromText(text) {
+  if (!text) return '';
+  const m = text.match(/\b(kinder(?:garten)?|grade\s*\d+|gr\.?\s*\d+)\b/i);
+  if (!m) return '';
+  const s = m[0].toLowerCase().replace(/\s+/g,'');
+  if (s.includes('kinder')) return 'Kindergarten';
+  const num = s.match(/\d+/);
+  return num ? 'Grade ' + num[0] : '';
+}
+
+// ── Helper: extract section from free text ───────────────────────────
+function _extractSectionFromText(text) {
+  if (!text) return '';
+  const m = text.match(/\b(?:section|sec\.?)\s*([A-Za-z0-9\-]+)/i);
+  return m ? _toTitleCase(m[1]) : '';
+}
+
+// ── Helper: Title Case ────────────────────────────────────────────────
+function _toTitleCase(str) {
+  if (!str) return '';
+  // Keep all-lowercase connector words lowercase
+  const LOWERS = new Set(['de','del','la','los','las','ng','ni','mga']);
+  return str.split(/\s+/).map((w, i) => {
+    if (!w) return '';
+    if (i > 0 && LOWERS.has(w.toLowerCase())) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  EXCEL / CSV IMPORT
+// ═══════════════════════════════════════════════════════════════════════
+
+async function _runExcelImport() {
+  const input = document.getElementById('importExcelInput');
+  if (!input || !input.files || !input.files.length) {
+    toast('Please select an Excel or CSV file first', 'danger'); return;
+  }
+  const file = input.files[0];
+  setStep(2);
+  const msg = document.getElementById('importLoadingMsg');
+  const sub = document.getElementById('importLoadingSub');
+  const pBar = document.getElementById('ocrProgressBar');
+  const pLbl = document.getElementById('ocrProgressLabel');
+  if (msg)  msg.textContent  = 'Reading file…';
+  if (sub)  sub.textContent  = file.name;
+  if (pBar) pBar.style.width = '30%';
+  if (pLbl) pLbl.textContent = '30%';
+
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') {
+      const text = await file.text();
+      if (pBar) pBar.style.width = '70%'; if (pLbl) pLbl.textContent = '70%';
+      _importStudents = _parseCsv(text);
+    } else {
+      // XLSX — use SheetJS (must be loaded)
+      if (typeof XLSX === 'undefined') throw new Error('SheetJS (XLSX) is not loaded. Add the SheetJS CDN script to your HTML.');
+      const ab = await file.arrayBuffer();
+      if (pBar) pBar.style.width = '50%'; if (pLbl) pLbl.textContent = '50%';
+      const wb  = XLSX.read(ab, { type: 'array' });
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      if (pBar) pBar.style.width = '80%'; if (pLbl) pLbl.textContent = '80%';
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      _importStudents = _mapExcelRows(rows);
+    }
+    if (pBar) pBar.style.width = '100%'; if (pLbl) pLbl.textContent = '100%';
+    _showImportPreview();
+  } catch (e) {
+    console.error('Excel import error:', e);
+    if (msg) msg.textContent = '❌ ' + e.message;
+    if (sub) sub.textContent = 'Make sure the file is a valid Excel (.xlsx) or CSV file';
+    setTimeout(() => setStep(1), 3500);
+  }
+}
+
+// ── CSV parser (handles quoted fields) ───────────────────────────────
+function _parseCsv(text) {
+  const lines = text.split(/\r?\n/);
+  if (!lines.length) return [];
+  const headers = _csvRow(lines[0]).map(h => h.toLowerCase().trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = _csvRow(lines[i]);
+    const row  = {};
+    headers.forEach((h, j) => row[h] = (cols[j] || '').trim());
+    rows.push(row);
+  }
+  return _mapExcelRows(rows);
+}
+
+function _csvRow(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Map Excel/CSV row → student object ───────────────────────────────
+function _mapExcelRows(rows) {
+  const seen    = new Set();
+  const results = [];
+
+  // Column aliases — covers many real-world master list headers
+  const COL = {
+    studentId: ['lrn','student id','studentid','id','student_id','learner reference number','learner ref'],
+    lastName:  ['last name','lastname','surname','family name','apellido','lname','last_name'],
+    firstName: ['first name','firstname','given name','givenname','fname','first_name','pangalan'],
+    middleName:['middle name','middlename','mname','middle_name','middle initial','mi'],
+    gender:    ['gender','sex','kasarian'],
+    grade:     ['grade','grade level','gradelevel','year level','yearlevel'],
+    section:   ['section','klase','class'],
+    dob:       ['date of birth','dob','birthdate','birth date','birthday','petsa ng kapanganakan'],
+    email:     ['email','email address','e-mail'],
+    phone:     ['phone','contact','contact number','mobile','cellphone'],
+    address:   ['address','home address'],
+    fatherName:['father','fathers name','father name',"father's name"],
+    motherName:['mother','mothers name','mother name',"mother's name"],
+  };
+
+  function findCol(row, aliases) {
+    for (const alias of aliases) {
+      for (const k of Object.keys(row)) {
+        if (k.toLowerCase().replace(/[^a-z0-9]/g,'') === alias.replace(/[^a-z0-9]/g,'')) {
+          return (row[k] || '').toString().trim();
+        }
+      }
+    }
+    return '';
+  }
+
+  // Detect if the sheet has a single "full name" column and no first/last split
+  const sampleRow = rows[0] || {};
+  const hasFirstLast = COL.lastName.some(a => Object.keys(sampleRow).some(k => k.toLowerCase().includes(a.split(' ')[0])));
+
+  for (const row of rows) {
+    // Skip obviously empty rows
+    const vals = Object.values(row).join('').trim();
+    if (!vals || vals.length < 2) continue;
+
+    let lastName   = findCol(row, COL.lastName);
+    let firstName  = findCol(row, COL.firstName);
+    let middleName = findCol(row, COL.middleName);
+
+    // Fallback: if no separate first/last, try "name" or "full name" columns
+    if (!lastName && !firstName) {
+      const fullNameKeys = ['name','full name','fullname','student name','studentname'];
+      const fullName = findCol(row, fullNameKeys);
+      if (fullName) {
+        const parsed = _parseFullNameString(fullName);
+        lastName   = parsed.lastName;
+        firstName  = parsed.firstName;
+        middleName = parsed.middleName;
+      }
+    }
+
+    if (!lastName && !firstName) continue;
+
+    // Normalize gender
+    let gender = findCol(row, COL.gender);
+    if (/^m$/i.test(gender) || /^male$/i.test(gender))   gender = 'Male';
+    else if (/^f$/i.test(gender) || /^female$/i.test(gender)) gender = 'Female';
+    else gender = '';
+
+    // Normalize grade
+    let grade = findCol(row, COL.grade);
+    grade = _extractGradeFromText(grade) || _toTitleCase(grade);
+
+    const studentId = findCol(row, COL.studentId);
+    const section   = _toTitleCase(findCol(row, COL.section));
+    const dob       = findCol(row, COL.dob);
+    const email     = findCol(row, COL.email);
+    const phone     = findCol(row, COL.phone);
+    const address   = findCol(row, COL.address);
+    const fatherName= findCol(row, COL.fatherName);
+    const motherName= findCol(row, COL.motherName);
+
+    lastName   = _toTitleCase(lastName.replace(/"/g,''));
+    firstName  = _toTitleCase(firstName.replace(/"/g,''));
+    middleName = _toTitleCase(middleName.replace(/"/g,''));
+
+    if (!lastName || lastName.length < 2) continue;
+
+    const key = (lastName + '|' + firstName).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const isDuplicate = students.some(s =>
+      s.lastName?.toLowerCase()  === lastName.toLowerCase() &&
+      s.firstName?.toLowerCase() === firstName.toLowerCase()
+    );
+
+    results.push({
+      lastName, firstName, middleName,
+      studentId, gender, grade, section, dob,
+      email, phone, address, fatherName, motherName,
+      selected: true,
+      _duplicate: isDuplicate,
+    });
+  }
+  return results;
+}
+
+function _parseFullNameString(name) {
+  // Handles "DELA CRUZ, JUAN P." or "Juan Dela Cruz" etc.
+  const commaIdx = name.indexOf(',');
+  if (commaIdx > 0) {
+    const last   = name.slice(0, commaIdx).trim();
+    const rest   = name.slice(commaIdx + 1).trim().split(/\s+/);
+    const miWord = rest.length > 1 && /^[A-Z]\.?$/.test(rest[rest.length-1]) ? rest.pop() : '';
+    return { lastName: last, firstName: rest.join(' '), middleName: miWord };
+  }
+  const words = name.split(/\s+/).filter(Boolean);
+  if (words.length < 2) return { lastName: words[0]||'', firstName: '', middleName: '' };
+  return { lastName: words[0], firstName: words.slice(1).join(' '), middleName: '' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SHOW IMPORT PREVIEW (Step 3)
+// ═══════════════════════════════════════════════════════════════════════
+
+function _showImportPreview() {
+  const countEl = document.getElementById('importFoundCount');
+  if (countEl) countEl.textContent = _importStudents.length + ' students found';
+
+  const dupCount = _importStudents.filter(s => s._duplicate).length;
+  const banner   = document.getElementById('importIssuesBanner');
+  if (banner) {
+    if (dupCount > 0) {
+      banner.style.display = 'block';
+      banner.textContent   = `⚠ ${dupCount} student(s) may already exist in the database (highlighted in orange). You can still import them if needed.`;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  const bulkHeader = document.getElementById('bulkEditHeader');
+  if (bulkHeader) bulkHeader.style.display = 'block';
+
+  setStep(3);
+  renderImportPreview();
+}
+
+// ── Render the editable preview table ────────────────────────────────
 function renderImportPreview() {
   const body = document.getElementById('importPreviewBody');
   if (!body) return;
-  body.innerHTML = _importStudents.map((s, i) => `
-    <tr class="import-row" data-i="${i}">
-      <td><input type="checkbox" checked onchange="toggleImportRow(${i})"></td>
-      <td><input type="text" value="${s.lastName}" onchange="updateImportField(${i},'lastName',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%"></td>
-      <td><input type="text" value="${s.firstName}" onchange="updateImportField(${i},'firstName',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%"></td>
-      <td>
-        <select onchange="updateImportField(${i},'gender',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem">
-          <option value="">—</option><option>Male</option><option>Female</option>
-        </select>
+
+  const sectionOpts = ['<option value="">—</option>',
+    ...getAllSections().map(s => `<option value="${esc(s)}">${esc(s)}</option>`)
+  ].join('');
+
+  const gradeOpts = `<option value="">—</option>
+    <optgroup label="Basic Education">
+    <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option>
+    <option>Grade 3</option><option>Grade 4</option><option>Grade 5</option>
+    <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+    <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option>
+    <option>Grade 12</option></optgroup>
+    <optgroup label="College">
+    <option>1st Year</option><option>2nd Year</option><option>3rd Year</option>
+    <option>4th Year</option><option>5th Year</option></optgroup>`;
+
+  const inStyle = 'background:var(--import-cell-bg);border:1px solid var(--import-cell-border);border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%;min-width:80px;color:var(--text-primary);font-family:inherit';
+  const selStyle = 'background:var(--import-cell-bg);border:1px solid var(--import-cell-border);border-radius:6px;padding:5px 8px;font-size:0.82rem;width:100%;color:var(--text-primary);font-family:inherit';
+
+  body.innerHTML = _importStudents.map((s, i) => {
+    const rowCls = s._duplicate ? 'import-row-dup' : '';
+    const dupBadge = s._duplicate
+      ? `<span style="font-size:0.68rem;background:rgba(245,158,11,0.15);color:var(--accent-warning);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600">dup?</span>` : '';
+
+    // Status badge
+    let statusHtml = '';
+    if (s._duplicate) statusHtml = '<span style="font-size:0.75rem;background:rgba(245,158,11,0.15);color:var(--accent-warning);border-radius:6px;padding:2px 8px;font-weight:600">Possible dup</span>';
+    else              statusHtml = '<span style="font-size:0.75rem;background:rgba(16,185,129,0.15);color:var(--accent-success);border-radius:6px;padding:2px 8px;font-weight:600">Ready</span>';
+
+    const makeGradeOpts = () => gradeOpts.replace(`<option>${esc(s.grade)}</option>`, `<option selected>${esc(s.grade)}</option>`);
+    const makeSecOpts   = () => sectionOpts.replace(`value="${esc(s.section)}"`, `value="${esc(s.section)}" selected`);
+    const genderOpts    = `<option value="">—</option>
+      <option${s.gender==='Male'?' selected':''}>Male</option>
+      <option${s.gender==='Female'?' selected':''}>Female</option>`;
+
+    return `<tr class="import-row ${rowCls}" data-i="${i}">
+      <td style="text-align:center;padding:8px 6px">
+        <input type="checkbox" ${s.selected?'checked':''} onchange="toggleImportRow(${i})" style="accent-color:var(--primary-color);width:15px;height:15px">
       </td>
-      <td>
-        <select onchange="updateImportField(${i},'grade',this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.82rem">
-          <option value="">—</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
-        </select>
+      <td style="padding:6px 8px;min-width:130px">
+        <input type="text" value="${esc(s.lastName)}" placeholder="Last Name"
+          onchange="updateImportField(${i},'lastName',this.value)" style="${inStyle}">${dupBadge}
       </td>
-    </tr>`).join('');
+      <td style="padding:6px 8px;min-width:120px">
+        <input type="text" value="${esc(s.firstName)}" placeholder="First Name"
+          onchange="updateImportField(${i},'firstName',this.value)" style="${inStyle}">
+      </td>
+      <td style="padding:6px 8px;min-width:110px">
+        <input type="text" value="${esc(s.middleName||'')}" placeholder="Middle Name"
+          onchange="updateImportField(${i},'middleName',this.value)" style="${inStyle}">
+      </td>
+      <td style="padding:6px 8px;min-width:90px">
+        <input type="text" value="${esc(s.studentId||'')}" placeholder="LRN/ID"
+          onchange="updateImportField(${i},'studentId',this.value)" style="${inStyle}">
+      </td>
+      <td style="padding:6px 8px;min-width:90px">
+        <select onchange="updateImportField(${i},'gender',this.value)" style="${selStyle}">${genderOpts}</select>
+      </td>
+      <td style="padding:6px 8px;min-width:110px">
+        <select onchange="updateImportField(${i},'grade',this.value)" style="${selStyle}">${makeGradeOpts()}</select>
+      </td>
+      <td style="padding:6px 8px;min-width:110px">
+        <select onchange="updateImportField(${i},'section',this.value)" style="${selStyle}">${makeSecOpts()}</select>
+      </td>
+      <td style="padding:6px 8px;min-width:110px">
+        <input type="date" value="${esc(s.dob||'')}"
+          onchange="updateImportField(${i},'dob',this.value)" style="${inStyle}">
+      </td>
+      <td style="padding:6px 8px;text-align:center">${statusHtml}</td>
+    </tr>`;
+  }).join('');
+
+  // Update header checkmark
+  const ca = document.getElementById('importCheckAll');
+  if (ca) ca.checked = _importStudents.every(s => s.selected);
 }
 
+// ── Preview table interactions ────────────────────────────────────────
 function toggleImportRow(i) {
   _importStudents[i].selected = !_importStudents[i].selected;
+  const ca = document.getElementById('importCheckAll');
+  if (ca) ca.checked = _importStudents.every(s => s.selected);
 }
-function updateImportField(i, field, val) {
-  _importStudents[i][field] = val;
+function importToggleAll(checked) {
+  _importStudents.forEach(s => s.selected = checked);
+  renderImportPreview();
 }
 function importSelectAll(v) {
   _importStudents.forEach(s => s.selected = v);
   renderImportPreview();
 }
+function updateImportField(i, field, val) {
+  _importStudents[i][field] = val;
+}
 function applyBulkField(field, val) {
+  if (!val) return;
   _importStudents.forEach(s => { if (s.selected) s[field] = val; });
   renderImportPreview();
+}
+function clearBulkFields() {
+  ['bulkGrade','bulkGender','bulkSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const dob = document.getElementById('bulkDob');
+  if (dob && dob._flatpickr) dob._flatpickr.clear();
+  else if (dob) dob.value = '';
+}
+
+// ── Commit (save to DB) ───────────────────────────────────────────────
+async function _commitImport() {
+  const toImport = _importStudents.filter(s => s.selected);
+  if (!toImport.length) {
+    toast('No students selected to import', 'danger'); return;
+  }
+
+  const btn = document.getElementById('importActionBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
+
+  let ok = 0, fail = 0;
+  for (const s of toImport) {
+    try {
+      const created = await apiPost({
+        studentId:  s.studentId  || '',
+        firstName:  s.firstName  || '',
+        middleName: s.middleName || '',
+        lastName:   s.lastName   || '',
+        gender:     s.gender     || '',
+        grade:      s.grade      || '',
+        section:    s.section    || '',
+        dob:        s.dob        || '',
+        email:      s.email      || '',
+        phone:      s.phone      || '',
+        address:    s.address    || '',
+        fatherName: s.fatherName || '',
+        motherName: s.motherName || '',
+        enrollDate: new Date().toISOString().slice(0,10),
+      });
+      students.push({ ...created });
+      ok++;
+    } catch (e) {
+      console.warn('Import failed for', s.lastName, ':', e.message);
+      fail++;
+    }
+  }
+
+  // Show completion step
+  setStep(4);
+  const t4 = document.getElementById('importStep4');
+  if (t4) t4.style.display = 'block';
+  const title = document.getElementById('importDoneTitle');
+  const dmsg  = document.getElementById('importDoneMsg');
+  if (title) title.textContent = ok > 0 ? 'Import Complete!' : 'Import Finished';
+  if (dmsg) {
+    let txt = '';
+    if (ok)   txt += `✅ ${ok} student${ok>1?'s':''} imported successfully.`;
+    if (fail) txt += ` ❌ ${fail} failed (may be duplicates or missing required fields).`;
+    dmsg.textContent = txt;
+  }
+
+  // Refresh footer to just show Close
+  const footer = document.getElementById('importFooter');
+  if (footer) {
+    footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeImportModal()">Close</button>
+      <button class="btn btn-primary" onclick="closeImportModal();applyFilters()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Done
+      </button>`;
+  }
+
+  applyFilters();
+  populateSections();
+  toast(`Imported ${ok} student${ok!==1?'s':''}${fail?' ('+fail+' failed)':''}`, ok > 0 ? 'success' : 'danger');
 }
 
 // ═══════════════════════════════════════════
@@ -694,3 +1573,30 @@ document.getElementById('importOverlay').addEventListener('click',  function(e){
 //  INIT
 // ═══════════════════════════════════════════
 init();
+
+// ═══════════════════════════════════════════
+//  EXCEL TEMPLATE DOWNLOAD
+//  Generates a blank .csv template the user can fill in
+// ═══════════════════════════════════════════
+function downloadExcelTemplate() {
+  const headers = [
+    'LRN', 'Last Name', 'First Name', 'Middle Name',
+    'Gender', 'Grade', 'Section', 'Date of Birth',
+    'Email', 'Phone', 'Address', "Father's Name", "Mother's Name"
+  ];
+  const example = [
+    '123456789012', 'Dela Cruz', 'Juan', 'Santos',
+    'Male', 'Grade 1', 'Sampaguita', '2015-06-15',
+    '', '', '', 'Pedro Dela Cruz', 'Maria Dela Cruz'
+  ];
+  const csv = [headers, example]
+    .map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(','))
+    .join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'student_import_template.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}

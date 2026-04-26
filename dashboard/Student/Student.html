@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
   </script>
@@ -73,13 +74,20 @@
           <span class="filter-label">Filter:</span>
           <select id="filterGrade" onchange="applyFilters()">
             <option value="">All Grades</option>
-            <option value="Kindergarten">Kindergarten</option>
-            <option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option><option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option><option value="Grade 6">Grade 6</option>
-            <option value="Grade 7">Grade 7</option><option value="Grade 8">Grade 8</option>
-            <option value="Grade 9">Grade 9</option><option value="Grade 10">Grade 10</option>
-            <option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option>
+            <optgroup label="Basic Education">
+              <option value="Kindergarten">Kindergarten</option>
+              <option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option><option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option><option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option><option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option><option value="Grade 10">Grade 10</option>
+              <option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option>
+            </optgroup>
+            <optgroup label="College">
+              <option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
+              <option value="5th Year">5th Year</option>
+            </optgroup>
           </select>
           <select id="filterSection" onchange="applyFilters()">
             <option value="">All Sections</option>
@@ -133,9 +141,9 @@
 <!-- ══════════════════════════════════════════
      IMPORT FROM IMAGE MODAL
 ══════════════════════════════════════════ -->
-<div class="overlay" id="importOverlay" style="align-items:flex-start;padding:20px;overflow-y:auto">
-  <div class="modal" style="max-width:900px;width:100%;margin:auto">
-    <div class="modal-header" style="position:sticky;top:0;z-index:10;background:#fff;border-radius:16px 16px 0 0">
+<div class="overlay" id="importOverlay" style="align-items:flex-start;padding:20px;overflow-y:auto;overflow-x:auto">
+  <div class="modal" style="max-width:900px;width:100%;min-width:320px;margin:auto;overflow-x:auto">
+    <div class="modal-header" style="position:sticky;top:0;z-index:10;border-radius:16px 16px 0 0">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="width:40px;height:40px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:var(--primary-color)">
           <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
@@ -148,11 +156,30 @@
       <button class="close-btn" onclick="closeImportModal()">✕</button>
     </div>
 
-    <div class="modal-body" style="padding:24px">
+    <div class="modal-body" style="padding:24px;overflow-x:auto">
+
+      <!-- ── Tab switcher ── -->
+      <div style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid var(--import-tab-border);border-radius:10px;overflow:hidden">
+        <button class="import-tab-btn active" data-mode="image"
+          onclick="switchImportTab('image')"
+          style="flex:1;padding:10px 0;background:var(--import-tab-active-bg);border:none;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--primary-color);transition:all 150ms;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Image / Photo
+        </button>
+        <button class="import-tab-btn" data-mode="excel"
+          onclick="switchImportTab('excel')"
+          style="flex:1;padding:10px 0;background:var(--import-tab-inactive-bg);border:none;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-secondary);transition:all 150ms;border-left:1.5px solid var(--import-tab-border);display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+          Excel / CSV
+        </button>
+      </div>
 
       <!-- Step 1: Upload -->
       <div id="importStep1">
-        <div id="importDropZone" style="border:2px dashed #c7d2fe;border-radius:14px;padding:48px 24px;text-align:center;cursor:pointer;background:#fafbff;transition:all 200ms" onclick="document.getElementById('importFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+
+        <!-- ── IMAGE PANEL ── -->
+        <div id="importImagePanel">
+        <div id="importDropZone" style="border:2px dashed var(--import-dropzone-border);border-radius:14px;padding:48px 24px;text-align:center;cursor:pointer;background:var(--import-dropzone-bg);transition:all 200ms" onclick="document.getElementById('importFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
           <div style="width:64px;height:64px;border-radius:16px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--primary-color)">
             <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
@@ -182,8 +209,51 @@
 
         <!-- Info note -->
         <div style="margin-top:16px;padding:12px 16px;background:rgba(6,182,212,0.07);border-left:3px solid var(--accent-info);border-radius:0 8px 8px 0;font-size:0.83rem;color:var(--text-secondary)">
-          <strong style="color:var(--accent-info)">How it works:</strong> Tesseract OCR reads the image locally in your browser, extracts each student's name from the master list table, and shows you a preview before saving anything to the database. For best results, use a clear, high-resolution scan.
+          <strong style="color:var(--accent-info)">Tips for best OCR accuracy:</strong> Use a clear, high-contrast, high-resolution scan. Avoid blurry or skewed photos. The importer auto-enhances your image before reading. Fill in Grade/Section in the context box to pre-populate all rows.
         </div>
+        </div><!-- /importImagePanel -->
+
+        <!-- ── EXCEL / CSV PANEL ── -->
+        <div id="importExcelPanel" style="display:none">
+          <div id="importExcelDropZone"
+            style="border:2px dashed var(--import-dropzone-border);border-radius:14px;padding:48px 24px;text-align:center;cursor:pointer;background:var(--import-dropzone-bg);transition:all 200ms"
+            onclick="document.getElementById('importExcelInput').click()"
+            ondragover="handleExcelDragOver(event)" ondragleave="handleExcelDragLeave(event)" ondrop="handleExcelDrop(event)">
+            <div class="excel-icon-wrap" style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+            </div>
+            <div style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-bottom:6px">Drop your Excel or CSV file here</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">Supports .xlsx, .xls, .csv — column headers are auto-detected</div>
+            <button class="btn btn-primary" type="button" style="pointer-events:none">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              Browse File
+            </button>
+          </div>
+          <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(event)">
+
+          <!-- File preview strip -->
+          <div id="importExcelPreviewWrap" style="display:none;margin-top:16px;padding:12px 16px;background:rgba(16,185,129,0.08);border-radius:10px;border:1px solid rgba(16,185,129,0.25);align-items:center;gap:10px">
+            <svg width="28" height="28" fill="none" stroke="#16a34a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+            <span id="importExcelFileName" style="font-size:0.85rem;font-weight:600;color:var(--accent-success);flex:1"></span>
+            <button class="btn btn-secondary btn-sm" onclick="clearImportExcel()">✕ Remove</button>
+          </div>
+
+          <!-- Column mapping hint -->
+          <div style="margin-top:16px;padding:12px 16px;background:rgba(6,182,212,0.07);border-left:3px solid var(--accent-info);border-radius:0 8px 8px 0;font-size:0.83rem;color:var(--text-secondary)">
+            <strong style="color:var(--accent-info)">Supported column headers:</strong>
+            LRN · Last Name · First Name · Middle Name · Gender · Grade · Section · Date of Birth · Email · Phone · Address · Father · Mother.
+            Column order and casing don't matter — they are matched automatically.
+            Rows with identical names are de-duplicated.
+          </div>
+
+          <!-- Download template link -->
+          <div style="margin-top:12px;text-align:center">
+            <a href="#" onclick="downloadExcelTemplate();return false" style="font-size:0.82rem;color:var(--primary-color);text-decoration:underline">
+              ⬇ Download blank Excel template
+            </a>
+          </div>
+        </div><!-- /importExcelPanel -->
+
       </div>
 
       <!-- Step 2: OCR Processing (shown while loading) -->
@@ -219,7 +289,7 @@
         <div id="importIssuesBanner" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border-left:3px solid var(--accent-warning);border-radius:0 8px 8px 0;font-size:0.83rem;color:#92400e"></div>
 
         <!-- Bulk-edit header -->
-        <div id="bulkEditHeader" style="display:none;margin-bottom:14px;padding:14px 16px;background:linear-gradient(135deg,#fafbff,#f0f2ff);border-radius:10px;border:1px solid #e0e7ff">
+        <div id="bulkEditHeader" style="display:none;margin-bottom:14px;padding:14px 16px;background:var(--import-bulk-bg);border-radius:10px;border:1px solid var(--import-tab-border)">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <svg width="15" height="15" fill="none" stroke="var(--primary-color)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"/></svg>
             <span style="font-size:0.82rem;font-weight:700;color:var(--primary-color);text-transform:uppercase;letter-spacing:0.5px">Apply to All Rows</span>
@@ -227,38 +297,50 @@
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
             <div style="display:flex;flex-direction:column;gap:3px">
               <label style="font-size:0.72rem;font-weight:600;color:var(--text-secondary)">Grade</label>
-              <select id="bulkGrade" onchange="applyBulkField('grade', this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.8rem;background:#fff;cursor:pointer;min-width:110px">
+              <select id="bulkGrade" onchange="applyBulkField('grade', this.value)" style="border:1px solid var(--import-tab-border);border-radius:6px;padding:5px 8px;font-size:0.8rem;background:var(--bg-card);color:var(--text-primary);cursor:pointer;min-width:130px">
                 <option value="">— Grade —</option>
-                <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+                <optgroup label="Basic Education">
+                  <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+                </optgroup>
+                <optgroup label="College">
+                  <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option>
+                </optgroup>
               </select>
             </div>
             <div style="display:flex;flex-direction:column;gap:3px">
               <label style="font-size:0.72rem;font-weight:600;color:var(--text-secondary)">Gender</label>
-              <select id="bulkGender" onchange="applyBulkField('gender', this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.8rem;background:#fff;cursor:pointer;min-width:100px">
+              <select id="bulkGender" onchange="applyBulkField('gender', this.value)" style="border:1px solid var(--import-tab-border);border-radius:6px;padding:5px 8px;font-size:0.8rem;background:var(--bg-card);color:var(--text-primary);cursor:pointer;min-width:100px">
                 <option value="">— Gender —</option>
                 <option>Male</option><option>Female</option>
               </select>
             </div>
             <div style="display:flex;flex-direction:column;gap:3px">
               <label style="font-size:0.72rem;font-weight:600;color:var(--text-secondary)">Section</label>
-              <select id="bulkSection" onchange="applyBulkField('section', this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.8rem;background:#fff;cursor:pointer;min-width:110px">
-                <option value="">— Section —</option>
-              </select>
+              <div style="display:flex;gap:5px;align-items:center">
+                <select id="bulkSection" onchange="applyBulkField('section', this.value)" style="border:1px solid var(--import-tab-border);border-radius:6px;padding:5px 8px;font-size:0.8rem;background:var(--bg-card);color:var(--text-primary);cursor:pointer;min-width:110px">
+                  <option value="">— Section —</option>
+                </select>
+                <button type="button" onclick="openAddSectionModal()" title="Add new section" style="flex-shrink:0;width:28px;height:28px;border-radius:6px;border:1px solid var(--import-tab-border);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;padding:0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+              </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:3px">
               <label style="font-size:0.72rem;font-weight:600;color:var(--text-secondary)">Birthdate</label>
-              <input type="date" id="bulkDob" onchange="applyBulkField('dob', this.value)" style="border:1px solid #c7d2fe;border-radius:6px;padding:5px 8px;font-size:0.8rem;background:#fff;min-width:130px">
+              <input type="text" id="bulkDob" placeholder="Select date" readonly style="border:1px solid var(--import-tab-border);border-radius:6px;padding:5px 8px;font-size:0.8rem;background:var(--bg-card);color:var(--text-primary);min-width:140px;cursor:pointer">
             </div>
-            <button onclick="clearBulkFields()" style="padding:6px 12px;background:none;border:1px solid #c7d2fe;border-radius:6px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;margin-top:auto">Clear</button>
+            <button onclick="clearBulkFields()" style="padding:6px 12px;background:none;border:1px solid var(--import-tab-border);border-radius:6px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;margin-top:auto">Clear</button>
           </div>
         </div>
 
-        <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--bg-input)">
-          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+        <div style="overflow-x:scroll;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--import-table-border);display:block;width:100%">
+          <table style="width:max-content;min-width:1100px;border-collapse:collapse;font-size:0.85rem">
             <thead>
               <tr style="background:var(--bg-input)">
                 <th style="padding:10px 12px;text-align:center;width:36px"><input type="checkbox" id="importCheckAll" onchange="importToggleAll(this.checked)" style="accent-color:var(--primary-color)"></th>
-                <th style="padding:10px 12px;text-align:left">Full Name</th>
+                <th style="padding:10px 12px;text-align:left">Last Name</th>
+                <th style="padding:10px 12px;text-align:left">First Name</th>
+                <th style="padding:10px 12px;text-align:left">Middle Name</th>
                 <th style="padding:10px 12px;text-align:left">LRN / ID</th>
                 <th style="padding:10px 12px;text-align:left">Gender</th>
                 <th style="padding:10px 12px;text-align:left">Grade</th>
@@ -298,28 +380,128 @@
 </div>
 
 <style>
+/* ── Import modal CSS variables (light) ── */
+:root {
+  --import-tab-border:      #e0e7ff;
+  --import-tab-active-bg:   #eef2ff;
+  --import-tab-inactive-bg: #f8fafc;
+  --import-dropzone-border: #c7d2fe;
+  --import-dropzone-bg:     #fafbff;
+  --import-bulk-bg:         linear-gradient(135deg,#fafbff,#f0f2ff);
+  --import-table-border:    #e2e8f0;
+  --import-cell-bg:         #ffffff;
+  --import-cell-border:     #c7d2fe;
+}
+/* ── Dark mode overrides ── */
+[data-theme="dark"] {
+  --import-tab-border:      rgba(108,99,255,0.22);
+  --import-tab-active-bg:   rgba(108,99,255,0.18);
+  --import-tab-inactive-bg: #13131f;
+  --import-dropzone-border: rgba(108,99,255,0.30);
+  --import-dropzone-bg:     #13131f;
+  --import-bulk-bg:         linear-gradient(135deg,#1a1a2e,#17172a);
+  --import-table-border:    rgba(255,255,255,0.06);
+  --import-cell-bg:         #1a1a2e;
+  --import-cell-border:     rgba(108,99,255,0.22);
+}
+
+/* Import table horizontal scroll */
+#importStep3 .import-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 1px solid var(--import-table-border);
+}
+#importStep3 .import-table-scroll::-webkit-scrollbar { height: 6px; }
+#importStep3 .import-table-scroll::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 3px; }
+#importStep3 .import-table-scroll::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 3px; opacity: 0.6; }
+
 @keyframes spin { to { transform: rotate(360deg); } }
-#importDropZone:hover { border-color: var(--primary-color); background: var(--primary-light); }
-#importDropZone.drag-over { border-color: var(--primary-color); background: var(--primary-light); transform: scale(1.01); }
+
+/* Drop zones */
+#importDropZone:hover, #importExcelDropZone:hover {
+  border-color: var(--primary-color); background: var(--primary-light);
+}
+#importDropZone.drag-over, #importExcelDropZone.drag-over {
+  border-color: var(--primary-color); background: var(--primary-light); transform: scale(1.01);
+}
+
+/* Row highlights */
 .import-row-warn td { background: rgba(245,158,11,0.05); }
-.import-row-dup td { background: rgba(239,68,68,0.05); }
+.import-row-dup  td { background: rgba(239,68,68,0.05); }
+
+/* Preview table inputs & selects */
 #importPreviewBody input[type=text],
 #importPreviewBody input[type=date],
 #importPreviewBody select {
+  background: var(--import-cell-bg);
+  border: 1px solid var(--import-cell-border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
   transition: border-color 150ms, box-shadow 150ms;
 }
+#importPreviewBody input::placeholder { color: var(--text-light); }
 #importPreviewBody input[type=text]:focus,
 #importPreviewBody input[type=date]:focus,
 #importPreviewBody select:focus {
   outline: none;
   border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
 }
 #importPreviewBody input[type=text]:hover,
 #importPreviewBody input[type=date]:hover,
-#importPreviewBody select:hover {
-  border-color: #a5b4fc !important;
+#importPreviewBody select:hover { border-color: var(--primary-color) !important; opacity: 0.85; }
+
+/* Preview table thead */
+#importStep3 thead tr  { background: var(--bg-input) !important; }
+#importStep3 thead th  { color: var(--text-secondary); border-bottom: 1px solid var(--import-table-border); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+#importStep3 tbody td  { border-bottom: 1px solid var(--import-table-border); color: var(--text-primary); }
+#importStep3 tbody tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+[data-theme="dark"] #importStep3 tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+/* Tab buttons */
+.import-tab-btn.active          { background: var(--import-tab-active-bg)   !important; color: var(--primary-color) !important; }
+.import-tab-btn:not(.active)    { background: var(--import-tab-inactive-bg) !important; color: var(--text-secondary) !important; }
+.import-tab-btn:not(.active):hover { background: var(--import-dropzone-bg) !important; color: var(--primary-color) !important; }
+
+/* Bulk header controls */
+#bulkEditHeader select,
+#bulkEditHeader input {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--import-tab-border) !important;
 }
+#bulkEditHeader select option { background: var(--bg-card); color: var(--text-primary); }
+
+/* Excel icon */
+.excel-icon-wrap { background: #d1fae5; color: #065f46; }
+[data-theme="dark"] .excel-icon-wrap { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+
+/* Excel file preview strip */
+#importExcelPreviewWrap { display: none; }
+#importExcelPreviewWrap[style*="block"] { display: flex !important; }
+
+/* Flatpickr dark mode */
+[data-theme="dark"] .flatpickr-calendar {
+  background: #17172a;
+  border-color: rgba(108,99,255,0.22);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  color: #e8e8f4;
+}
+[data-theme="dark"] .flatpickr-day { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-day:hover { background: rgba(108,99,255,0.18); border-color: transparent; }
+[data-theme="dark"] .flatpickr-day.selected { background: #6c63ff; border-color: #6c63ff; color: #fff; }
+[data-theme="dark"] .flatpickr-day.today { border-color: #6c63ff; }
+[data-theme="dark"] .flatpickr-months { background: #1a1a2e; border-radius: 8px 8px 0 0; }
+[data-theme="dark"] .flatpickr-month { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-current-month input.cur-year { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-weekday { color: #8888aa; }
+[data-theme="dark"] .flatpickr-prev-month svg, [data-theme="dark"] .flatpickr-next-month svg { fill: #8888aa; }
+[data-theme="dark"] .flatpickr-prev-month:hover svg, [data-theme="dark"] .flatpickr-next-month:hover svg { fill: #6c63ff; }
+[data-theme="dark"] .flatpickr-day.flatpickr-disabled { color: #55556e; }
 </style>
 
 <!-- ══════════════════════════════════════════
@@ -385,10 +567,15 @@
             <label class="form-label" for="f-grade">Grade Level <span class="req">*</span></label>
             <select id="f-grade" class="form-select">
               <option value="">Select Grade Level</option>
-              <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option>
-              <option>Grade 3</option><option>Grade 4</option><option>Grade 5</option>
-              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              <optgroup label="Basic Education">
+                <option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option>
+                <option>Grade 3</option><option>Grade 4</option><option>Grade 5</option>
+                <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+                <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              </optgroup>
+              <optgroup label="College">
+                <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option>
+              </optgroup>
             </select>
             <span class="error-msg" id="err-grade"></span>
           </div>
@@ -491,7 +678,7 @@
 ══════════════════════════════════════════ -->
 <div class="overlay" id="viewOverlay" style="align-items:flex-start;padding:20px;overflow-y:auto">
   <div class="modal" style="max-width:780px;width:100%;margin:auto">
-    <div class="modal-header" style="position:sticky;top:0;z-index:10;background:#fff;border-radius:16px 16px 0 0">
+    <div class="modal-header" style="position:sticky;top:0;z-index:10;border-radius:16px 16px 0 0">
       <div style="display:flex;align-items:center;gap:14px">
         <div id="viewAvatarBadge" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
         <div>
