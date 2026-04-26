@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support · ClassInstruct</title>
+  <link rel="stylesheet" href="sidebar.css" />
+  <link rel="stylesheet" href="support.css" />
+</head>
+<body data-page="support" onload="applyTheme(localStorage.getItem('theme') || 'light')">
+<div class="app">
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="main">
+    <div class="page-frame visible">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="page-title">Support</div>
+          <div class="page-sub">Get help or send us a message</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Contact Us</div>
+          <div class="field"><label>Subject</label><input type="text" id="supportSubject" placeholder="What do you need help with?" /></div>
+          <div class="field"><label>Message</label><textarea id="supportMessage" placeholder="Describe your issue or question..."></textarea></div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="sendMessage()">Send Message</button></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Quick Links</div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Documentation</div><div class="s-desc">Browse the ClassInstruct user guide</div></div></div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Video Tutorials</div><div class="s-desc">Watch how-to videos for all features</div></div></div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Report a Bug</div><div class="s-desc">Found something broken? Let us know</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="shared.js"></script>
+<script src="support.js"></script>
+</body>
+</html>

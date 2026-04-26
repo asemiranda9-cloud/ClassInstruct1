@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile · ClassInstruct</title>
+  <link rel="stylesheet" href="sidebar.css" />
+  <link rel="stylesheet" href="profile.css" />
+</head>
+<body data-page="profile" onload="applyTheme(localStorage.getItem('theme') || 'light')">
+<div class="app">
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="main">
+    <div class="page-frame visible">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="page-title">My Profile</div>
+          <div class="page-sub">View and edit your personal information</div>
+        </div>
+
+        <div class="card">
+          <div class="profile-hero">
+            <div class="profile-avatar-lg">T</div>
+            <div class="profile-hero-info">
+              <div class="ph-name">Teacher Smith</div>
+              <div class="ph-role">Instructor · Science Department</div>
+              <div class="ph-email">teacher.smith@school.edu</div>
+            </div>
+            <button class="btn btn-ghost" style="margin-left:auto;" onclick="editPhoto()">Edit Photo</button>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-num">142</div><div class="stat-lbl">Students</div></div>
+            <div class="stat-card"><div class="stat-num">6</div><div class="stat-lbl">Classes</div></div>
+            <div class="stat-card"><div class="stat-num">94%</div><div class="stat-lbl">Avg Attendance</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Personal Information</div>
+          <div class="field-row">
+            <div class="field"><label>First Name</label><input type="text" value="Teacher" /></div>
+            <div class="field"><label>Last Name</label><input type="text" value="Smith" /></div>
+          </div>
+          <div class="field"><label>Email</label><input type="email" value="teacher.smith@school.edu" /></div>
+          <div class="field"><label>Phone</label><input type="tel" value="+63 912 345 6789" /></div>
+          <div class="field"><label>Department</label><input type="text" value="Science Department" /></div>
+          <div class="field"><label>Bio</label>
+            <textarea>Passionate educator with 8 years of experience in secondary science education. Focused on inquiry-based learning and student engagement.</textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+            <button class="btn btn-ghost" onclick="discardChanges()">Discard</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Activity</div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Marked Attendance</div><div class="s-desc">Grade 10 - Section A · Today, 8:02 AM</div></div></div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Posted Grades</div><div class="s-desc">Q3 Science Exam results · Yesterday</div></div></div>
+          <div class="setting-row"><div class="setting-info"><div class="s-label">Added Student</div><div class="s-desc">Maria Santos enrolled · 2 days ago</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="shared.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>

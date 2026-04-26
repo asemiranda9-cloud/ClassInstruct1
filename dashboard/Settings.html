@@ -1,11 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To be Co</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings · ClassInstruct</title>
+  <link rel="stylesheet" href="sidebar.css" />
+  <link rel="stylesheet" href="Settings.css" />
 </head>
-<body>
-    <img src="to-be-continued-meme-spongebob.jpg" alt="Description of image">
+<body data-page="settings" onload="applyTheme(localStorage.getItem('theme') || 'light')">
+<div class="app">
+
+ 
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="main">
+    <div class="page-frame visible">
+      <div class="page-inner">
+        <div class="page-header">
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Manage your account preferences and application settings</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Account</div>
+          <div class="field-row">
+            <div class="field"><label>First Name</label><input type="text" value="Teacher" /></div>
+            <div class="field"><label>Last Name</label><input type="text" value="Smith" /></div>
+          </div>
+          <div class="field"><label>Email Address</label><input type="email" value="teacher.smith@school.edu" /></div>
+          <div class="field"><label>Role</label>
+            <select><option selected>Instructor</option><option>Admin</option><option>Coordinator</option></select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveAccount()">Save Changes</button>
+            <button class="btn btn-ghost">Cancel</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Notifications</div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Email Notifications</div><div class="s-desc">Receive updates via email</div></div>
+            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Attendance Alerts</div><div class="s-desc">Notify when attendance drops below threshold</div></div>
+            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Grade Submissions</div><div class="s-desc">Alert when students submit assignments</div></div>
+            <button class="toggle-switch" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Weekly Summary</div><div class="s-desc">Get a weekly digest every Monday</div></div>
+            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Appearance</div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Dark Mode</div><div class="s-desc">Switch between light and dark interface</div></div>
+            <button class="toggle-switch" id="settingsDarkToggle" onclick="toggleTheme()"></button>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Compact Sidebar</div><div class="s-desc">Reduce sidebar item spacing</div></div>
+            <button class="toggle-switch" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Security</div>
+          <div class="field"><label>Current Password</label><input type="password" id="currentPassword" placeholder="••••••••" /></div>
+          <div class="field-row">
+            <div class="field"><label>New Password</label><input type="password" id="newPassword" placeholder="••••••••" /></div>
+            <div class="field"><label>Confirm Password</label><input type="password" id="confirmPassword" placeholder="••••••••" /></div>
+          </div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="updatePassword()">Update Password</button></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Danger Zone</div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="s-label">Delete Account</div><div class="s-desc">Permanently remove your account and all data</div></div>
+            <button class="btn btn-danger">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="shared.js"></script>
+<script src="Settings.js"></script>
 </body>
 </html>

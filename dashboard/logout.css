@@ -1,0 +1,36 @@
+/* ── Logout Layout ── */
+.logout-page {
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh; background: var(--main-bg); flex-direction: column;
+}
+.logout-card {
+  background: var(--card-bg); border: 0.5px solid var(--card-border);
+  border-radius: 18px; padding: 40px 36px; text-align: center;
+  box-shadow: var(--shadow); max-width: 360px; width: 100%;
+  animation: fadeIn 0.22s ease;
+}
+.logout-icon {
+  width: 56px; height: 56px; background: rgba(220,60,60,0.10);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px;
+}
+.logout-icon svg { width: 24px; height: 24px; stroke: #d63a3a; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.logout-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.logout-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
+.logout-btns { display: flex; flex-direction: column; gap: 10px; }
+.logout-btns .btn { justify-content: center; width: 100%; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; border: none; transition: all 0.15s;
+}
+.btn-danger { background: rgba(220,60,60,0.10); color: #d63a3a; }
+.btn-danger:hover { background: rgba(220,60,60,0.18); }
+.btn-ghost {
+  background: var(--input-bg); color: var(--text-secondary);
+  border: 0.5px solid var(--input-border);
+}
+.btn-ghost:hover { background: var(--sb-item-hover-bg); color: var(--text-primary); }

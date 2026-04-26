@@ -14,6 +14,7 @@
     window.CI_LAST_NAME  = "<?php echo isset($_SESSION['last_name'])  ? addslashes($_SESSION['last_name'])  : ''; ?>";
     window.CI_GENDER     = "<?php echo isset($_SESSION['gender'])     ? addslashes($_SESSION['gender'])     : ''; ?>";
   </script>
+<script src="shared.js"></script>
 </head>
 <body>
 <div class="dashboard">
