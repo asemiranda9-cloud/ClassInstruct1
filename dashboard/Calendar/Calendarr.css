@@ -685,6 +685,16 @@
         .nav-btn { justify-content: center; padding: 10px; }
       }
 
+      @media (max-width: 900px) {
+        .sidebar { width: 70px; min-width: 70px; }
+        .sidebar-logo span, .user-name, .user-role, .nav-btn span { display: none; }
+        .sidebar-logo { justify-content: center; }
+        .user-profile { justify-content: center; }
+        .nav-btn { justify-content: center; }
+        .content-wrap { grid-template-columns: 1fr; }
+        .cal-day { min-height: 70px; }
+      }
+
       @media (max-width: 768px) {
         .sidebar { display: none; }
         .main-content { margin-left: 0; padding: 14px; }

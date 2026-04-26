@@ -210,12 +210,12 @@ tr:hover td { background: #fafbff; }
 .page-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-@media (max-width: 1024px) {
-  :root { --sidebar-width: 80px; }
+@media (max-width: 900px) {
+  .sidebar { width: 70px; min-width: 70px; }
   .sidebar-logo span, .user-name, .user-role, .nav-btn span { display: none; }
   .sidebar-logo { justify-content: center; }
-  .user-profile { justify-content: center; padding: var(--spacing-sm); }
-  .nav-btn { justify-content: center; padding: var(--spacing-md); }
+  .user-profile { justify-content: center; }
+  .nav-btn { justify-content: center; }
   .stats-row { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 768px) {

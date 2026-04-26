@@ -1527,6 +1527,11 @@ tr:has(.summary-cell--alert):hover { background: #fff3f3 !important; }
 /* ══════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .sc-left { min-width: 160px; padding: 14px; }
+  .sc-right { padding: 14px; }
+}
+
 @media (max-width: 768px) {
   .main-content { margin-left: 0; }
   .page-header  { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px; }

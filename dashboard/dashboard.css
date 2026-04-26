@@ -522,3 +522,50 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); o
   .hero-stats { width: 100%; }
   .hero-top-row { flex-wrap: wrap; }
 }
+
+/* Tablet (laptop): 1024px - sidebar icon-only via parent frame */
+@media (max-width: 1024px) {
+  .hero-stats { gap: 8px; }
+  .hero-stat-card { min-width: 120px; padding: 10px 12px; }
+  .hero-stat-icon { width: 34px; height: 34px; }
+  .hero-stat-val { font-size: 1rem; }
+  .content-grid { gap: 16px; }
+}
+
+/* Small tablet: 900px */
+@media (max-width: 900px) {
+  .hero-banner { padding: 18px 20px; gap: 12px; }
+  .hero-stat-card { min-width: 110px; }
+  .att-cal-day { max-width: 44px; }
+}
+
+/* Mobile: 768px */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; padding: 14px; }
+  .header { flex-wrap: wrap; gap: 10px; padding: 14px; }
+  .header-title { font-size: 1.4rem; }
+  .search-container { width: 100%; max-width: none; }
+  .gender-chart-container { flex-direction: column; }
+
+  /* shrink elements further on mobile */
+  .att-cal-day { max-width: 40px; font-size: 0.6rem; }
+  .student-count { font-size: 1.8rem; }
+  .icon-container { width: 40px; height: 40px; }
+  .gender-pie-chart { width: 90px; height: 90px; }
+
+  .hero-banner { padding: 14px 16px; gap: 10px; }
+  .hero-stat-card { min-width: 100px; padding: 8px 10px; }
+  .hero-stat-icon { width: 30px; height: 30px; }
+  .hero-stat-icon svg { width: 14px; height: 14px; }
+}
+
+/* Small phone: 480px */
+@media (max-width: 480px) {
+  .main-content { padding: 10px; }
+  .hero-stat-card { min-width: 80px; padding: 6px 8px; }
+  .hero-stat-icon { width: 28px; height: 28px; }
+  .hero-stat-val { font-size: 0.9rem; }
+  .att-cal-day { max-width: 36px; font-size: 0.55rem; }
+  .content-grid { gap: 12px; }
+}

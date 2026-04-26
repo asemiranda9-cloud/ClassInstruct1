@@ -1235,12 +1235,17 @@
       <span class="logo-text font-serif">ClassInstruct</span>
       </a>
     </div>
-    <div class="nav-links">
-      <a href="#features" class="font-sans">Features</a>
-      <a href="#how-it-works" class="font-sans">Method</a>
-      <a href="#about" class="font-sans">About</a>
-      <a href="#contact" class="font-sans">Contact</a>
+    <div class="nav-menu">
+      <a href="#features" class="nav-link font-sans">Features</a>
+      <a href="#how-it-works" class="nav-link font-sans">Method</a>
+      <a href="#about" class="nav-link font-sans">About</a>
+      <a href="#contact" class="nav-link font-sans">Contact</a>
     </div>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
     <button class="btn-primary font-sans open-signin">Sign In</button>
   </nav>
 

@@ -112,7 +112,7 @@
             </select>
           </div>
           <div class="gender-chart-container">
-            <div class="gender-pie-chart" id="genderPie" style="width:110px;height:110px">
+            <div class="gender-pie-chart" id="genderPie">
               <div class="pie-center">
                 <span class="total-label">Total</span>
                 <span class="total-count" id="genderTotal">—</span>

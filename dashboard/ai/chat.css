@@ -1,313 +1,414 @@
+/* ============================================
+   ClassInstruct AI Chat - Responsive Layout
+   ============================================ */
+
 .classinstruct-AI {
+  display: flex;
+  min-height: 100vh;
+  background-color: #ebebeb;
+}
+
+/* ── Sidebar ── */
+.classinstruct-AI .sidebar {
+  width: 242px;
+  min-width: 242px;
   background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  gap: 0;
+  border-right: 1px solid rgba(0,0,0,0.08);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.classinstruct-AI .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.classinstruct-AI .user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #4f46e5;
+  flex-shrink: 0;
+}
+
+.classinstruct-AI .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.classinstruct-AI .user-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
   overflow: hidden;
-  width: 100%;
-  min-width: 1440px;
-  min-height: 1024px;
+  text-overflow: ellipsis;
+}
+
+.classinstruct-AI .user-role {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.classinstruct-AI .nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.classinstruct-AI .nav-menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-family: "Inter-Regular", Helvetica, sans-serif;
+  font-weight: 400;
+  color: #1e293b;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background-color 150ms ease;
+}
+
+.classinstruct-AI .nav-menu a:hover,
+.classinstruct-AI .nav-menu a:focus {
+  background-color: #f1f5f9;
+  text-decoration: none;
+}
+
+.classinstruct-AI .nav-menu a[aria-current="page"] {
+  font-weight: 700;
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.classinstruct-AI .nav-menu a .nav-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.classinstruct-AI .nav-menu a .nav-icon.icon-ai { color: #4f46e5; }
+.classinstruct-AI .nav-menu a .nav-icon.icon-dashboard { color: #64748b; }
+.classinstruct-AI .nav-menu a .nav-icon.icon-students { color: #10b981; }
+.classinstruct-AI .nav-menu a .nav-icon.icon-attendance { color: #f59e0b; }
+.classinstruct-AI .nav-menu a .nav-icon.icon-calendar { color: #ec4899; }
+
+/* ── Main Content ── */
+.classinstruct-AI .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Header ── */
+.classinstruct-AI .header {
+  background-color: #ffffff;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.classinstruct-AI .header-title {
+  font-family: "Itim-Regular", Helvetica, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.classinstruct-AI .header-search {
+  flex: 1;
+  max-width: 400px;
   position: relative;
 }
 
-.classinstruct-AI .rectangle {
-  position: absolute;
-  top: 0;
-  left: 3px;
-  width: 242px;
-  height: 1024px;
-}
-
-.classinstruct-AI .text-wrapper {
-  position: absolute;
-  top: 148px;
-  left: 39px;
-  width: 124px;
-  font-family: "Inter-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .div {
-  position: absolute;
-  top: 204px;
-  left: 39px;
-  font-family: "Inter-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-  white-space: nowrap;
-}
-
-.classinstruct-AI .frame {
-  position: absolute;
-  top: 412px;
-  left: 78px;
-  width: 100px;
-  height: 100px;
-}
-
-.classinstruct-AI .text-wrapper-2 {
-  position: absolute;
-  top: 263px;
-  left: 39px;
-  width: 168px;
-  font-family: "Inter-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .text-wrapper-3 {
-  position: absolute;
-  top: 324px;
-  left: 39px;
-  width: 168px;
-  font-family: "Inter-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .text-wrapper-4 {
-  position: absolute;
-  top: 382px;
-  left: 39px;
-  width: 168px;
-  font-family: "Inter-Bold", Helvetica;
-  font-weight: 700;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .ellipse {
-  position: absolute;
-  top: 32px;
-  left: 30px;
-  width: 58px;
-  height: 60px;
-  object-fit: cover;
-}
-
-.classinstruct-AI .text-wrapper-5 {
-  position: absolute;
-  top: 44px;
-  left: 104px;
-  width: 126px;
-  font-family: "Inter-Bold", Helvetica;
-  font-weight: 700;
-  color: #141313;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .rectangle-2 {
-  position: absolute;
-  top: -26px;
-  left: 275px;
-  width: 1174px;
-  height: 1143px;
-  background-color: #ebebeb;
+.classinstruct-AI .header-search input {
+  width: 100%;
+  padding: 10px 18px 10px 44px;
+  background-color: #f1f5f9;
+  border: 2px solid transparent;
   border-radius: 20px;
-  box-shadow: 0px 4px 4px #00000040;
+  font-size: 0.9rem;
+  color: #1e293b;
+  transition: all 150ms ease;
+  font-family: "Instrument Sans-Medium", Helvetica, sans-serif;
 }
 
-.classinstruct-AI .text-wrapper-6 {
-  position: absolute;
-  top: 46px;
-  left: 1239px;
-  width: 256px;
-  font-family: "Inter-Bold", Helvetica;
-  font-weight: 700;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-}
-
-.classinstruct-AI .text-wrapper-7 {
-  position: absolute;
-  top: 34px;
-  left: 291px;
-  width: 337px;
-  font-family: "Itim-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 48px;
-  letter-spacing: -0.96px;
-  line-height: 57.6px;
-  white-space: nowrap;
-}
-
-.classinstruct-AI .rectangle-3 {
-  position: absolute;
-  top: 42px;
-  left: 850px;
-  width: 327px;
-  height: 38px;
+.classinstruct-AI .header-search input:focus {
+  outline: none;
+  border-color: #4f46e5;
   background-color: #ffffff;
-  border-radius: 15px;
-  border: 1px solid;
-  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
 }
 
-.classinstruct-AI .text-wrapper-8 {
+.classinstruct-AI .header-search input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.classinstruct-AI .header-search .search-icon {
   position: absolute;
-  top: 50px;
-  left: 877px;
-  font-family: "Instrument Sans-Medium", Helvetica;
-  font-weight: 500;
-  color: #000000;
-  font-size: 20px;
-  letter-spacing: -0.40px;
-  line-height: 24.0px;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.classinstruct-AI .header-brand {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #64748b;
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border-radius: 20px;
   white-space: nowrap;
 }
 
-.classinstruct-AI .search {
-  position: absolute;
-  top: 49px;
-  left: 1135px;
-  width: 24px;
-  height: 24px;
+/* ── Content Area ── */
+.classinstruct-AI .content-area {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  min-height: 0;
 }
 
-.classinstruct-AI .rectangle-4 {
-  position: absolute;
-  top: 118px;
-  left: 303px;
-  width: 1006px;
-  height: 870px;
+/* ── Chat Container ── */
+.classinstruct-AI .chat-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.classinstruct-AI .chat-container {
+  flex: 1;
   background-color: #ffffff;
   border-radius: 20px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 400px;
 }
 
-.classinstruct-AI .rectangle-5 {
-  position: absolute;
-  top: 881px;
-  left: 337px;
-  width: 940px;
-  height: 75px;
+.classinstruct-AI .chat-messages {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.classinstruct-AI .chat-messages .message {
+  max-width: 75%;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.classinstruct-AI .chat-messages .user-message {
+  align-self: flex-end;
+  background-color: #4f46e5;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.classinstruct-AI .chat-messages .ai-message {
+  align-self: flex-start;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border-bottom-left-radius: 4px;
+}
+
+.classinstruct-AI .chat-messages .ai-message.typing-message {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.classinstruct-AI .chat-messages .ai-message.error {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+}
+
+/* ── Welcome Message ── */
+.classinstruct-AI .welcome-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.classinstruct-AI .welcome-message h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+/* ── Chat Input ── */
+.classinstruct-AI .chat-input-wrapper {
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.08);
+  padding: 12px 16px;
+}
+
+.classinstruct-AI .chat-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background-color: #d9d9d9;
   border-radius: 40px;
+  padding: 8px 8px 8px 24px;
 }
 
-.classinstruct-AI .p {
-  position: absolute;
-  top: 900px;
-  left: 386px;
-  width: 591px;
-  opacity: 0.5;
-  font-family: "DM Sans-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 32px;
-  letter-spacing: 0;
-  line-height: normal;
-  white-space: nowrap;
+.classinstruct-AI .chat-input-container input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  color: #1e293b;
+  font-family: "DM Sans-Regular", Helvetica, sans-serif;
+  min-width: 0;
 }
 
-.classinstruct-AI .rectangle-6 {
-  position: absolute;
-  top: 118px;
-  left: 1336px;
+.classinstruct-AI .chat-input-container input:focus {
+  outline: none;
+}
+
+.classinstruct-AI .chat-input-container input::placeholder {
+  color: #1e293b;
+  opacity: 0.4;
+}
+
+/* ── Action Buttons ── */
+.classinstruct-AI .action-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.classinstruct-AI .action-button:hover {
+  background-color: rgba(79,70,229,0.1);
+  color: #4f46e5;
+}
+
+.classinstruct-AI .action-button.send-btn {
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+.classinstruct-AI .action-button.send-btn:hover {
+  background-color: #4338ca;
+}
+
+.classinstruct-AI .action-button img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* ── Right Sidebar ── */
+.classinstruct-AI .right-sidebar {
   width: 84px;
-  height: 870px;
+  min-width: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.classinstruct-AI .sidebar-actions {
   background-color: #ffffff;
-  border-radius: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.08);
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
-.classinstruct-AI .image {
-  top: 327px;
-  left: 1359px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
+.classinstruct-AI .icon-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  border: none;
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 150ms ease;
+  font-family: inherit;
 }
 
-.classinstruct-AI .img {
-  top: 415px;
-  left: 1359px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
+.classinstruct-AI .icon-button:hover {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.classinstruct-AI .image-2 {
-  top: 503px;
-  left: 1359px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
+.classinstruct-AI .icon-button .icon-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
-.classinstruct-AI .image-3 {
-  top: 905px;
-  left: 1087px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
+.classinstruct-AI .icon-button .icon-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: inherit;
 }
 
-.classinstruct-AI .image-4 {
-  top: 239px;
-  left: 1359px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
-}
-
-.classinstruct-AI .image-5 {
-  top: 151px;
-  left: 1359px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
-}
-
-.classinstruct-AI .image-6 {
-  top: 905px;
-  left: 1144px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
-}
-
-.classinstruct-AI .image-7 {
-  top: 905px;
-  left: 1201px;
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  aspect-ratio: 1;
-  object-fit: cover;
-}
-/* Inject original CSS code here */
-
-.classinstruct-AI .visually-hidden {
+/* ── Utility ── */
+.visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -319,237 +420,112 @@
   border-width: 0;
 }
 
-.classinstruct-AI .sidebar {
-  position: absolute;
-  top: 0;
-  left: 3px;
-  width: 242px;
-  height: 1024px;
-}
-
-.classinstruct-AI .user-profile {
-  position: absolute;
-  top: 32px;
-  left: 30px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.classinstruct-AI .nav-menu {
-  position: absolute;
-  top: 148px;
-  left: 39px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.classinstruct-AI .nav-menu a {
-  display: block;
-  font-family: "Inter-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 24px;
-  letter-spacing: -0.48px;
-  line-height: 28.8px;
-  text-decoration: none;
-  padding: 14.5px 0;
-}
-
-.classinstruct-AI .nav-menu a:hover,
-.classinstruct-AI .nav-menu a:focus {
-  text-decoration: underline;
-  outline: none;
-}
-
-.classinstruct-AI .nav-menu a[aria-current="page"] {
-  font-family: "Inter-Bold", Helvetica;
-  font-weight: 700;
-}
-
-.classinstruct-AI .main-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.classinstruct-AI .header {
-  position: relative;
-  height: 118px;
-}
-
-.classinstruct-AI .search-container {
-  position: absolute;
-  top: 42px;
-  left: 605px;
-}
-
-.classinstruct-AI .rectangle-3 {
-  width: 327px;
-  height: 38px;
-  background-color: #ffffff;
-  border-radius: 15px;
-  border: 1px solid #000000;
-  padding: 0 40px 0 27px;
-  font-family: "Instrument Sans-Medium", Helvetica;
-  font-weight: 500;
-  color: #000000;
-  font-size: 20px;
-  letter-spacing: -0.40px;
-  line-height: 24.0px;
-}
-
-.classinstruct-AI .rectangle-3:focus {
-  outline: 2px solid #4a90e2;
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #4f46e5;
   outline-offset: 2px;
 }
 
-.classinstruct-AI .rectangle-3::placeholder {
-  color: #000000;
-  opacity: 1;
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Tablet: 900px - collapse right sidebar */
+@media (max-width: 900px) {
+  .classinstruct-AI .right-sidebar {
+    display: none;
+  }
+
+  .classinstruct-AI .content-area {
+    padding: 16px;
+  }
 }
 
-.classinstruct-AI .search-container .search {
-  position: absolute;
-  top: 7px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
+/* Small Tablet / Large Phone: 768px - hide left sidebar */
+@media (max-width: 768px) {
+  .classinstruct-AI {
+    flex-direction: column;
+  }
+
+  .classinstruct-AI .sidebar {
+    display: none;
+  }
+
+  .classinstruct-AI .header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .classinstruct-AI .header-title {
+    font-size: 1.3rem;
+  }
+
+  .classinstruct-AI .header-search {
+    order: 3;
+    width: 100%;
+    max-width: none;
+  }
+
+  .classinstruct-AI .header-brand {
+    display: none;
+  }
+
+  .classinstruct-AI .content-area {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .classinstruct-AI .chat-container {
+    min-height: 300px;
+    border-radius: 16px;
+  }
+
+  .classinstruct-AI .chat-messages .message {
+    max-width: 85%;
+    font-size: 0.9rem;
+  }
+
+  .classinstruct-AI .chat-input-container {
+    padding: 8px 8px 8px 16px;
+  }
+
+  .classinstruct-AI .chat-input-container input {
+    font-size: 0.9rem;
+  }
 }
 
-.classinstruct-AI .content-area {
-  position: relative;
-}
+/* Phone: 480px */
+@media (max-width: 480px) {
+  .classinstruct-AI .header {
+    padding: 10px 12px;
+  }
 
-.classinstruct-AI .chat-input-container {
-  position: absolute;
-  top: 763px;
-  left: 32px;
-  display: flex;
-  align-items: center;
-  margin-top: 20px;
-}
+  .classinstruct-AI .header-title {
+    font-size: 1.1rem;
+  }
 
-.classinstruct-AI .chat-input-container input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #bdc3c7;
-  border-radius: 4px;
-  margin-right: 10px;
-}
+  .classinstruct-AI .content-area {
+    padding: 10px;
+  }
 
-.classinstruct-AI .action-button {
-  background-color: #3498db; /* Modern button color */
-  border: none;
-  color: white;
-  padding: 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+  .classinstruct-AI .chat-messages {
+    padding: 14px;
+  }
 
-.classinstruct-AI .action-button:hover {
-  background-color: #2980b9; /* Darker on hover */
-}
+  .classinstruct-AI .chat-messages .message {
+    max-width: 90%;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
 
-.classinstruct-AI .action-button-voice {
-  right: 140px;
-}
+  .classinstruct-AI .action-button {
+    width: 36px;
+    height: 36px;
+  }
 
-.classinstruct-AI .action-button-attach {
-  right: 83px;
-}
-
-.classinstruct-AI .action-button-send {
-  right: 26px;
-}
-
-.classinstruct-AI .action-button img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.classinstruct-AI .sidebar-right {
-  position: absolute;
-  top: 118px;
-  right: 28px;
-}
-
-.classinstruct-AI .rectangle-6 {
-  width: 84px;
-  height: 870px;
-  background-color: #ffffff;
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 33px;
-  gap: 55px;
-}
-
-.classinstruct-AI .icon-button {
-  width: 35px;
-  height: 35px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.classinstruct-AI .icon-button:hover,
-.classinstruct-AI .icon-button:focus {
-  opacity: 0.8;
-}
-
-.classinstruct-AI .icon-button img {
-  width: 24px; /* Icon size */
-  height: 24px;
-}
-
-.classinstruct-AI .rectangle-5 {
-  width: 940px;
-  height: 75px;
-  background-color: #d9d9d9;
-  border-radius: 40px;
-  border: none;
-  padding: 0 150px 0 49px;
-  font-family: "DM Sans-Regular", Helvetica;
-  font-weight: 400;
-  color: #000000;
-  font-size: 32px;
-  letter-spacing: 0;
-  line-height: normal;
-}
-
-.classinstruct-AI .rectangle-5:focus {
-  outline: 2px solid #4a90e2;
-  outline-offset: 2px;
-}
-
-.classinstruct-AI .rectangle-5::placeholder {
-  color: #000000;
-  opacity: 0.5;
-}
-.user-message {
-  align-self: flex-end;
-  background-color: #4f46e5;
-  color: white;
-  padding: 10px;
-  border-radius: 12px;
-  margin: 5px 0;
-  max-width: 70%;
-}
-
-.ai-message {
-  align-self: flex-start;
-  background-color: #f1f5f9;
-  color: #1e293b;
-  padding: 10px;
-  border-radius: 12px;
-  margin: 5px 0;
-  max-width: 70%;
+  .classinstruct-AI .action-button img {
+    width: 16px;
+    height: 16px;
+  }
 }
