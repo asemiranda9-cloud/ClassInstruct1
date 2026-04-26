@@ -19,7 +19,18 @@
       "Bash(taskkill //F //PID 11428)",
       "Bash(taskkill //F //PID 6844)",
       "Bash(\"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe\" -k start)",
-      "Bash(\"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe\" -f \"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/conf/httpd.conf\")"
+      "Bash(\"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/bin/httpd.exe\" -f \"C:/laragon/bin/apache/httpd-2.4.66-260223-Win64-VS18/conf/httpd.conf\")",
+      "Bash(where php *)",
+      "Bash(reg query *)",
+      "Bash(dir \"C:\\\\laragon\\\\php*\")",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)",
+      "Bash(/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe *)",
+      "Bash(echo 'export PATH=\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64:$PATH\"')",
+      "Bash(export PATH=\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64:$PATH\")",
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" composer *)",
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" /c/laragon/bin/composer.phar install)",
+      "Bash(\"/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" \"/c/laragon/bin/composer.phar\" install)"
     ]
   }
 }
