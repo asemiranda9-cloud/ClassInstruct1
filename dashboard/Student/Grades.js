@@ -116,37 +116,76 @@ async function loadAllStudents() {
 
 // Populate grade and section <select> dropdowns from live student data
 function populateGradeSectionFilters(data) {
-  const gradeSet   = new Set();
-  const sectionSet = new Set();
-  data.forEach(r => {
-    if (r.grade)   gradeSet.add(r.grade);
-    if (r.section) sectionSet.add(r.section);
-  });
+  const gradeOrder = ['Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4',
+    'Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'];
 
+  // Determine which grades the selected subject is assigned to (if any)
+  const selectedSubjectName = document.getElementById('subjectSel')
+    ? document.getElementById('subjectSel').value : '';
+  const selectedSubject  = subjects.find(s => s.name === selectedSubjectName);
+  const assignedGrades   = selectedSubject && subjectGradeMap[selectedSubject.id]
+    ? subjectGradeMap[selectedSubject.id] : null;
+
+  // Build grade set: all grades in data, filtered by subject assignments if subject selected
+  const allGradesInData = new Set();
+  data.forEach(r => { if (r.grade) allGradesInData.add(r.grade); });
+  const gradeSet = assignedGrades
+    ? new Set([...allGradesInData].filter(g => assignedGrades.has(g)))
+    : allGradesInData;
+
+  // Current grade selection (before we repopulate)
   const gradeSel   = document.getElementById('gradeSel');
   const sectionSel = document.getElementById('sectionSel');
+  const prevGrade   = gradeSel   ? gradeSel.value   : '';
+  const prevSection = sectionSel ? sectionSel.value : '';
 
+  // Populate grade dropdown
   if (gradeSel) {
-    const prev = gradeSel.value;
     while (gradeSel.options.length > 1) gradeSel.remove(1);
-    [...gradeSet].sort().forEach(g => {
+    [...gradeSet].sort((a, b) => {
+      const ai = gradeOrder.indexOf(a), bi = gradeOrder.indexOf(b);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    }).forEach(g => {
       const o = document.createElement('option');
       o.value = g; o.textContent = g;
-      if (g === prev) o.selected = true;
+      if (g === prevGrade) o.selected = true;
       gradeSel.appendChild(o);
     });
+    // Reset if previous grade is no longer valid for this subject
+    if (prevGrade && !gradeSet.has(prevGrade)) gradeSel.value = '';
   }
 
+  // Build section set: only from students whose grade is in the active grade filter
+  const activeGrade = gradeSel ? gradeSel.value : '';
+  const sectionSet  = new Set();
+  data.forEach(r => {
+    if (!r.section) return;
+    // If a grade is selected, only include sections from that grade
+    // If no grade selected but subject has assigned grades, restrict to those grades
+    if (activeGrade) {
+      if (r.grade === activeGrade) sectionSet.add(r.section);
+    } else if (assignedGrades) {
+      if (assignedGrades.has(r.grade)) sectionSet.add(r.section);
+    } else {
+      sectionSet.add(r.section);
+    }
+  });
+
+  // Populate section dropdown
   if (sectionSel) {
-    const prev = sectionSel.value;
     while (sectionSel.options.length > 1) sectionSel.remove(1);
     [...sectionSet].sort().forEach(s => {
       const o = document.createElement('option');
       o.value = s; o.textContent = s;
-      if (s === prev) o.selected = true;
+      if (s === prevSection) o.selected = true;
       sectionSel.appendChild(o);
     });
+    // Reset if previous section is no longer valid
+    if (prevSection && !sectionSet.has(prevSection)) sectionSel.value = '';
   }
+
+  // Re-render subject dropdown so it filters to the selected grade
+  renderSubjectDropdown();
 }
 
 // Merge saved grade data into the already-loaded students array
@@ -356,35 +395,54 @@ function resetGpaDefault() {
 // ════════════════════════════════════════
 //  SUBJECTS
 // ════════════════════════════════════════
+// ── Subject ↔ Grade assignments: { subjectId: [gradeLevels] } ──
+let subjectGradeMap = {}; // subjectId → Set of grade levels
+
 async function loadSubjects() {
   try {
     const res  = await fetch(API + '?action=subjects');
     const data = await res.json();
-    subjects    = data.map(s => ({ id: s.id, name: s.name, code: s.code || '', active: !!parseInt(s.is_active) }));
+    subjects    = data.map(s => ({ id: parseInt(s.id), name: s.name, code: s.code || '', active: !!parseInt(s.is_active) }));
     allSubjects = [...subjects];
     subjectIdCounter = subjects.length ? Math.max(...subjects.map(s => s.id)) + 1 : 1;
   } catch {
-    subjects = [
-      { id:1, name:'Mathematics', code:'MATH', active:true },
-      { id:2, name:'Science',     code:'SCI',  active:true },
-      { id:3, name:'English',     code:'ENG',  active:true },
-      { id:4, name:'Filipino',    code:'FIL',  active:true },
-      { id:5, name:'MAPEH',       code:'MAPEH',active:true },
-      { id:6, name:'AP',          code:'AP',   active:true },
-      { id:7, name:'ESP',         code:'ESP',  active:true },
-    ];
-    allSubjects = [...subjects];
-    subjectIdCounter = 8;
+    subjects    = [];
+    allSubjects = [];
+    subjectIdCounter = 1;
+  }
+  // Load subject→grade assignments
+  try {
+    const res2 = await fetch(API + '?action=subject_grades');
+    const data2 = await res2.json();
+    subjectGradeMap = {};
+    data2.forEach(row => {
+      if (!subjectGradeMap[row.subject_id]) subjectGradeMap[row.subject_id] = new Set();
+      subjectGradeMap[row.subject_id].add(row.grade_level);
+    });
+  } catch {
+    subjectGradeMap = {};
   }
   renderSubjectDropdown();
   renderSubjectTable();
 }
 
 function renderSubjectDropdown() {
-  const sel     = document.getElementById('subjectSel');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— Select Subject —</option>';
-  subjects.filter(s => s.active).forEach(s => {
+  const sel      = document.getElementById('subjectSel');
+  const current  = sel.value;
+  const selGrade = document.getElementById('gradeSel') ? document.getElementById('gradeSel').value : '';
+  sel.innerHTML  = '<option value="">— Select Subject —</option>';
+
+  let list = subjects.filter(s => s.active);
+
+  // Only show subjects assigned to the selected grade. No fallback.
+  if (selGrade) {
+    list = list.filter(s => {
+      const grades = subjectGradeMap[s.id];
+      return grades && grades.has(selGrade);
+    });
+  }
+
+  list.forEach(s => {
     const opt = document.createElement('option');
     opt.value       = s.name;
     opt.textContent = s.name + (s.code ? ' (' + s.code + ')' : '');
@@ -400,23 +458,32 @@ function renderSubjectTable() {
     (s.code || '').toLowerCase().includes(subjectFilter.toLowerCase())
   );
   document.getElementById('subjectCount').textContent = '(' + subjects.length + ' total)';
+  // Show Delete All button only when there are subjects
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+  if (deleteAllBtn) deleteAllBtn.style.display = subjects.length ? 'inline-flex' : 'none';
   body.innerHTML = '';
   if (!list.length) {
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:2rem;">No subjects found.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:2rem;">No subjects found.</td></tr>';
     return;
   }
   list.forEach((s, i) => {
+    const assignedGrades = subjectGradeMap[s.id] ? [...subjectGradeMap[s.id]].sort().join(', ') : '—';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="color:var(--gray-400);font-size:12px;">${i + 1}</td>
       <td><div style="font-weight:600;color:var(--gray-900);">${esc(s.name)}</div></td>
       <td><span style="font-family:'DM Mono',monospace;font-size:12px;background:var(--gray-100);padding:2px 8px;border-radius:4px;color:var(--gray-600);">${esc(s.code || '—')}</span></td>
       <td><span class="badge ${s.active ? 'badge-active' : 'badge-inactive'}">${s.active ? 'Active' : 'Inactive'}</span></td>
+      <td style="font-size:12px;color:var(--gray-600);max-width:180px;">${esc(assignedGrades)}</td>
       <td>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm" onclick="openEditModal(${s.id})">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
+          </button>
+          <button class="btn btn-sm" onclick="openAssignGradesModal(${s.id})" style="color:var(--primary);border-color:var(--primary);">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Assign Grades
           </button>
           <button class="btn btn-sm" onclick="toggleSubjectStatus(${s.id})" style="${s.active ? 'color:var(--warning);border-color:var(--warning);' : 'color:var(--success);border-color:var(--success);'}">
             ${s.active ? 'Deactivate' : 'Activate'}
@@ -445,7 +512,7 @@ async function addSubject() {
     const res  = await fetch(API + '?action=add_subject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) });
     const data = await res.json();
     if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
-    subjects.push({ id: data.id || subjectIdCounter++, name, code, active: true });
+    subjects.push({ id: parseInt(data.id) || subjectIdCounter++, name, code, active: true });
   } catch {
     subjects.push({ id: subjectIdCounter++, name, code, active: true });
   }
@@ -455,11 +522,18 @@ async function addSubject() {
   toast('Subject "' + name + '" added!', 'success');
 }
 
-function toggleSubjectStatus(id) {
+async function toggleSubjectStatus(id) {
   const s = subjects.find(s => s.id === id); if (!s) return;
   s.active = !s.active; allSubjects = [...subjects];
   renderSubjectTable(); renderSubjectDropdown();
   toast(s.name + ' is now ' + (s.active ? 'active' : 'inactive') + '.', 'success');
+  try {
+    await fetch(API + '?action=toggle_subject&id=' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: s.active ? 1 : 0 })
+    });
+  } catch {}
 }
 
 async function deleteSubject(id) {
@@ -472,6 +546,18 @@ async function deleteSubject(id) {
 }
 
 function filterSubjects(q) { subjectFilter = q; renderSubjectTable(); }
+
+async function deleteAllSubjects() {
+  if (!subjects.length) return;
+  if (!confirm('Delete ALL subjects? This cannot be undone.')) return;
+  const ids = subjects.map(s => s.id);
+  for (const id of ids) {
+    try { await fetch(API + '?action=delete_subject&id=' + id, { method: 'DELETE' }); } catch {}
+  }
+  subjects = []; allSubjects = [];
+  renderSubjectTable(); renderSubjectDropdown();
+  toast('All subjects deleted.', 'success');
+}
 
 function openEditModal(id) {
   const s = subjects.find(s => s.id === id); if (!s) return;
@@ -496,6 +582,98 @@ async function saveEdit() {
   if (s) { s.name = name; s.code = code; } allSubjects = [...subjects];
   closeEditModal(); renderSubjectTable(); renderSubjectDropdown();
   toast('Subject updated!', 'success');
+}
+
+// ════════════════════════════════════════
+//  ASSIGN GRADES TO SUBJECT MODAL
+// ════════════════════════════════════════
+async function openAssignGradesModal(subjectId) {
+  const s = subjects.find(s => s.id === subjectId); if (!s) return;
+  const assigned = subjectGradeMap[subjectId] ? [...subjectGradeMap[subjectId]] : [];
+
+  const existing = document.getElementById('assignGradesModal');
+  if (existing) existing.remove();
+
+  // Fetch only grade levels that have enrolled students
+  let gradeLevels = [];
+  try {
+    const res = await fetch(API + '?action=distinct_grades');
+    gradeLevels = await res.json();
+    if (!Array.isArray(gradeLevels)) gradeLevels = [];
+  } catch { gradeLevels = []; }
+
+  const checkboxHtml = gradeLevels.length === 0
+    ? '<p style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">No students enrolled yet.</p>'
+    : gradeLevels.map(g => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;
+                  background:${assigned.includes(g) ? 'var(--primary-light,#ede9fe)' : 'var(--gray-50)'};
+                  border:1px solid ${assigned.includes(g) ? 'var(--primary)' : 'var(--gray-200)'};
+                  transition:all 0.15s;" id="lbl-ag-${g.replace(' ','-')}">
+      <input type="checkbox" value="${g}" ${assigned.includes(g) ? 'checked' : ''}
+        onchange="this.closest('label').style.background=this.checked?'var(--primary-light,#ede9fe)':'var(--gray-50)';
+                  this.closest('label').style.borderColor=this.checked?'var(--primary)':'var(--gray-200)';"
+        style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer;">
+      <span style="font-size:13px;font-weight:500;color:var(--gray-800);">${g}</span>
+    </label>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'assignGradesModal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(17,24,39,0.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:0;max-width:480px;width:calc(100% - 2rem);
+                box-shadow:0 20px 60px rgba(0,0,0,.18);" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--gray-200);">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--gray-900);">Assign Grade Levels</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:2px;">Subject: <strong>${esc(s.name)}</strong></div>
+        </div>
+        <button onclick="document.getElementById('assignGradesModal').remove()"
+          style="background:none;border:none;font-size:18px;color:var(--gray-400);cursor:pointer;padding:4px;border-radius:6px;">✕</button>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <p style="font-size:12px;color:var(--gray-500);margin:0 0 12px;">Select which grade levels this subject is offered in. When a grade is selected in the Grade Sheet, only assigned subjects will appear.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="gradeCheckboxes">
+          ${checkboxHtml}
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100);">
+          <button class="btn" onclick="document.getElementById('assignGradesModal').remove()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveSubjectGradeAssignment(${subjectId})">Save Assignment</button>
+        </div>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function saveSubjectGradeAssignment(subjectId) {
+  const modal     = document.getElementById('assignGradesModal');
+  const checkboxes = modal.querySelectorAll('input[type=checkbox]');
+  const selected  = [...checkboxes].filter(c => c.checked).map(c => c.value);
+
+  // Update local map
+  subjectGradeMap[subjectId] = new Set(selected);
+
+  // Build full assignments array from all subjects
+  const allAssignments = [];
+  Object.entries(subjectGradeMap).forEach(([sid, grades]) => {
+    grades.forEach(g => allAssignments.push({ subject_id: parseInt(sid), grade_level: g }));
+  });
+
+  try {
+    const res  = await fetch(API + '?action=save_subject_grades', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignments: allAssignments })
+    });
+    const data = await res.json();
+    if (data.error) { toast('Error: ' + data.error, 'error'); return; }
+    toast('Grade assignments saved!', 'success');
+  } catch {
+    toast('Saved locally (DB offline).', 'success');
+  }
+  modal.remove();
+  renderSubjectTable();
+  renderSubjectDropdown();
 }
 
 // ════════════════════════════════════════

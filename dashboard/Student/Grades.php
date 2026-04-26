@@ -240,9 +240,16 @@
         <div class="table-card">
           <div class="table-toolbar">
             <span class="table-toolbar-title">All Subjects <span id="subjectCount" style="color:var(--gray-400);font-weight:400;"></span></span>
-            <div class="search-wrap">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" placeholder="Search subjects..." oninput="filterSubjects(this.value)">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="search-wrap">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="Search subjects..." oninput="filterSubjects(this.value)">
+              </div>
+              <button class="btn btn-sm" onclick="deleteAllSubjects()" id="deleteAllBtn"
+                style="color:var(--danger,#ef4444);border:1.5px solid var(--danger,#ef4444);background:rgba(239,68,68,0.06);white-space:nowrap;display:none;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                Delete All
+              </button>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -253,7 +260,8 @@
                   <th>Subject Name</th>
                   <th style="width:100px;">Code</th>
                   <th style="width:100px;">Status</th>
-                  <th style="width:160px;">Actions</th>
+                  <th style="width:180px;">Assigned Grades</th>
+                  <th style="width:260px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="subjectBody"></tbody>

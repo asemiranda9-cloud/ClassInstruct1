@@ -133,17 +133,19 @@ if ($row['cnt'] == 0) {
     ");
 }
 
-// Default subjects if empty
-$chkSubj = $conn->query("SELECT COUNT(*) as cnt FROM subjects");
-$rs = $chkSubj->fetch_assoc();
-if ($rs['cnt'] == 0) {
-    $conn->query("
-        INSERT INTO subjects (name, code) VALUES
-        ('Mathematics','MATH'),('English','ENG'),('Science','SCI'),
-        ('Filipino','FIL'),('Araling Panlipunan','AP'),('MAPEH','MAPEH'),
-        ('Edukasyon sa Pagpapakatao','EsP'),('Technology & Livelihood','TLE')
-    ");
-}
+// Create subject_grades table — links subjects to specific grade levels
+$conn->query("
+    CREATE TABLE IF NOT EXISTS subject_grades (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subject_id INT NOT NULL,
+        grade_level VARCHAR(20) NOT NULL,
+        UNIQUE KEY unique_subj_grade (subject_id, grade_level),
+        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+    )
+");
+
+// NOTE: No default subjects are auto-inserted.
+// Users add subjects manually via Manage Subjects and assign them to grade levels.
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -151,35 +153,39 @@ $action = $_GET['action'] ?? '';
 switch ($method) {
     case 'GET':
         switch ($action) {
-            case 'students':    getStudents($conn);    break;
-            case 'grades':      getGrades($conn);      break;
-            case 'subjects':    getSubjects($conn);    break;
-            case 'weights':     getWeights($conn);     break;
-            case 'gpa_scales':  getGpaScales($conn);   break;
-            case 'summary':     getSummary($conn);     break;
-            case 'item_scores': getItemScores($conn);   break;
+            case 'students':         getStudents($conn);        break;
+            case 'grades':           getGrades($conn);          break;
+            case 'subjects':         getSubjects($conn);        break;
+            case 'weights':          getWeights($conn);         break;
+            case 'gpa_scales':       getGpaScales($conn);       break;
+            case 'summary':          getSummary($conn);         break;
+            case 'item_scores':      getItemScores($conn);      break;
+            case 'subject_grades':   getSubjectGrades($conn);   break;
+            case 'distinct_grades':  getDistinctGrades($conn);  break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
     case 'POST':
         switch ($action) {
-            case 'save_grades':   saveGrades($conn);   break;
-            case 'add_subject':   addSubject($conn);   break;
-            case 'save_weights':  saveWeights($conn);  break;
-            case 'save_gpa':      saveGpaScales($conn); break;
+            case 'save_grades':      saveGrades($conn);         break;
+            case 'add_subject':      addSubject($conn);         break;
+            case 'save_weights':     saveWeights($conn);        break;
+            case 'save_gpa':         saveGpaScales($conn);      break;
+            case 'save_subject_grades': saveSubjectGrades($conn); break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
     case 'PUT':
         switch ($action) {
-            case 'edit_subject':  editSubject($conn);  break;
+            case 'edit_subject':     editSubject($conn);        break;
+            case 'toggle_subject':   toggleSubject($conn);      break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
     case 'DELETE':
         switch ($action) {
-            case 'delete_subject': deleteSubject($conn); break;
-            case 'delete_gpa':     deleteGpaScale($conn); break;
+            case 'delete_subject':   deleteSubject($conn);      break;
+            case 'delete_gpa':       deleteGpaScale($conn);     break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
@@ -279,9 +285,20 @@ function getGrades($conn) {
     echo json_encode($rows);
 }
 
-// ── GET subjects ──
+// ── GET subjects (optionally filtered by grade level) ──
 function getSubjects($conn) {
-    $result = $conn->query("SELECT * FROM subjects ORDER BY name ASC");
+    $grade = $_GET['grade'] ?? '';
+    if ($grade) {
+        $gradeEsc = $conn->real_escape_string($grade);
+        $result = $conn->query("
+            SELECT s.* FROM subjects s
+            INNER JOIN subject_grades sg ON sg.subject_id = s.id
+            WHERE sg.grade_level = '$gradeEsc'
+            ORDER BY s.name ASC
+        ");
+    } else {
+        $result = $conn->query("SELECT * FROM subjects ORDER BY name ASC");
+    }
     $rows = [];
     while ($r = $result->fetch_assoc()) $rows[] = $r;
     echo json_encode($rows);
@@ -441,17 +458,19 @@ function saveGrades($conn) {
     $saved = 0;
     foreach ($records as $rec) {
         $sid  = (int)$rec['student_id'];
-        $ww   = isset($rec['written_works'])          ? (float)$rec['written_works']          : null;
-        $pt   = isset($rec['performance_tasks'])      ? (float)$rec['performance_tasks']      : null;
-        $qa   = isset($rec['quarterly_assessment'])   ? (float)$rec['quarterly_assessment']   : null;
-        $att  = isset($rec['attendance'])             ? (float)$rec['attendance']             : null;
-        $fg   = isset($rec['final_grade'])            ? (float)$rec['final_grade']            : null;
+        // Use null for missing/null values (NULL-safe for DECIMAL columns)
+        $ww   = ($rec['written_works']          !== null && $rec['written_works']          !== '') ? (float)$rec['written_works']          : null;
+        $pt   = ($rec['performance_tasks']       !== null && $rec['performance_tasks']       !== '') ? (float)$rec['performance_tasks']       : null;
+        $qa   = ($rec['quarterly_assessment']    !== null && $rec['quarterly_assessment']    !== '') ? (float)$rec['quarterly_assessment']    : null;
+        $att  = ($rec['attendance']              !== null && $rec['attendance']              !== '') ? (float)$rec['attendance']              : null;
+        $fg   = ($rec['final_grade']             !== null && $rec['final_grade']             !== '') ? (float)$rec['final_grade']             : null;
         $stmt->bind_param('issddddd', $sid, $subject, $quarter, $ww, $pt, $qa, $att, $fg);
         if ($stmt->execute()) $saved++;
     }
     $stmt->close();
 
-    // Also save item scores if provided
+    // Save item scores — JS sends: item_scores[compKey][itemId] = score (plain number)
+    // or item_scores[compKey][itemId] = { score, maxScore } (object form)
     $itemStmt = $conn->prepare("
         INSERT INTO grade_item_scores (student_id, subject, quarter, component_key, item_name, item_max_score, score)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -460,19 +479,25 @@ function saveGrades($conn) {
     foreach ($records as $rec) {
         $sid = (int)$rec['student_id'];
         $itemScores = $rec['item_scores'] ?? [];
-        if (is_array($itemScores)) {
-            foreach ($itemScores as $compKey => $items) {
-                if (is_array($items)) {
-                    foreach ($items as $itemName => $scoreData) {
-                        if (is_array($scoreData) && isset($scoreData['score'])) {
-                            $itemNameEsc = $conn->real_escape_string($itemName);
-                            $maxScore = isset($scoreData['maxScore']) ? (float)$scoreData['maxScore'] : 100;
-                            $score = (float)$scoreData['score'];
-                            $itemStmt->bind_param('issssdd', $sid, $subject, $quarter, $compKey, $itemNameEsc, $maxScore, $score);
-                            $itemStmt->execute();
-                        }
-                    }
+        if (!is_array($itemScores)) continue;
+        foreach ($itemScores as $compKey => $items) {
+            if (!is_array($items)) continue;
+            $compKeyEsc = $conn->real_escape_string((string)$compKey);
+            foreach ($items as $itemId => $scoreData) {
+                // Accept both plain number and {score, maxScore} object
+                if (is_array($scoreData)) {
+                    $score    = isset($scoreData['score'])    ? (float)$scoreData['score']    : null;
+                    $maxScore = isset($scoreData['maxScore']) ? (float)$scoreData['maxScore'] : 100.0;
+                } elseif (is_numeric($scoreData)) {
+                    $score    = (float)$scoreData;
+                    $maxScore = 100.0;
+                } else {
+                    continue; // null or non-numeric — skip
                 }
+                if ($score === null) continue;
+                $itemIdEsc = $conn->real_escape_string((string)$itemId);
+                $itemStmt->bind_param('issssdd', $sid, $subject, $quarter, $compKeyEsc, $itemIdEsc, $maxScore, $score);
+                $itemStmt->execute();
             }
         }
     }
@@ -567,4 +592,71 @@ function deleteGpaScale($conn) {
     $stmt->execute();
     echo json_encode(['success' => true]);
     $stmt->close();
+}
+// ── PUT toggle_subject ──
+function toggleSubject($conn) {
+    $id     = (int)($_GET['id'] ?? 0);
+    $data   = json_decode(file_get_contents('php://input'), true);
+    $active = isset($data['is_active']) ? (int)$data['is_active'] : 0;
+    if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); return; }
+    $stmt = $conn->prepare("UPDATE subjects SET is_active=? WHERE id=?");
+    $stmt->bind_param('ii', $active, $id);
+    $stmt->execute();
+    echo json_encode(['success' => true]);
+    $stmt->close();
+}
+
+// ── GET subject_grades — returns all subject→grade assignments ──
+function getSubjectGrades($conn) {
+    $result = $conn->query("
+        SELECT sg.subject_id, sg.grade_level, s.name, s.code
+        FROM subject_grades sg
+        JOIN subjects s ON s.id = sg.subject_id
+        ORDER BY sg.grade_level ASC, s.name ASC
+    ");
+    $rows = [];
+    while ($r = $result->fetch_assoc()) $rows[] = $r;
+    echo json_encode($rows);
+}
+
+// ── POST save_subject_grades — replace grade assignments for all subjects ──
+// -- GET distinct_grades -- returns only grade levels that have enrolled students --
+function getDistinctGrades($conn) {
+    $colCheck = $conn->query("SHOW COLUMNS FROM students");
+    $cols = [];
+    while ($c = $colCheck->fetch_assoc()) $cols[] = $c['Field'];
+    $gradeCol = in_array('grade', $cols) ? 'grade' : 'grade_level';
+    $result = $conn->query("
+        SELECT DISTINCT `$gradeCol` AS grade_level
+        FROM students
+        WHERE `$gradeCol` IS NOT NULL AND `$gradeCol` != ''
+        ORDER BY FIELD(`$gradeCol`,
+            'Kindergarten',
+            'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6',
+            'Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'
+        ), `$gradeCol` ASC
+    ");
+    $rows = [];
+    while ($r = $result->fetch_assoc()) $rows[] = $r['grade_level'];
+    echo json_encode($rows);
+}
+
+function saveSubjectGrades($conn) {
+    $data        = json_decode(file_get_contents('php://input'), true);
+    $assignments = $data['assignments'] ?? []; // [{subject_id, grade_level}]
+    if (!is_array($assignments)) { http_response_code(400); echo json_encode(['error' => 'Invalid data']); return; }
+
+    // Wipe and re-insert
+    $conn->query("DELETE FROM subject_grades");
+    $stmt = $conn->prepare("INSERT IGNORE INTO subject_grades (subject_id, grade_level) VALUES (?, ?)");
+    $saved = 0;
+    foreach ($assignments as $a) {
+        $sid   = (int)($a['subject_id']  ?? 0);
+        $grade = trim($a['grade_level']  ?? '');
+        if (!$sid || !$grade) continue;
+        $stmt->bind_param('is', $sid, $grade);
+        if ($stmt->execute()) $saved++;
+    }
+    $stmt->close();
+    echo json_encode(['success' => true, 'saved' => $saved]);
 }
