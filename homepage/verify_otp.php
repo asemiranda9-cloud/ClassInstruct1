@@ -58,14 +58,16 @@ if (!password_verify($otp, $data['otp'])) {
 
 // ─── Success — create session / auth token ────────────────────────────────────
 unset($_SESSION[OTP_SESSION_KEY]);   // single-use: clear OTP immediately
+unset($_SESSION['ci_otp_last_sent']); // clear rate-limit so next login isn't blocked
 
 $email = $data['email'];
 
 // ── Fetch user details from DB ────────────────────────────────────────────────
 require __DIR__ . '/db.php';
-$firstName = '';
-$lastName  = '';
-$gender    = '';
+$firstName     = '';
+$lastName      = '';
+$gender        = '';
+$googlePicture = '';
 
 $uStmt = $conn->prepare('SELECT first_name, last_name, gender FROM users WHERE email = ? AND is_active = 1 LIMIT 1');
 $uStmt->bind_param('s', $email);
@@ -79,14 +81,20 @@ if ($uRow) {
     $gender    = $uRow['gender']     ?? '';
 }
 
+// Build Gravatar URL from the email — works for Gmail accounts.
+// Google links Gmail to Gravatar, so many users will get their actual Gmail photo.
+// Falls back to a clean identicon (d=identicon) if no Gravatar is set.
+$gravatarHash    = md5(strtolower(trim($email)));
+$googlePicture   = "https://www.gravatar.com/avatar/{$gravatarHash}?s=200&d=identicon";
+
 // Start authenticated session
 $_SESSION['ci_user'] = [
-    'email'       => $email,
-    'first_name'  => $firstName,
-    'last_name'   => $lastName,
-    'gender'      => $gender,
-    'auth_method' => 'otp',
-    'authed_at'   => time(),
+    'email'          => $email,
+    'first_name'     => $firstName,
+    'last_name'      => $lastName,
+    'gender'         => $gender,
+    'auth_method'    => 'otp',
+    'authed_at'      => time(),
 ];
 
 $token = generateSimpleToken($email);
@@ -97,6 +105,7 @@ echo json_encode([
     'first_name' => $firstName,
     'last_name'  => $lastName,
     'gender'     => $gender,
+    'picture'    => $googlePicture,   // ← now included so frontend can set ci_picture
     'token'      => $token,
     'redirect'   => '/dashboard',
 ]);

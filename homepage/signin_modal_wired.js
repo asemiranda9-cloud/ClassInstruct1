@@ -1,6 +1,5 @@
-const BASE = window.location.hostname === 'localhost'
-  ? '/ClassInstruct1/homepage'
-  : '/homepage';
+// Derive base path dynamically from current URL — works on any hostname
+const BASE = window.location.pathname.replace(/\/[^\/]+$/, '');
 
 (function () {
   /* ── Elements ── */
@@ -289,10 +288,14 @@ const BASE = window.location.hostname === 'localhost'
       if (data.success) {
         clearInterval(timerInterval);
         if (data.token) sessionStorage.setItem('ci_token', data.token);
-        // Save user info for dashboard greeting
+        // Save user info for dashboard greeting + profile/settings pages
         sessionStorage.setItem('ci_first_name', data.first_name || '');
         sessionStorage.setItem('ci_last_name',  data.last_name  || '');
         sessionStorage.setItem('ci_gender',     data.gender     || '');
+        sessionStorage.setItem('ci_email',      data.email      || '');
+        sessionStorage.setItem('ci_picture',    data.picture    || '');
+        // Persist Google picture to localStorage so profile always has it
+        if (data.picture) localStorage.setItem('ci_google_photo', data.picture);
         showStep(stepSuccess);
         setTimeout(() => { window.location.href = '/dashboard/sidebar.html'; }, 1500);
       } else {

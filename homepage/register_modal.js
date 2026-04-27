@@ -1,3 +1,7 @@
+// Derive the base path from the current page URL so it works on any hostname/subdirectory.
+// e.g. if the page is at /ClassInstruct1/homepage/homepage.php → base = /ClassInstruct1/homepage
+const REG_BASE = window.location.pathname.replace(/\/[^/]+$/, '');
+
 /**
  * register_modal.js
  * ClassInstruct — Registration Modal Handler
@@ -236,7 +240,7 @@
     setLoading(btnRegisterSubmit, true);
 
     try {
-      const res = await fetch('/homepage/register_otp.php', {
+      const res = await fetch(`${REG_BASE}/register_otp.php`, {
         method:      'POST',
         headers:     { 'Content-Type': 'application/json' },
         body:        JSON.stringify({ firstName, lastName, gender, email, password }),
@@ -335,7 +339,7 @@
     setLoading(regBtnVerify, true);
 
     try {
-      const res = await fetch('/homepage/register_verify.php', {
+      const res = await fetch(`${REG_BASE}/register_verify.php`, {
         method:      'POST',
         headers:     { 'Content-Type': 'application/json' },
         body:        JSON.stringify({ otp: entered }),
@@ -350,6 +354,8 @@
         sessionStorage.setItem('ci_first_name', data.first_name || data.name?.split(' ')[0] || '');
         sessionStorage.setItem('ci_last_name',  data.last_name  || data.name?.split(' ').slice(1).join(' ') || '');
         sessionStorage.setItem('ci_gender',     data.gender     || '');
+        sessionStorage.setItem('ci_email',      data.email      || regEmail?.value?.trim() || '');
+        sessionStorage.setItem('ci_picture',    data.picture    || '');
         showStep(regStepSuccess);
         setTimeout(() => {
           closeRegModal();
@@ -417,7 +423,7 @@
     clearOtpDigits();
 
     try {
-      const res = await fetch('/homepage/register_otp.php', {
+      const res = await fetch(`${REG_BASE}/register_otp.php`, {
         method:      'POST',
         headers:     { 'Content-Type': 'application/json' },
         body:        JSON.stringify({ resend: true }),

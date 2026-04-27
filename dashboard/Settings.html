@@ -6,57 +6,77 @@
   <title>Settings · ClassInstruct</title>
   <link rel="stylesheet" href="sidebar.css" />
   <link rel="stylesheet" href="Settings.css" />
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  </script>
 </head>
-<body data-page="settings" onload="applyTheme(localStorage.getItem('theme') || 'light')">
+<body data-page="settings">
 <div class="app">
-
- 
-
-  <!-- ══════════════ MAIN ══════════════ -->
   <div class="main">
     <div class="page-frame visible">
       <div class="page-inner">
+
         <div class="page-header">
           <div class="page-title">Settings</div>
           <div class="page-sub">Manage your account preferences and application settings</div>
         </div>
 
+        <!-- Account -->
         <div class="card">
           <div class="card-title">Account</div>
           <div class="field-row">
-            <div class="field"><label>First Name</label><input type="text" value="Teacher" /></div>
-            <div class="field"><label>Last Name</label><input type="text" value="Smith" /></div>
+            <div class="field"><label>First Name</label><input type="text" id="settFirstName" placeholder="First name" /></div>
+            <div class="field"><label>Last Name</label> <input type="text" id="settLastName"  placeholder="Last name" /></div>
           </div>
-          <div class="field"><label>Email Address</label><input type="email" value="teacher.smith@school.edu" /></div>
-          <div class="field"><label>Role</label>
-            <select><option selected>Instructor</option><option>Admin</option><option>Coordinator</option></select>
+          <div class="field">
+            <label>Email Address</label>
+            <input type="email" id="settEmail" placeholder="Email address" />
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <select id="settGender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Role</label>
+            <select id="settRole">
+              <option value="Instructor" selected>Instructor</option>
+              <option value="Admin">Admin</option>
+              <option value="Coordinator">Coordinator</option>
+            </select>
           </div>
           <div class="btn-row">
             <button class="btn btn-primary" onclick="saveAccount()">Save Changes</button>
-            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-ghost" onclick="discardAccount()">Cancel</button>
           </div>
         </div>
 
+        <!-- Notifications -->
         <div class="card">
           <div class="card-title">Notifications</div>
           <div class="setting-row">
             <div class="setting-info"><div class="s-label">Email Notifications</div><div class="s-desc">Receive updates via email</div></div>
-            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+            <button class="toggle-switch on" id="togEmailNotif" onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="setting-row">
             <div class="setting-info"><div class="s-label">Attendance Alerts</div><div class="s-desc">Notify when attendance drops below threshold</div></div>
-            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+            <button class="toggle-switch on" id="togAttAlert"  onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="setting-row">
             <div class="setting-info"><div class="s-label">Grade Submissions</div><div class="s-desc">Alert when students submit assignments</div></div>
-            <button class="toggle-switch" onclick="this.classList.toggle('on')"></button>
+            <button class="toggle-switch"    id="togGradeSub"  onclick="this.classList.toggle('on')"></button>
           </div>
           <div class="setting-row">
             <div class="setting-info"><div class="s-label">Weekly Summary</div><div class="s-desc">Get a weekly digest every Monday</div></div>
-            <button class="toggle-switch on" onclick="this.classList.toggle('on')"></button>
+            <button class="toggle-switch on" id="togWeekly"    onclick="this.classList.toggle('on')"></button>
           </div>
         </div>
 
+        <!-- Appearance -->
         <div class="card">
           <div class="card-title">Appearance</div>
           <div class="setting-row">
@@ -65,31 +85,73 @@
           </div>
           <div class="setting-row">
             <div class="setting-info"><div class="s-label">Compact Sidebar</div><div class="s-desc">Reduce sidebar item spacing</div></div>
-            <button class="toggle-switch" onclick="this.classList.toggle('on')"></button>
+            <button class="toggle-switch" id="togCompact" onclick="this.classList.toggle('on')"></button>
           </div>
         </div>
 
+        <!-- Security -->
         <div class="card">
           <div class="card-title">Security</div>
+
+          <!-- Password -->
           <div class="field"><label>Current Password</label><input type="password" id="currentPassword" placeholder="••••••••" /></div>
           <div class="field-row">
             <div class="field"><label>New Password</label><input type="password" id="newPassword" placeholder="••••••••" /></div>
             <div class="field"><label>Confirm Password</label><input type="password" id="confirmPassword" placeholder="••••••••" /></div>
           </div>
-          <div class="btn-row"><button class="btn btn-primary" onclick="updatePassword()">Update Password</button></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="updatePassword()">Update Password</button>
+          </div>
+
+          <div style="height:0.5px;background:var(--border);margin:22px 0;"></div>
+
+          <!-- Website PIN -->
+          <div class="s-label" style="font-size:13.5px;font-weight:600;color:var(--text-primary);">Website PIN</div>
+          <div class="s-desc" style="font-size:12px;color:var(--text-muted);margin-top:3px;margin-bottom:16px;" id="pinStatusDesc">
+            Set a 4-digit PIN for quick access to your account.
+          </div>
+
+          <!-- State: no PIN yet -->
+          <div id="pinStateNone">
+            <button class="btn btn-primary" onclick="openPinForm('set')">Set PIN</button>
+          </div>
+
+          <!-- State: PIN exists -->
+          <div id="pinStateHas" style="display:none;">
+            <div class="pin-active-badge">🔒 PIN is active</div>
+            <div class="btn-row" style="margin-top:14px;">
+              <button class="btn btn-ghost" onclick="openPinForm('change')">Change PIN</button>
+              <button class="btn btn-danger" onclick="openPinForm('remove')">Remove PIN</button>
+            </div>
+          </div>
+
+          <!-- Inline form (shown on action) -->
+          <div id="pinForm" style="display:none;margin-top:18px;">
+            <!-- Fields injected by JS -->
+            <div id="pinFormInner"></div>
+            <div class="btn-row" style="margin-top:6px;">
+              <button class="btn btn-primary" onclick="submitPin()">Confirm</button>
+              <button class="btn btn-ghost"   onclick="closePinForm()">Cancel</button>
+            </div>
+          </div>
+
         </div>
 
+        <!-- Danger Zone -->
         <div class="card">
           <div class="card-title">Danger Zone</div>
           <div class="setting-row">
-            <div class="setting-info"><div class="s-label">Delete Account</div><div class="s-desc">Permanently remove your account and all data</div></div>
-            <button class="btn btn-danger">Delete</button>
+            <div class="setting-info">
+              <div class="s-label">Delete Account</div>
+              <div class="s-desc">Permanently remove your account and all data</div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteAccount()">Delete</button>
           </div>
         </div>
+
       </div>
     </div>
   </div>
-
 </div>
 <script src="shared.js"></script>
 <script src="Settings.js"></script>
