@@ -82,7 +82,7 @@
       </div>
 
       <!-- Profile Card (populated dynamically) -->
-      <div class="sb-profile" onclick="window.location.href='profile.html'">
+      <div class="sb-profile" onclick="openProfile()">
         <div class="sb-avatar" id="sbAvatar">
           <img id="sbAvatarImg" src="" alt="" style="display:none;width:100%;height:100%;border-radius:50%;object-fit:cover;" />
           <span id="sbAvatarInitial">?</span>
@@ -153,6 +153,18 @@
         }
       }
     });
+
+    // ── Open profile in iframe (keeps sidebar visible) ──
+    function openProfile() {
+      document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+      const frame = document.getElementById('mainFrame');
+      frame.src = 'profile.html';
+      frame.onload = function () {
+        const saved = localStorage.getItem('theme') || 'light';
+        try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
+        try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
+      };
+    }
 
     // ── Iframe nav ──
     function navTo(el, url) {
