@@ -1498,10 +1498,12 @@ style.textContent = `
     box-shadow: 0 25px 60px rgba(0,0,0,0.4);
     transform: translateY(20px) scale(0.97);
     transition: transform 0.3s ease, background 0.25s;
-    overflow: hidden;
+    overflow: visible;
   }
   .modal-overlay.visible .modal-panel { transform: translateY(0) scale(1); }
   .modal-panel-wide { max-width: 640px; }
+  .modal-header { border-radius: 20px 20px 0 0; overflow: hidden; }
+  .modal-footer { border-radius: 0 0 20px 20px; overflow: hidden; }
 
   /* Modal header */
   .modal-header {
@@ -1546,18 +1548,56 @@ style.textContent = `
   }
 
   /* Toggle buttons */
-  .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .toggle-btn {
-    padding: 8px 18px; border-radius: 20px;
-    border: 1.5px solid var(--toggle-border);
-    background: var(--toggle-bg); color: var(--toggle-color);
-    font-size: 0.83rem; font-weight: 500; cursor: pointer;
-    font-family: inherit; white-space: nowrap; flex-shrink: 0;
-    display: inline-flex; align-items: center; line-height: 1.4;
-    transition: all 0.15s;
+  .toggle-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+    width: 100% !important;
+    align-items: center !important;
   }
-  .toggle-btn:hover { border-color: #6c63ff; color: #6c63ff; }
-  .toggle-btn.active { background: #6c63ff; border-color: #6c63ff; color: white; }
+  .toggle-btn,
+  .toggle-btn:not([class*="active"]) {
+    all: unset !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 18px !important;
+    border-radius: 20px !important;
+    border: 1.5px solid var(--toggle-border, #e2e8f0) !important;
+    background: var(--toggle-bg, #f8fafc) !important;
+    color: var(--toggle-color, #475569) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    line-height: 1 !important;
+    transition: background 0.15s, border-color 0.15s, color 0.15s !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: unset !important;
+    height: auto !important;
+    width: auto !important;
+  }
+  .toggle-btn::before,
+  .toggle-btn::after {
+    display: none !important;
+    content: none !important;
+  }
+  .toggle-btn:hover {
+    border-color: #6c63ff !important;
+    background: rgba(108,99,255,0.08) !important;
+    color: #6c63ff !important;
+  }
+  .toggle-btn.active {
+    background: #6c63ff !important;
+    border-color: #6c63ff !important;
+    color: #ffffff !important;
+  }
 
   /* Modal footer */
   .modal-footer {
