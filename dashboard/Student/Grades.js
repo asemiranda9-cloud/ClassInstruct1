@@ -358,27 +358,30 @@ function addGpaRow() {
 }
 
 async function saveGpaScales() {
-  const tbody  = document.getElementById('gpaBody');
-  const rows   = tbody.querySelectorAll('tr');
-  const scales = [];
-  rows.forEach(tr => {
-    const inputs = tr.querySelectorAll('input');
-    if (inputs.length < 6) return;
-    scales.push({ min_grade: parseFloat(inputs[0].value)||0, max_grade: parseFloat(inputs[1].value)||0,
-      gpa_value: parseFloat(inputs[2].value)||0, letter_grade: inputs[3].value,
-      descriptor: inputs[4].value, scale_name: inputs[5].value });
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to save GPA scales.', 'warning'); return; }
+    const tbody  = document.getElementById('gpaBody');
+    const rows   = tbody.querySelectorAll('tr');
+    const scales = [];
+    rows.forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length < 6) return;
+      scales.push({ min_grade: parseFloat(inputs[0].value)||0, max_grade: parseFloat(inputs[1].value)||0,
+        gpa_value: parseFloat(inputs[2].value)||0, letter_grade: inputs[3].value,
+        descriptor: inputs[4].value, scale_name: inputs[5].value });
+    });
+    if (!scales.length) { toast('Add at least one GPA row.', 'error'); return; }
+    try {
+      const res  = await fetch(API + '?action=save_gpa', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scales }) });
+      const data = await res.json();
+      if (data.success) { toast('GPA scale saved (' + data.saved + ' rows)', 'success'); loadGpaScales(); renderTable(); }
+      else toast('Error: ' + (data.error || 'unknown'), 'error');
+    } catch {
+      gpaScales = scales;
+      renderTable();
+      toast('GPA scale updated locally.', 'success');
+    }
   });
-  if (!scales.length) { toast('Add at least one GPA row.', 'error'); return; }
-  try {
-    const res  = await fetch(API + '?action=save_gpa', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scales }) });
-    const data = await res.json();
-    if (data.success) { toast('GPA scale saved (' + data.saved + ' rows)', 'success'); loadGpaScales(); renderTable(); }
-    else toast('Error: ' + (data.error || 'unknown'), 'error');
-  } catch {
-    gpaScales = scales;
-    renderTable();
-    toast('GPA scale updated locally.', 'success');
-  }
 }
 
 function resetGpaDefault() {
@@ -498,28 +501,31 @@ function renderSubjectTable() {
 }
 
 async function addSubject() {
-  const nameEl = document.getElementById('newSubjectName');
-  const codeEl = document.getElementById('newSubjectCode');
-  const errEl  = document.getElementById('subjectFormError');
-  const name   = nameEl.value.trim();
-  const code   = codeEl.value.trim().toUpperCase();
-  if (!name) { errEl.textContent = 'Subject name is required.'; errEl.style.display = 'block'; nameEl.focus(); return; }
-  if (subjects.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-    errEl.textContent = 'A subject with this name already exists.'; errEl.style.display = 'block'; nameEl.focus(); return;
-  }
-  errEl.style.display = 'none';
-  try {
-    const res  = await fetch(API + '?action=add_subject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) });
-    const data = await res.json();
-    if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
-    subjects.push({ id: parseInt(data.id) || subjectIdCounter++, name, code, active: true });
-  } catch {
-    subjects.push({ id: subjectIdCounter++, name, code, active: true });
-  }
-  allSubjects = [...subjects];
-  nameEl.value = ''; codeEl.value = '';
-  renderSubjectTable(); renderSubjectDropdown();
-  toast('Subject "' + name + '" added!', 'success');
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to add subject.', 'warning'); return; }
+    const nameEl = document.getElementById('newSubjectName');
+    const codeEl = document.getElementById('newSubjectCode');
+    const errEl  = document.getElementById('subjectFormError');
+    const name   = nameEl.value.trim();
+    const code   = codeEl.value.trim().toUpperCase();
+    if (!name) { errEl.textContent = 'Subject name is required.'; errEl.style.display = 'block'; nameEl.focus(); return; }
+    if (subjects.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+      errEl.textContent = 'A subject with this name already exists.'; errEl.style.display = 'block'; nameEl.focus(); return;
+    }
+    errEl.style.display = 'none';
+    try {
+      const res  = await fetch(API + '?action=add_subject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) });
+      const data = await res.json();
+      if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
+      subjects.push({ id: parseInt(data.id) || subjectIdCounter++, name, code, active: true });
+    } catch {
+      subjects.push({ id: subjectIdCounter++, name, code, active: true });
+    }
+    allSubjects = [...subjects];
+    nameEl.value = ''; codeEl.value = '';
+    renderSubjectTable(); renderSubjectDropdown();
+    toast('Subject "' + name + '" added!', 'success');
+  });
 }
 
 async function toggleSubjectStatus(id) {
@@ -537,26 +543,32 @@ async function toggleSubjectStatus(id) {
 }
 
 async function deleteSubject(id) {
-  const s = subjects.find(s => s.id === id); if (!s) return;
-  if (!confirm('Delete "' + s.name + '"? This cannot be undone.')) return;
-  try { await fetch(API + '?action=delete_subject&id=' + id, { method:'DELETE' }); } catch {}
-  subjects = subjects.filter(s => s.id !== id); allSubjects = [...subjects];
-  renderSubjectTable(); renderSubjectDropdown();
-  toast('Subject deleted.', 'success');
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to delete subject.', 'warning'); return; }
+    const s = subjects.find(s => s.id === id); if (!s) return;
+    if (!confirm('Delete "' + s.name + '"? This cannot be undone.')) return;
+    try { await fetch(API + '?action=delete_subject&id=' + id, { method:'DELETE' }); } catch {}
+    subjects = subjects.filter(s => s.id !== id); allSubjects = [...subjects];
+    renderSubjectTable(); renderSubjectDropdown();
+    toast('Subject deleted.', 'success');
+  });
 }
 
 function filterSubjects(q) { subjectFilter = q; renderSubjectTable(); }
 
 async function deleteAllSubjects() {
-  if (!subjects.length) return;
-  if (!confirm('Delete ALL subjects? This cannot be undone.')) return;
-  const ids = subjects.map(s => s.id);
-  for (const id of ids) {
-    try { await fetch(API + '?action=delete_subject&id=' + id, { method: 'DELETE' }); } catch {}
-  }
-  subjects = []; allSubjects = [];
-  renderSubjectTable(); renderSubjectDropdown();
-  toast('All subjects deleted.', 'success');
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required.', 'warning'); return; }
+    if (!subjects.length) return;
+    if (!confirm('Delete ALL subjects? This cannot be undone.')) return;
+    const ids = subjects.map(s => s.id);
+    for (const id of ids) {
+      try { await fetch(API + '?action=delete_subject&id=' + id, { method: 'DELETE' }); } catch {}
+    }
+    subjects = []; allSubjects = [];
+    renderSubjectTable(); renderSubjectDropdown();
+    toast('All subjects deleted.', 'success');
+  });
 }
 
 function openEditModal(id) {
@@ -573,15 +585,18 @@ function closeEditModal() {
   ov.classList.remove('show'); ov.style.display = 'none';
 }
 async function saveEdit() {
-  const name = document.getElementById('editSubjectName').value.trim();
-  const code = document.getElementById('editSubjectCode').value.trim().toUpperCase();
-  if (!name) { alert('Subject name is required.'); return; }
-  if (subjects.find(s => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingSubjectId)) { alert('A subject with this name already exists.'); return; }
-  try { await fetch(API + '?action=edit_subject&id=' + editingSubjectId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) }); } catch {}
-  const s = subjects.find(s => s.id === editingSubjectId);
-  if (s) { s.name = name; s.code = code; } allSubjects = [...subjects];
-  closeEditModal(); renderSubjectTable(); renderSubjectDropdown();
-  toast('Subject updated!', 'success');
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to update subject.', 'warning'); return; }
+    const name = document.getElementById('editSubjectName').value.trim();
+    const code = document.getElementById('editSubjectCode').value.trim().toUpperCase();
+    if (!name) { alert('Subject name is required.'); return; }
+    if (subjects.find(s => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingSubjectId)) { alert('A subject with this name already exists.'); return; }
+    try { await fetch(API + '?action=edit_subject&id=' + editingSubjectId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) }); } catch {}
+    const s = subjects.find(s => s.id === editingSubjectId);
+    if (s) { s.name = name; s.code = code; } allSubjects = [...subjects];
+    closeEditModal(); renderSubjectTable(); renderSubjectDropdown();
+    toast('Subject updated!', 'success');
+  });
 }
 
 // ════════════════════════════════════════
@@ -1004,34 +1019,32 @@ function filterDesc(d) {
 //  SAVE GRADES
 // ════════════════════════════════════════
 async function saveGrades() {
-  const subject = document.getElementById('subjectSel').value;
-  const quarter = document.getElementById('quarterSel').value;
-  if (!subject) { toast('Select a subject first.', 'error'); return; }
-
-  // Build item scores map for this save session
-  const itemScoresMap = {};
-  students.forEach(s => {
-    if (studentItemScores[s._id]) {
-      itemScoresMap[s._id] = studentItemScores[s._id];
-    }
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to save grades.', 'warning'); return; }
+    const subject = document.getElementById('subjectSel').value;
+    const quarter = document.getElementById('quarterSel').value;
+    if (!subject) { toast('Select a subject first.', 'error'); return; }
+    const itemScoresMap = {};
+    students.forEach(s => {
+      if (studentItemScores[s._id]) { itemScoresMap[s._id] = studentItemScores[s._id]; }
+    });
+    const records = students.map(s => ({
+      student_id: s._id, written_works: s.ww, performance_tasks: s.pt,
+      quarterly_assessment: s.qa, attendance: s.att,
+      final_grade: hasAnyGrade(s) ? computeFinal(s) : null,
+      item_scores: studentItemScores[s._id] || {},
+    }));
+    try {
+      const res  = await fetch(API + '?action=save_grades', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
+      const data = await res.json();
+      if (data.error) { toast('Error: ' + data.error, 'error'); return; }
+      hasUnsavedGrades = false;
+      markUnsavedIndicator(false);
+      saveStudentItemScores();
+      toast('Grades saved! (' + data.saved + ' records)', 'success');
+      if (window.CILog) CILog.push('grades_saved', 'Grades saved', subject + ' · ' + quarter + ' · ' + data.saved + ' record' + (data.saved !== 1 ? 's' : ''));
+    } catch { toast('Network error — is XAMPP running?', 'error'); }
   });
-
-  const records = students.map(s => ({
-    student_id: s._id, written_works: s.ww, performance_tasks: s.pt,
-    quarterly_assessment: s.qa, attendance: s.att,
-    final_grade: hasAnyGrade(s) ? computeFinal(s) : null,
-    item_scores: studentItemScores[s._id] || {},
-  }));
-  try {
-    const res  = await fetch(API + '?action=save_grades', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
-    const data = await res.json();
-    if (data.error) { toast('Error: ' + data.error, 'error'); return; }
-    hasUnsavedGrades = false;         // ← clear dirty flag
-    markUnsavedIndicator(false);      // ← update UI indicator
-    saveStudentItemScores();          // Also persist item scores to localStorage
-    toast('Grades saved! (' + data.saved + ' records)', 'success');
-    if (window.CILog) CILog.push('grades_saved', 'Grades saved', subject + ' · ' + quarter + ' · ' + data.saved + ' record' + (data.saved !== 1 ? 's' : ''));
-  } catch { toast('Network error — is XAMPP running?', 'error'); }
 }
 
 // ════════════════════════════════════════
@@ -1107,30 +1120,35 @@ function syncCompLabels() {
 }
 
 function addComponent() {
-  const PALETTE = ['#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6'];
-  const usedColors = components.map(c=>c.color);
-  const color = PALETTE.find(p=>!usedColors.includes(p)) || PALETTE[components.length % PALETTE.length];
-  const key = 'c' + Date.now();
-  components.push({ key, label:'New Component', pct:0, color, items:[] });
-  renderWeights();
-  renderComponentItems();
-  updateWeightDisplay();
-  // Focus the new name input
-  const cards = document.querySelectorAll('#weightsGrid .weight-card');
-  const lastCard = cards[cards.length - 2]; // -2 because last is "Add" button
-  if (lastCard) { const inp = lastCard.querySelector('input[type=text]'); if (inp) { inp.focus(); inp.select(); } }
+  verifyPin(function(confirmed) {
+    if (!confirmed) { toast('PIN required to add component.', 'warning'); return; }
+    const PALETTE = ['#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6'];
+    const usedColors = components.map(c=>c.color);
+    const color = PALETTE.find(p=>!usedColors.includes(p)) || PALETTE[components.length % PALETTE.length];
+    const key = 'c' + Date.now();
+    components.push({ key, label:'New Component', pct:0, color, items:[] });
+    renderWeights();
+    renderComponentItems();
+    updateWeightDisplay();
+    const cards = document.querySelectorAll('#weightsGrid .weight-card');
+    const lastCard = cards[cards.length - 2];
+    if (lastCard) { const inp = lastCard.querySelector('input[type=text]'); if (inp) { inp.focus(); inp.select(); } }
+  });
 }
 
 function removeComponent(ci) {
-  if (components.length <= 1) { toast('You must have at least one component.', 'error'); return; }
-  const name = components[ci].label;
-  if (!confirm(`Remove "${name}"? Its items will also be deleted.`)) return;
-  components.splice(ci, 1);
-  renderWeights();
-  renderComponentItems();
-  updateWeightDisplay();
-  renderTable();
-  toast(`"${name}" removed.`, 'success');
+  verifyPin(function(confirmed) {
+    if (!confirmed) { toast('PIN required to remove component.', 'warning'); return; }
+    if (components.length <= 1) { toast('You must have at least one component.', 'error'); return; }
+    const name = components[ci].label;
+    if (!confirm(`Remove "${name}"? Its items will also be deleted.`)) return;
+    components.splice(ci, 1);
+    renderWeights();
+    renderComponentItems();
+    updateWeightDisplay();
+    renderTable();
+    toast(`"${name}" removed.`, 'success');
+  });
 }
 
 function updateWeight(k, v) {
@@ -1147,12 +1165,14 @@ function updateWeightDisplay() {
   if (box) box.innerHTML = 'Total: <strong style="color:' + (ok ? 'var(--success)' : 'var(--danger)') + ';">' + total + '%</strong> ' + (ok ? '✓ Ready to save' : '— needs to be 100% (off by ' + (total - 100) + '%)');
 }
 async function saveWeights() {
-  const total = components.reduce((a,c)=>a+c.pct,0);
-  if (total !== 100) { toast('Weights must total 100%. Currently ' + total + '%.', 'error'); return; }
-  // Save to localStorage for custom components
-  try { localStorage.setItem('classinstruct_components', JSON.stringify(components.map(c=>({key:c.key,label:c.label,pct:c.pct,color:c.color})))); } catch {}
-  try { await fetch(API + '?action=save_weights', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww||0, performance_tasks_pct: weights.pt||0, quarterly_assessment_pct: weights.qa||0 }) }); } catch {}
-  toast('Weights saved!', 'success'); renderTable();
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to save weights.', 'warning'); return; }
+    const total = components.reduce((a,c)=>a+c.pct,0);
+    if (total !== 100) { toast('Weights must total 100%. Currently ' + total + '%.', 'error'); return; }
+    try { localStorage.setItem('classinstruct_components', JSON.stringify(components.map(c=>({key:c.key,label:c.label,pct:c.pct,color:c.color})))); } catch {}
+    try { await fetch(API + '?action=save_weights', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww||0, performance_tasks_pct: weights.pt||0, quarterly_assessment_pct: weights.qa||0 }) }); } catch {}
+    toast('Weights saved!', 'success'); renderTable();
+  });
 }
 function resetWeights() {
   components = [
@@ -1358,29 +1378,32 @@ function closeStudentListModal(event) {
 function toggleImport() { document.getElementById('importZone').classList.toggle('show'); }
 
 function handleImport(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const wb   = XLSX.read(e.target.result, { type:'binary' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws);
-      if (!rows.length) { toast('No data found in file.', 'error'); return; }
-      rows.forEach(r => {
-        const name  = (r['Name'] || r['name'] || r['Student'] || '').toLowerCase().trim();
-        const match = students.find(s => s.name.toLowerCase().trim() === name);
-        if (match) {
-          if (r['Written Works']        !== undefined) match.ww  = parseFloat(r['Written Works'])        || null;
-          if (r['Performance Tasks']    !== undefined) match.pt  = parseFloat(r['Performance Tasks'])    || null;
-          if (r['Quarterly Assessment'] !== undefined) match.qa  = parseFloat(r['Quarterly Assessment']) || null;
-          if (r['Attendance']           !== undefined) match.att = parseFloat(r['Attendance'])           || null;
-        }
-      });
-      filtered = [...students]; renderTable(); toggleImport();
-      toast('Imported grades from ' + file.name, 'success');
-    } catch { toast('Could not read file. Check format and try again.', 'error'); }
-  };
-  reader.readAsBinaryString(file); input.value = '';
+  verifyPin(function(confirmed) {
+    if (!confirmed) { toast('PIN required to import grades.', 'warning'); input.value = ''; return; }
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const wb   = XLSX.read(e.target.result, { type:'binary' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws);
+        if (!rows.length) { toast('No data found in file.', 'error'); return; }
+        rows.forEach(r => {
+          const name  = (r['Name'] || r['name'] || r['Student'] || '').toLowerCase().trim();
+          const match = students.find(s => s.name.toLowerCase().trim() === name);
+          if (match) {
+            if (r['Written Works']        !== undefined) match.ww  = parseFloat(r['Written Works'])        || null;
+            if (r['Performance Tasks']    !== undefined) match.pt  = parseFloat(r['Performance Tasks'])    || null;
+            if (r['Quarterly Assessment'] !== undefined) match.qa  = parseFloat(r['Quarterly Assessment']) || null;
+            if (r['Attendance']           !== undefined) match.att = parseFloat(r['Attendance'])           || null;
+          }
+        });
+        filtered = [...students]; renderTable(); toggleImport();
+        toast('Imported grades from ' + file.name, 'success');
+      } catch { toast('Could not read file. Check format and try again.', 'error'); }
+    };
+    reader.readAsBinaryString(file); input.value = '';
+  });
 }
 
 function exportExcel() {

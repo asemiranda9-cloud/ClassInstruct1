@@ -286,6 +286,7 @@ function renderTable() {
           <div>
             <div style="font-weight:600">
               <a href="StudentInfo.html?id=${s.id}" style="color:inherit;text-decoration:none"
+                onclick="event.preventDefault();verifyPin(function(c){if(c)window.location='StudentInfo.html?id=${s.id}';else toast('PIN required.','warning');})"
                 onmouseover="this.style.color='#4f46e5';this.style.textDecoration='underline'"
                 onmouseout="this.style.color='inherit';this.style.textDecoration='none'">${name}</a>
             </div>
@@ -471,34 +472,44 @@ function clearErrors() {
 async function saveStudent() {
   const data = getFormData();
   if (!validate(data)) return;
-  try {
-    if (editingId) {
-      const updated = await apiPut(editingId, data);
-      const idx = students.findIndex(s => s.id === editingId);
-      if (idx !== -1) students[idx] = { ...updated };
-      toast('Student updated successfully!', 'success');
-      if (window.CILog) CILog.push('student_updated', 'Student updated', buildFullName(updated) + (data.section ? ' · ' + data.section : ''));
-    } else {
-      const created = await apiPost(data);
-      students.push({ ...created });
-      toast('Student added successfully!', 'success');
-      if (window.CILog) CILog.push('student_added', 'Student enrolled', buildFullName(created) + (data.section ? ' · ' + data.section : ''));
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to save student.', 'warning'); return; }
+    try {
+      if (editingId) {
+        const updated = await apiPut(editingId, data);
+        const idx = students.findIndex(s => s.id === editingId);
+        if (idx !== -1) students[idx] = { ...updated };
+        toast('Student updated successfully!', 'success');
+        if (window.CILog) CILog.push('student_updated', 'Student updated', buildFullName(updated) + (data.section ? ' · ' + data.section : ''));
+      } else {
+        const created = await apiPost(data);
+        students.push({ ...created });
+        toast('Student added successfully!', 'success');
+        if (window.CILog) CILog.push('student_added', 'Student enrolled', buildFullName(created) + (data.section ? ' · ' + data.section : ''));
+      }
+      closeFormModal();
+      applyFilters();
+    } catch (e) {
+      if (e.message.includes('already exists')) {
+        setErr('studentId', e.message);
+      } else {
+        toast(e.message, 'danger');
+      }
     }
-    closeFormModal();
-    applyFilters();
-  } catch (e) {
-    if (e.message.includes('already exists')) {
-      setErr('studentId', e.message);
-    } else {
-      toast(e.message, 'danger');
-    }
-  }
+  });
 }
 
 // ═══════════════════════════════════════════
 //  VIEW MODAL
 // ═══════════════════════════════════════════
 function viewStudent(id) {
+  verifyPin(function(confirmed) {
+    if (!confirmed) { toast('PIN required to view student.', 'warning'); return; }
+    _viewStudent(id);
+  });
+}
+
+function _viewStudent(id) {
   const s = students.find(x => x.id === id);
   if (!s) return;
   const name     = buildFullName(s);
@@ -584,17 +595,20 @@ function closeConfirm() {
 
 document.getElementById('confirmDeleteBtn').onclick = async function() {
   if (!deleteTargetId) return;
-  try {
-    const target = students.find(s => s.id === deleteTargetId);
-    await apiDelete(deleteTargetId);
-    students = students.filter(s => s.id !== deleteTargetId);
-    toast('Student deleted.', 'danger');
-    if (window.CILog && target) CILog.push('student_deleted', 'Student removed', buildFullName(target) + (target.section ? ' · ' + target.section : ''));
-    closeConfirm();
-    applyFilters();
-  } catch (e) {
-    toast(e.message, 'danger');
-  }
+  verifyPin(async function(confirmed) {
+    if (!confirmed) { toast('PIN required to delete student.', 'warning'); return; }
+    try {
+      const target = students.find(s => s.id === deleteTargetId);
+      await apiDelete(deleteTargetId);
+      students = students.filter(s => s.id !== deleteTargetId);
+      toast('Student deleted.', 'danger');
+      if (window.CILog && target) CILog.push('student_deleted', 'Student removed', buildFullName(target) + (target.section ? ' · ' + target.section : ''));
+      closeConfirm();
+      applyFilters();
+    } catch (e) {
+      toast(e.message, 'danger');
+    }
+  });
 };
 
 // ═══════════════════════════════════════════════════════════════════════

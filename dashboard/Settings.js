@@ -85,63 +85,13 @@ function deleteAccount() {
 //  WEBSITE PIN  (keyboard input, no numpad)
 // ══════════════════════════════════════════════════════════════
 
-let pinMode = ''; // 'set' | 'change' | 'remove'
+let pinMode = ''; // 'set' | 'change' | 'remove' | 'verify'
 
 function initPinState() {
   const has = !!localStorage.getItem('ci_pin');
   document.getElementById('pinStateNone').style.display = has ? 'none'  : 'block';
   document.getElementById('pinStateHas').style.display  = has ? 'block' : 'none';
   document.getElementById('pinForm').style.display = 'none';
-}
-
-// Build the right set of fields based on mode
-function openPinForm(mode) {
-  pinMode = mode;
-  const inner = document.getElementById('pinFormInner');
-
-  if (mode === 'set') {
-    inner.innerHTML = `
-      <div class="field" style="margin-bottom:14px;">
-        <label>New PIN</label>
-        <div class="pin-input-row">${pinBoxes('pinNew')}</div>
-      </div>
-      <div class="field" style="margin-bottom:14px;">
-        <label>Confirm PIN</label>
-        <div class="pin-input-row">${pinBoxes('pinConfirm')}</div>
-      </div>`;
-  } else if (mode === 'change') {
-    inner.innerHTML = `
-      <div class="field" style="margin-bottom:14px;">
-        <label>Current PIN</label>
-        <div class="pin-input-row">${pinBoxes('pinCurrent')}</div>
-      </div>
-      <div class="field" style="margin-bottom:14px;">
-        <label>New PIN</label>
-        <div class="pin-input-row">${pinBoxes('pinNew')}</div>
-      </div>
-      <div class="field" style="margin-bottom:14px;">
-        <label>Confirm PIN</label>
-        <div class="pin-input-row">${pinBoxes('pinConfirm')}</div>
-      </div>`;
-  } else if (mode === 'remove') {
-    inner.innerHTML = `
-      <div class="field" style="margin-bottom:14px;">
-        <label>Enter current PIN to remove it</label>
-        <div class="pin-input-row">${pinBoxes('pinCurrent')}</div>
-      </div>`;
-  }
-
-  document.getElementById('pinForm').style.display = 'block';
-  // Hide the idle state while form is open
-  document.getElementById('pinStateNone').style.display = 'none';
-  document.getElementById('pinStateHas').style.display  = 'none';
-
-  // Wire up auto-advance between boxes
-  wirePinBoxes();
-
-  // Focus first box
-  const first = document.querySelector('.pin-box');
-  if (first) first.focus();
 }
 
 // Generate 4 individual input boxes
@@ -196,7 +146,63 @@ function setPinError(prefix) {
   if (first) first.focus();
 }
 
+// Build the right set of fields based on mode (set|change|remove|verify)
+function openPinForm(mode) {
+  pinMode = mode;
+  const inner = document.getElementById('pinFormInner');
+
+  if (mode === 'set') {
+    inner.innerHTML = `
+      <div class="field" style="margin-bottom:14px;">
+        <label>New PIN</label>
+        <div class="pin-input-row">${pinBoxes('pinNew')}</div>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Confirm PIN</label>
+        <div class="pin-input-row">${pinBoxes('pinConfirm')}</div>
+      </div>`;
+  } else if (mode === 'change') {
+    inner.innerHTML = `
+      <div class="field" style="margin-bottom:14px;">
+        <label>Current PIN</label>
+        <div class="pin-input-row">${pinBoxes('pinCurrent')}</div>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>New PIN</label>
+        <div class="pin-input-row">${pinBoxes('pinNew')}</div>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Confirm PIN</label>
+        <div class="pin-input-row">${pinBoxes('pinConfirm')}</div>
+      </div>`;
+  } else if (mode === 'remove') {
+    inner.innerHTML = `
+      <div class="field" style="margin-bottom:14px;">
+        <label>Enter current PIN to remove it</label>
+        <div class="pin-input-row">${pinBoxes('pinCurrent')}</div>
+      </div>`;
+  } else if (mode === 'verify') {
+    inner.innerHTML = `
+      <div class="field" style="margin-bottom:14px;">
+        <label>Enter PIN to confirm</label>
+        <div class="pin-input-row">${pinBoxes('pinCurrent')}</div>
+      </div>
+      <button class="pin-submit-btn" onclick="submitPinVerify()" style="margin-top:8px;padding:10px 20px;background:#1e1a4a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Confirm</button>
+      <button class="pin-cancel-btn" onclick="cancelPinVerify()" style="margin-top:8px;margin-left:8px;padding:10px 20px;background:#e5e7eb;color:#333;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Cancel</button>`;
+  }
+
+  document.getElementById('pinForm').style.display = 'block';
+  document.getElementById('pinStateNone').style.display = 'none';
+  document.getElementById('pinStateHas').style.display  = 'none';
+
+  wirePinBoxes();
+
+  const first = document.querySelector('.pin-box');
+  if (first) first.focus();
+}
+
 function submitPin() {
+  if (pinMode === 'verify') return; // handled by submitPinVerify()
   if (pinMode === 'set') {
     const np = getPinValue('pinNew');
     const cp = getPinValue('pinConfirm');
@@ -205,7 +211,6 @@ function submitPin() {
     localStorage.setItem('ci_pin', btoa(np));
     closePinForm();
     showToast('PIN set successfully! 🔒');
-
   } else if (pinMode === 'change') {
     const cur = getPinValue('pinCurrent');
     const np  = getPinValue('pinNew');
@@ -217,7 +222,6 @@ function submitPin() {
     localStorage.setItem('ci_pin', btoa(np));
     closePinForm();
     showToast('PIN changed successfully! 🔒');
-
   } else if (pinMode === 'remove') {
     const cur = getPinValue('pinCurrent');
     const stored = atob(localStorage.getItem('ci_pin') || '');
@@ -233,6 +237,39 @@ function closePinForm() {
   document.getElementById('pinFormInner').innerHTML = '';
   pinMode = '';
   initPinState();
+}
+
+// ── Reusable PIN Verification (for other modules) ─────────────────────────────
+let _pinVerifyCallback = null;
+
+function verifyPin(callback) {
+  if (!localStorage.getItem('ci_pin')) {
+    callback(true);
+    return;
+  }
+  _pinVerifyCallback = callback;
+  openPinForm('verify');
+}
+
+function submitPinVerify() {
+  const cur = getPinValue('pinCurrent');
+  const stored = atob(localStorage.getItem('ci_pin') || '');
+  if (cur !== stored) {
+    showToast('Incorrect PIN.', 'error');
+    setPinError('pinCurrent');
+    return;
+  }
+  const cb = _pinVerifyCallback;
+  closePinForm();
+  _pinVerifyCallback = null;
+  if (cb) cb(true);
+}
+
+function cancelPinVerify() {
+  const cb = _pinVerifyCallback;
+  closePinForm();
+  _pinVerifyCallback = null;
+  if (cb) cb(false);
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
