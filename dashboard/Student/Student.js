@@ -594,7 +594,7 @@ document.getElementById('confirmDeleteBtn').onclick = async function() {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-//  IMPORT MODAL — IMAGE (Tesseract OCR) + EXCEL/CSV
+//  IMPORT MODAL — IMAGE (Gemini Vision AI via gemini_proxy.php) + EXCEL/CSV
 // ═══════════════════════════════════════════════════════════════════════
 
 let _importStudents  = [];
@@ -790,12 +790,16 @@ async function runImportAction() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  IMAGE OCR IMPORT  — enhanced Tesseract pipeline
+//  IMAGE IMPORT — Gemini Vision AI  (via gemini_proxy.php)
+//  API key lives in .env → read server-side → never sent to browser.
 // ═══════════════════════════════════════════════════════════════════════
 
+// Path to the PHP proxy — same folder as Student.html
+const GEMINI_PROXY = 'gemini_proxy.php';
+
 async function _runOcrImport() {
-  const img = document.getElementById('importPreviewImg');
-  if (!img || !img.src || img.src === window.location.href) {
+  const imgEl = document.getElementById('importPreviewImg');
+  if (!imgEl || !imgEl.src || imgEl.src === window.location.href) {
     toast('Please select an image first', 'danger'); return;
   }
 
@@ -805,314 +809,201 @@ async function _runOcrImport() {
   const msg  = document.getElementById('importLoadingMsg');
   const sub  = document.getElementById('importLoadingSub');
 
-  if (msg) msg.textContent = 'Initializing Tesseract OCR…';
-  if (sub) sub.textContent = 'Loading English language model — this takes a moment on first run';
-  if (pBar) pBar.style.width = '0%';
-  if (pLbl) pLbl.textContent = '0%';
+  const prog = (pct, label, sublabel) => {
+    if (pBar) pBar.style.width = pct + '%';
+    if (pLbl) pLbl.textContent = pct + '%';
+    if (msg  && label)    msg.textContent = label;
+    if (sub  && sublabel) sub.textContent = sublabel;
+  };
 
   try {
-    if (typeof Tesseract === 'undefined') throw new Error('Tesseract.js not loaded. Check your <script> tag.');
+    prog(10, 'Preparing image…', 'Resizing image for Gemini Vision');
 
-    // Pre-process image through canvas for better OCR accuracy
-    const processedSrc = await _preprocessImageForOCR(img);
+    // Resize image to max 1600 px wide and convert to JPEG base64
+    const { base64, mimeType } = await _imageToBase64Jpeg(_currentImgFile, imgEl, 1600);
 
-    if (msg) msg.textContent = 'Running OCR on image…';
-    if (sub) sub.textContent = 'Reading text from your master list — please wait';
+    prog(25, 'Sending to Gemini AI…', 'AI is scanning your master list — please wait');
 
-    const result = await Tesseract.recognize(processedSrc, 'eng', {
-      logger: m => {
-        const pct = Math.round((m.progress || 0) * 100);
-        if (m.status === 'loading language traineddata') {
-          if (msg) msg.textContent = 'Loading language model…';
-          if (pBar) pBar.style.width = Math.min(30, pct * 0.3) + '%';
-          if (pLbl) pLbl.textContent = Math.min(30, pct * 0.3) + '%';
-        } else if (m.status === 'initializing api') {
-          if (msg) msg.textContent = 'Initializing OCR engine…';
-          if (pBar) pBar.style.width = '35%';
-          if (pLbl) pLbl.textContent = '35%';
-        } else if (m.status === 'recognizing text') {
-          const p = 35 + Math.round(pct * 0.65);
-          if (pBar) pBar.style.width = p + '%';
-          if (pLbl) pLbl.textContent = p + '%';
-          if (msg) msg.textContent = 'Recognizing text… ' + pct + '%';
-        }
-      },
-      tessedit_pageseg_mode: Tesseract.PSM ? Tesseract.PSM.AUTO : 3,
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,\'-/',
-      preserve_interword_spaces: '1',
+    const context = (document.getElementById('importContext')?.value || '').trim();
+
+    // Build the optional context hint to append to the server-side prompt
+    const promptSuffix = context
+      ? `\nAdditional context from user: ${context}`
+      : '';
+
+    // POST to PHP proxy — the proxy adds the API key from .env
+    const response = await fetch(GEMINI_PROXY, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ imageBase64: base64, mimeType, promptSuffix: promptSuffix }),
     });
 
-    if (msg) msg.textContent = 'Parsing student records…';
-    if (pBar) pBar.style.width = '100%';
-    if (pLbl) pLbl.textContent = '100%';
+    prog(75, 'Processing AI response…', 'Parsing extracted student records');
 
-    const rawText   = result.data.text;
-    const context   = (document.getElementById('importContext')?.value || '').trim();
-    _importStudents = _parseOcrText(rawText, context);
+    const result = await response.json();
 
-    _showImportPreview();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || ('Server error ' + response.status));
+    }
+
+    const parsed = result.students;
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('No students detected. Make sure the photo shows a student masterlist clearly.');
+    }
+
+    prog(90, 'Finalizing student list…', 'Almost done');
+
+    // Normalise, title-case, dedup, flag existing duplicates
+    const seen = new Set();
+    _importStudents = parsed
+      .map(s => {
+        const lastName   = _toTitleCase((s.lastName   || '').toString().trim());
+        const firstName  = _toTitleCase((s.firstName  || '').toString().trim());
+        const middleName = _toTitleCase((s.middleName || '').toString().trim().replace(/\.$/, ''));
+        const studentId  = (s.studentId || '').toString().replace(/\D/g, '');
+        const gRaw       = (s.gender || '').toString().toLowerCase();
+        const gender     = gRaw.startsWith('f') ? 'Female'
+                         : gRaw.startsWith('m') ? 'Male' : '';
+        return { lastName, firstName, middleName, studentId, gender,
+                 grade: '', section: '', dob: '', selected: true };
+      })
+      .filter(s => s.lastName.length >= 2)
+      .filter(s => {
+        const key = (s.lastName + '|' + s.firstName).toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      })
+      .map(s => ({
+        ...s,
+        _duplicate: students.some(x =>
+          x.lastName?.toLowerCase()  === s.lastName.toLowerCase() &&
+          x.firstName?.toLowerCase() === s.firstName.toLowerCase()
+        ),
+      }));
+
+    prog(100, 'Done!', `${_importStudents.length} students extracted by Gemini AI`);
+    setTimeout(_showImportPreview, 400);
 
   } catch (e) {
-    console.error('OCR error:', e);
-    if (msg) msg.textContent = '❌ OCR failed: ' + e.message;
-    if (sub) sub.textContent = 'Try a clearer, higher-resolution image';
-    setTimeout(() => setStep(1), 3000);
+    console.error('Gemini scan error:', e);
+
+    const errMsg = e.message || '';
+    let display  = '❌ Gemini scan failed: ' + errMsg;
+    let hint     = 'Check your .env API key, server connection, or try a clearer image';
+    let retrySec = 0;
+
+    if (/quota|rate.?limit|exceeded|free.?tier/i.test(errMsg)) {
+      const retryMatch = errMsg.match(/retry\s+in\s+([\d.]+)\s*s/i);
+      retrySec = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
+      display = '⏳ Gemini free-tier quota reached.';
+      hint    = 'You can upgrade your Gemini API key, or wait for the countdown below and retry.';
+    } else if (/api.?key|not.?set|invalid/i.test(errMsg)) {
+      display = '🔑 Invalid or missing Gemini API key.';
+      hint    = 'Check that GEMINI_API_KEY is correctly set in your .env file.';
+    } else if (/network|fetch|curl/i.test(errMsg)) {
+      display = '🌐 Network error reaching Gemini API.';
+      hint    = "Check your server's internet connection and that gemini_proxy.php is reachable.";
+    }
+
+    if (msg) msg.textContent = display;
+    if (sub) sub.textContent = hint;
+
+    if (retrySec > 0) {
+      // Show countdown + retry button — don't auto-navigate away
+      _showRetryCountdown(retrySec, msg, sub, pBar, pLbl);
+    } else {
+      setTimeout(() => setStep(1), 6000);
+    }
   }
 }
 
-// ── Canvas pre-processing for better OCR ─────────────────────────────
-async function _preprocessImageForOCR(imgEl) {
-  return new Promise(resolve => {
-    const canvas = document.createElement('canvas');
-    const img    = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      // Scale up small images; cap large ones
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      const MIN_W = 1800;
-      const MAX_W = 4000;
-      if (w < MIN_W) { const s = MIN_W / w; w = MIN_W; h = Math.round(h * s); }
-      if (w > MAX_W) { const s = MAX_W / w; w = MAX_W; h = Math.round(h * s); }
+// ── Countdown timer shown after a quota error ─────────────────────────
+function _showRetryCountdown(seconds, msgEl, subEl, pBar, pLbl) {
+  let remaining = seconds;
+  if (pBar) { pBar.style.width = '0%'; pBar.style.background = 'var(--accent-warning, #f59e0b)'; }
+  if (pLbl) pLbl.textContent = '';
 
-      canvas.width  = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
+  // Inject a retry button below the sub-label
+  let retryBtn = document.getElementById('_geminiRetryBtn');
+  if (!retryBtn) {
+    retryBtn = document.createElement('button');
+    retryBtn.id = '_geminiRetryBtn';
+    retryBtn.className = 'btn btn-primary';
+    retryBtn.style = 'margin-top:16px;min-width:140px';
+    subEl?.parentNode?.insertBefore(retryBtn, subEl.nextSibling);
+  }
+  retryBtn.disabled = true;
+  retryBtn.style.display = 'inline-flex';
 
-      // White background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
+  const tick = () => {
+    if (remaining <= 0) {
+      if (pBar) { pBar.style.width = '100%'; pBar.style.background = 'var(--primary-color)'; }
+      if (pLbl) pLbl.textContent = 'Ready';
+      retryBtn.disabled = false;
+      retryBtn.textContent = '🔄 Retry Now';
+      retryBtn.onclick = () => {
+        retryBtn.style.display = 'none';
+        if (pBar) pBar.style.background = '';
+        setStep(1);
+        // Small delay so UI settles, then re-trigger scan
+        setTimeout(() => runImportAction(), 80);
+      };
+      return;
+    }
+    const pct = Math.round(((seconds - remaining) / seconds) * 100);
+    if (pBar) pBar.style.width = pct + '%';
+    if (pLbl) pLbl.textContent = remaining + 's';
+    retryBtn.textContent = `⏳ Retry in ${remaining}s`;
+    remaining--;
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
 
-      // Enhance contrast via pixel manipulation
-      const imageData = ctx.getImageData(0, 0, w, h);
-      const data      = imageData.data;
-
-      // Convert to greyscale then apply threshold (binarise)
-      for (let i = 0; i < data.length; i += 4) {
-        const grey = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-        // Adaptive-like threshold: anything below 160 → black, else white
-        const val = grey < 160 ? 0 : 255;
-        data[i] = data[i+1] = data[i+2] = val;
-      }
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+// ── Resize image → JPEG base64 (max maxWidth px wide) ────────────────
+function _imageToBase64Jpeg(file, fallbackImgEl, maxWidth) {
+  return new Promise((resolve, reject) => {
+    const resize = (dataUrl) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const jpegUrl = canvas.toDataURL('image/jpeg', 0.93);
+        resolve({ base64: jpegUrl.split(',')[1], mimeType: 'image/jpeg' });
+      };
+      img.onerror = () => resolve({ base64: dataUrl.split(',')[1] || dataUrl, mimeType: 'image/jpeg' });
+      img.src = dataUrl;
     };
-    img.onerror = () => resolve(imgEl.src); // fallback to original
-    img.src = imgEl.src;
+
+    if (file instanceof File) {
+      const reader = new FileReader();
+      reader.onload  = e => resize(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    } else if (fallbackImgEl?.src) {
+      resize(fallbackImgEl.src);
+    } else {
+      reject(new Error('No image source available'));
+    }
   });
 }
 
-// ── OCR text parser — the heart of accurate extraction ───────────────
-function _parseOcrText(rawText, context) {
-  // --- Step 1: split into lines, clean each -------------------------
-  const lines = rawText
-    .split(/\r?\n/)
-    .map(l => l
-      .replace(/[|\\]/g, ' ')         // pipes/backslashes → space
-      .replace(/\s{2,}/g, ' ')        // collapse whitespace
-      .trim()
-    )
-    .filter(l => l.length >= 3);      // remove short junk
-
-  // --- Step 2: detect header / footer lines to skip ----------------
-  const SKIP_PATTERNS = [
-    /^(no\.?|#|num|sr\.?\s*no)/i,
-    /^(student|name|full\s*name|learner|pupil)/i,
-    /^(lrn|id|student\s*id|learner\s*ref)/i,
-    /^(grade|section|gender|sex|grd|grde)/i,
-    /^(date|school|year|sy|s\.y\.?|school\s*year)/i,
-    /^(page|total|list|masterlist|master\s*list|class\s*list|record)/i,
-    /^(republic|department|deped|division|district)/i,
-    /^[-=_*.#]{3,}$/,                 // separator lines
-    /^\d{1,3}\.?\s*$/,               // lone row numbers
-  ];
-  const isSkippable = l => SKIP_PATTERNS.some(p => p.test(l.trim()));
-
-  // --- Step 3: detect if line looks like a real name ---------------
-  // A real name: 2–5 words, each 2+ chars, mostly alpha + hyphens/apostrophes
-  const NAME_WORD = /^[A-ZÑa-zñ][A-Za-zÑña-z'\-\.]{1,}$/;
-  const NUMBER_HEAVY = /\d{4,}/; // 4+ digits = likely an LRN/ID, not a name part
-
-  function looksLikeName(str) {
-    if (NUMBER_HEAVY.test(str)) return false;
-    const words = str.trim().split(/\s+/);
-    if (words.length < 2 || words.length > 7) return false;
-    const validWords = words.filter(w => NAME_WORD.test(w) && w.length >= 2);
-    return validWords.length >= 2;
-  }
-
-  // --- Step 4: try to detect table columns -------------------------
-  // Many master lists follow "LRN   LAST NAME   FIRST NAME   ..." pattern.
-  // We detect if a line has a leading number / LRN so we can strip it.
-  const LRN_PREFIX = /^\d{6,12}\b/;
-  const ROW_NUM    = /^\d{1,3}[.\s]/;
-
-  // --- Step 5: parse context hint for grade/section ----------------
-  const ctxGrade   = _extractGradeFromText(context);
-  const ctxSection = _extractSectionFromText(context);
-
-  // --- Step 6: walk every line and extract student records ---------
-  const seen    = new Set();
-  const results = [];
-
-  for (const rawLine of lines) {
-    if (isSkippable(rawLine)) continue;
-
-    let line = rawLine;
-
-    // Strip leading row numbers like "1." or "1 "
-    line = line.replace(/^\d{1,3}[.\)]\s*/, '').trim();
-
-    // Try to extract LRN (12-digit number) from the line
-    let lrn = '';
-    const lrnMatch = line.match(/\b(\d{12})\b/);
-    if (lrnMatch) {
-      lrn  = lrnMatch[1];
-      line = line.replace(lrnMatch[0], '').replace(/\s{2,}/g,' ').trim();
-    }
-
-    // Try shorter LRN (6–11 digits)
-    if (!lrn) {
-      const shortLrn = line.match(/\b(\d{6,11})\b/);
-      if (shortLrn) {
-        lrn  = shortLrn[1];
-        line = line.replace(shortLrn[0], '').replace(/\s{2,}/g,' ').trim();
-      }
-    }
-
-    // Detect gender keyword in line
-    let gender = '';
-    const genderMatch = line.match(/\b(male|female|m|f)\b/i);
-    if (genderMatch) {
-      const g = genderMatch[1].toLowerCase();
-      gender  = (g === 'm' || g === 'male') ? 'Male' : 'Female';
-      line    = line.replace(genderMatch[0], '').replace(/\s{2,}/g,' ').trim();
-    }
-
-    // Detect grade in line
-    let grade = ctxGrade;
-    const gradeInLine = _extractGradeFromText(line);
-    if (gradeInLine) {
-      grade = gradeInLine;
-      // remove the grade text so it doesn't bleed into the name
-      line  = line.replace(/\b(grade|gr\.?|kinder(garten)?)\s*\d*/gi, '').replace(/\s{2,}/g,' ').trim();
-    }
-
-    // Detect section
-    let section = ctxSection;
-    const secInLine = _extractSectionFromText(line);
-    if (secInLine) {
-      section = secInLine;
-      line    = line.replace(/\b(section|sec\.?)\s*[A-Za-z0-9]*/gi, '').replace(/\s{2,}/g,' ').trim();
-    }
-
-    // --- Parse the name portion ---
-    // Many Philippine master lists use format: "LAST NAME, FIRST NAME MI."
-    // or "LAST NAME  FIRST NAME  MI"
-    let firstName = '', lastName = '', middleName = '';
-
-    const commaIdx = line.indexOf(',');
-    if (commaIdx > 0) {
-      // "DELA CRUZ, JUAN P." — last, first [mi]
-      const lastPart  = line.slice(0, commaIdx).trim();
-      const firstPart = line.slice(commaIdx + 1).trim();
-
-      // Middle initial / name is typically the last word of firstPart if it's 1–2 chars or ends with "."
-      const fpWords = firstPart.split(/\s+/).filter(Boolean);
-      if (fpWords.length >= 2) {
-        const lastWord = fpWords[fpWords.length - 1];
-        if (/^[A-Z]\.?$/.test(lastWord) || lastWord.length <= 3) {
-          middleName = fpWords.pop();
-        }
-      }
-      firstName = fpWords.join(' ');
-      lastName  = lastPart;
-    } else {
-      // No comma — try to split by spaces
-      // Common Philippine order: FIRST [MI] LAST  OR  LAST FIRST [MI]
-      // Heuristic: if all-caps and 2+ words, treat as last name first
-      const words = line.split(/\s+/).filter(w => NAME_WORD.test(w));
-      if (words.length === 0) continue;
-
-      if (words.length === 1) {
-        lastName = words[0];
-      } else if (words.length === 2) {
-        // Could be "FIRST LAST" or "LAST FIRST"
-        // If all uppercase, assume last-name-first convention of Phil. schools
-        if (line === line.toUpperCase()) {
-          lastName  = words[0];
-          firstName = words[1];
-        } else {
-          firstName = words[0];
-          lastName  = words[1];
-        }
-      } else {
-        // 3+ words
-        // Check middle-initial pattern (single letter, possibly with dot)
-        const miIdx = words.findIndex((w, i) => i > 0 && /^[A-Z]\.?$/.test(w));
-        if (miIdx !== -1) {
-          middleName = words[miIdx];
-          const rest = words.filter((_, i) => i !== miIdx);
-          if (line === line.toUpperCase()) {
-            // All caps → last first
-            lastName  = rest[0];
-            firstName = rest.slice(1).join(' ');
-          } else {
-            firstName = rest[0];
-            lastName  = rest.slice(1).join(' ');
-          }
-        } else {
-          // No MI detected
-          if (line === line.toUpperCase()) {
-            // All caps — last first middle pattern
-            lastName   = words[0];
-            firstName  = words.slice(1, words.length - 1).join(' ') || words[1];
-            middleName = words.length > 2 ? words[words.length - 1] : '';
-          } else {
-            firstName = words[0];
-            lastName  = words[words.length - 1];
-            if (words.length > 2) middleName = words.slice(1, -1).join(' ');
-          }
-        }
-      }
-    }
-
-    // Normalize casing: Title Case
-    firstName  = _toTitleCase(firstName);
-    lastName   = _toTitleCase(lastName);
-    middleName = _toTitleCase(middleName);
-
-    // Skip if we didn't get at least a last name with 2 chars
-    if (!lastName || lastName.length < 2) continue;
-
-    // Dedup by normalized full name
-    const key = (lastName + '|' + firstName).toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    // Flag duplicates against existing DB students
-    const isDuplicate = students.some(s =>
-      s.lastName?.toLowerCase() === lastName.toLowerCase() &&
-      s.firstName?.toLowerCase() === firstName.toLowerCase()
-    );
-
-    results.push({
-      lastName,
-      firstName,
-      middleName,
-      studentId: lrn,
-      gender,
-      grade,
-      section,
-      dob: '',
-      selected: true,
-      _duplicate: isDuplicate,
-      _rawLine: rawLine,
-    });
-  }
-
-  return results;
+// ── Helper: Title Case with Filipino connectors ───────────────────────
+function _toTitleCase(str) {
+  if (!str) return '';
+  const LOWERS = new Set(['de','del','la','los','las','ng','ni','mga']);
+  return str.split(/\s+/).map((w, i) => {
+    if (!w) return '';
+    if (i > 0 && LOWERS.has(w.toLowerCase())) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(' ');
 }
 
 // ── Helper: extract grade from free text ─────────────────────────────
@@ -1120,7 +1011,7 @@ function _extractGradeFromText(text) {
   if (!text) return '';
   const m = text.match(/\b(kinder(?:garten)?|grade\s*\d+|gr\.?\s*\d+)\b/i);
   if (!m) return '';
-  const s = m[0].toLowerCase().replace(/\s+/g,'');
+  const s = m[0].toLowerCase().replace(/\s+/g, '');
   if (s.includes('kinder')) return 'Kindergarten';
   const num = s.match(/\d+/);
   return num ? 'Grade ' + num[0] : '';
@@ -1131,18 +1022,6 @@ function _extractSectionFromText(text) {
   if (!text) return '';
   const m = text.match(/\b(?:section|sec\.?)\s*([A-Za-z0-9\-]+)/i);
   return m ? _toTitleCase(m[1]) : '';
-}
-
-// ── Helper: Title Case ────────────────────────────────────────────────
-function _toTitleCase(str) {
-  if (!str) return '';
-  // Keep all-lowercase connector words lowercase
-  const LOWERS = new Set(['de','del','la','los','las','ng','ni','mga']);
-  return str.split(/\s+/).map((w, i) => {
-    if (!w) return '';
-    if (i > 0 && LOWERS.has(w.toLowerCase())) return w.toLowerCase();
-    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-  }).join(' ');
 }
 
 // ═══════════════════════════════════════════════════════════════════════

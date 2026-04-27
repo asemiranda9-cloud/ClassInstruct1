@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="AddStudent.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
@@ -150,7 +149,7 @@
         </div>
         <div>
           <h2 class="modal-title" style="margin:0;font-size:1.15rem">Import Students from Image</h2>
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px">Upload a master list photo or scan — Tesseract OCR will extract and import the students</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px">Upload a master list photo or scan — Gemini AI will extract and import the students automatically</div>
         </div>
       </div>
       <button class="close-btn" onclick="closeImportModal()">✕</button>
@@ -209,7 +208,7 @@
 
         <!-- Info note -->
         <div style="margin-top:16px;padding:12px 16px;background:rgba(6,182,212,0.07);border-left:3px solid var(--accent-info);border-radius:0 8px 8px 0;font-size:0.83rem;color:var(--text-secondary)">
-          <strong style="color:var(--accent-info)">Tips for best OCR accuracy:</strong> Use a clear, high-contrast, high-resolution scan. Avoid blurry or skewed photos. The importer auto-enhances your image before reading. Fill in Grade/Section in the context box to pre-populate all rows.
+          <strong style="color:var(--accent-info)">Tips for best AI accuracy:</strong> Use a clear, high-resolution scan or photo. Gemini Vision handles split Male/Female tables, LRN columns, and numbered lists automatically. Fill in Grade/Section in the context box to pre-populate all rows.
         </div>
         </div><!-- /importImagePanel -->
 
@@ -264,8 +263,8 @@
             <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
           </svg>
         </div>
-        <div style="font-size:1.1rem;font-weight:600;margin-bottom:8px" id="importLoadingMsg">Initializing OCR engine…</div>
-        <div style="font-size:0.85rem;color:var(--text-secondary)" id="importLoadingSub">Tesseract is reading the master list and extracting student records</div>
+        <div style="font-size:1.1rem;font-weight:600;margin-bottom:8px" id="importLoadingMsg">Sending to Gemini AI…</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary)" id="importLoadingSub">Gemini Vision is reading the master list and extracting student records</div>
         <div style="margin-top:16px;background:var(--bg-input);border-radius:8px;overflow:hidden;height:8px;max-width:320px;margin-left:auto;margin-right:auto">
           <div id="ocrProgressBar" style="height:100%;background:var(--primary-color);width:0%;transition:width 300ms ease;border-radius:8px"></div>
         </div>
