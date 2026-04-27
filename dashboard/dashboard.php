@@ -255,32 +255,7 @@
           <div class="section-header">
             <h2>Recent Activity</h2>
           </div>
-          <div id="recentActivity" style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
-              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">👤</div>
-              <div style="flex:1">
-                <div style="font-size:.85rem;font-weight:500">New student enrolled</div>
-                <div style="font-size:.72rem;color:var(--text-3)">Grade 7 - Section A</div>
-              </div>
-              <span style="font-size:.68rem;color:var(--text-3)">2m ago</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
-              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">✓</div>
-              <div style="flex:1">
-                <div style="font-size:.85rem;font-weight:500">Attendance marked</div>
-                <div style="font-size:.72rem;color:var(--text-3)">Grade 8 - Section B</div>
-              </div>
-              <span style="font-size:.68rem;color:var(--text-3)">1h ago</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
-              <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify-content:center;color:white;font-size:14px">📋</div>
-              <div style="flex:1">
-                <div style="font-size:.85rem;font-weight:500">Quiz created</div>
-                <div style="font-size:.72rem;color:var(--text-3)">Mathematics - Grade 10</div>
-              </div>
-              <span style="font-size:.68rem;color:var(--text-3)">3h ago</span>
-            </div>
-          </div>
+          <div id="recentActivity" style="display:flex;flex-direction:column;gap:10px"></div>
         </article>
       </div>
 
@@ -288,6 +263,7 @@
   </main>
 </div>
 
+<script src="activity_log.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>

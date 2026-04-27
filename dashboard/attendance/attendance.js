@@ -911,6 +911,21 @@ const Actions = {
     } else {
       showToast(saved + ' saved, ' + failed + ' failed', 'error');
     }
+
+    // Log each saved change individually with student name + status
+    if (window.CILog && saved > 0) {
+      items.forEach(function(item) {
+        if (item.status === 'none') return; // deletions — skip
+        const student = tableData.students.find(function(s) { return s.id == item.studentId; });
+        const name = student ? student.full_name : ('Student #' + item.studentId);
+        const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+        const logType = 'attendance_' + item.status;
+        const sectionDetail = (state.grade && state.section)
+          ? state.grade + ' - ' + state.section
+          : (state.sectionName && state.sectionName !== 'All Sections' ? state.sectionName : 'All Sections');
+        CILog.push(logType, statusLabel + ': ' + name, sectionDetail + ' \u00b7 ' + item.date);
+      });
+    }
   },
 
   openMonthlyReport: function() {

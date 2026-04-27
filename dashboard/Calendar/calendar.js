@@ -1,4 +1,4 @@
-      // ── State ──
+// ── State ──
        const months = [
         { name:'January',   days:31, startDay:3 },
         { name:'February',  days:28, startDay:6 },
@@ -78,6 +78,10 @@
         renderEntriesList();
         renderCalendar();
         renderSched();
+        if (window.CILog) {
+          const dateLabel = months[curMonthIdx].name + ' ' + parseInt(modalKey.split('-')[2]) + ', ' + curYear;
+          CILog.push('calendar_entry', cap(selectedType) + ' added to Calendar', esc(title) + ' · ' + dateLabel);
+        }
       }
 
       function fmtTime(t) {
@@ -88,12 +92,18 @@
 
       // ── Delete entry ──
       function deleteEntry(key, id) {
+        const entry = (dayEntries[key]||[]).find(e => e.id === id);
         dayEntries[key] = (dayEntries[key]||[]).filter(e => e.id !== id);
         if (!dayEntries[key].length) delete dayEntries[key];
         saveEntries();
         renderEntriesList();
         renderCalendar();
         renderSched();
+        if (window.CILog && entry) {
+          const parts = key.split('-');
+          const dateLabel = months[parseInt(parts[1])-1].name + ' ' + parseInt(parts[2]) + ', ' + parts[0];
+          CILog.push('calendar_entry', cap(entry.type) + ' removed from Calendar', esc(entry.title) + ' · ' + dateLabel);
+        }
       }
 
       // ── Render entries modal ──

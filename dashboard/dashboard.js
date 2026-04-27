@@ -77,11 +77,60 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAttMonthFilter();
   renderMiniCalendar();
   renderUpcomingEvents();
+  renderRecentActivity();
   await loadStudents();
   loadAttendanceCal();
   loadSubjectsForPerf();
   loadPerformanceChart();
 });
+
+// Re-render when another page logs an activity (cross-iframe postMessage)
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') {
+    renderRecentActivity();
+  }
+});
+
+// Also re-render when tab regains focus (user switched pages then came back)
+window.addEventListener('focus', renderRecentActivity);
+// visibilitychange fires correctly inside an iframe when the user returns to the dashboard
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) renderRecentActivity();
+});
+
+// ════════════════════════════════════════════════
+//  RECENT ACTIVITY
+// ════════════════════════════════════════════════
+function renderRecentActivity() {
+  const el = document.getElementById('recentActivity');
+  if (!el) return;
+
+  // Guard: if activity_log.js hasn't loaded yet, retry in 100ms
+  if (typeof window.CILog === 'undefined') {
+    setTimeout(renderRecentActivity, 100);
+    return;
+  }
+
+  const entries = window.CILog.get(10);
+
+  if (!entries.length) {
+    el.innerHTML = `<div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">
+      No activity yet. Changes you make will appear here.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = entries.map(e => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
+      <div style="width:36px;height:36px;border-radius:50%;background:${esc(e.gradient)};display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0">${e.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div>
+        <div style="font-size:.72rem;color:var(--text-3)">${esc(e.detail)}</div>
+      </div>
+      <span style="font-size:.68rem;color:var(--text-3);white-space:nowrap">${esc(e.relTime)}</span>
+    </div>
+  `).join('');
+}
 
 // ════════════════════════════════════════════════
 //  STUDENTS — loads all, drives enrolled + gender + recent

@@ -1030,6 +1030,7 @@ async function saveGrades() {
     markUnsavedIndicator(false);      // ← update UI indicator
     saveStudentItemScores();          // Also persist item scores to localStorage
     toast('Grades saved! (' + data.saved + ' records)', 'success');
+    if (window.CILog) CILog.push('grades_saved', 'Grades saved', subject + ' · ' + quarter + ' · ' + data.saved + ' record' + (data.saved !== 1 ? 's' : ''));
   } catch { toast('Network error — is XAMPP running?', 'error'); }
 }
 

@@ -6,6 +6,45 @@ let isSending = false;
 let chatHistory = [];
 let pendingLessonPlanMeta = null; // set when a lesson plan is being generated
 
+// ── Chat Persistence (localStorage — survives reloads and browser restarts) ──
+const CHAT_STORAGE_KEY = 'ci_chat_session';
+
+function saveChat() {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+  } catch(e) { /* storage full — ignore */ }
+}
+
+function restoreChat() {
+  try {
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!saved) return;
+    const history = JSON.parse(saved);
+    if (!Array.isArray(history) || history.length === 0) return;
+
+    // Remove welcome message
+    chatMessages.innerHTML = '';
+    chatHistory = [];
+
+    history.forEach(msg => {
+      const div = document.createElement('div');
+      if (msg.role === 'user') {
+        div.className = 'user-message';
+        div.innerHTML = `<div class="message-content">${escapeHtml(msg.text)}</div>`;
+      } else {
+        div.className = 'ai-message';
+        div.innerHTML = `<div class="message-content">${formatMessage(msg.text)}</div>`;
+      }
+      chatMessages.appendChild(div);
+      chatHistory.push(msg);
+    });
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  } catch(e) { console.error('restoreChat failed:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', restoreChat);
+
 // Streams the AI reply chunk-by-chunk into a live message bubble.
 // Returns the full accumulated text when done.
 async function streamMessageFromGemini(message, onChunk, { imageBase64, imageMimeType, docText, fileUri, fileMimeType } = {}) {
@@ -112,6 +151,7 @@ function addUserMessage(text) {
   chatMessages.appendChild(messageDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   chatHistory.push({ role: 'user', text, timestamp: new Date() });
+  saveChat();
 }
 
 function addAiMessage(text, isError = false) {
@@ -142,7 +182,7 @@ function addAiMessage(text, isError = false) {
   messageDiv.innerHTML = `<div class="message-content">${formatMessage(text)}</div>${pdfBtnHTML}`;
   chatMessages.appendChild(messageDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
-  if (!isError) chatHistory.push({ role: 'ai', text, timestamp: new Date() });
+  if (!isError) { chatHistory.push({ role: 'ai', text, timestamp: new Date() }); saveChat(); }
 }
 
 function escapeAttr(str) {
@@ -208,7 +248,7 @@ async function handleSendMessage() {
       messageDiv.appendChild(pdfBar);
     }
 
-    if (fullText) chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() });
+    if (fullText) { chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() }); saveChat(); }
 
   } catch (error) {
     typingDiv.remove();
@@ -620,7 +660,17 @@ window.handleSendMessageWithFile = async function() {
       messageDiv.appendChild(pdfBar);
     }
 
-    if (fullText) chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() });
+    if (fullText) {
+      chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() });
+      saveChat();
+      if (window.CILog) {
+        if (fileName) {
+          CILog.push('ai_chat', 'File Shared with AI', fileName);
+        } else {
+          CILog.push('ai_chat', 'AI Chat', promptText.substring(0, 60));
+        }
+      }
+    }
 
   } catch (error) {
     typingDiv.remove();
@@ -755,6 +805,7 @@ function newChat() {
     if (!confirmed) return;
   }
   chatHistory = [];
+  localStorage.removeItem(CHAT_STORAGE_KEY);
   chatMessages.innerHTML = `
     <div class="welcome-message">
       <h2>Welcome to ClassInstruct AI</h2>
@@ -954,6 +1005,7 @@ function generateLessonPlan() {
   };
 
   const prompt = fw.prompt(subject, grade, topic, duration);
+  if (window.CILog) CILog.push('lesson_plan', 'Lesson Plan Generated', `${subject} · ${grade} · ${topic}`);
   chatInput.value = prompt;
   handleSendMessage();
 }
@@ -965,7 +1017,7 @@ function openQuiz() {
   modal.className = 'modal-overlay';
   modal.id = 'quiz-modal';
   modal.innerHTML = `
-    <div class="modal-panel">
+    <div class="modal-panel modal-panel-wide">
       <div class="modal-header">
         <div>
           <h2 class="modal-title">Quiz Generator</h2>
@@ -1047,6 +1099,7 @@ function generateQuiz() {
 
   closeAllModals();
   const prompt = `Create a ${diff} difficulty quiz for ${grade} students on the topic: "${topic}". Generate ${count} ${type} questions. For multiple choice, include 4 options (A, B, C, D) and mark the correct answer. Include an answer key at the end. Format clearly and number each question.`;
+  if (window.CILog) CILog.push('quiz_generated', 'Quiz Generated', `${topic} · ${grade} · ${count} ${type} questions`);
   chatInput.value = prompt;
   handleSendMessage();
 }
@@ -1068,7 +1121,7 @@ function openHistory() {
     `;
   } else {
     historyHTML = chatHistory.map((msg, i) => {
-      const time = msg.timestamp ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const preview = msg.text.length > 120 ? msg.text.substring(0, 120) + '...' : msg.text;
       return `
         <div class="history-item ${msg.role}">
@@ -1107,6 +1160,7 @@ function openHistory() {
 function clearHistory() {
   if (confirm("Clear all chat history? This cannot be undone.")) {
     chatHistory = [];
+    localStorage.removeItem(CHAT_STORAGE_KEY);
     closeAllModals();
     showToast("History cleared.");
   }
@@ -1316,278 +1370,254 @@ async function downloadLessonPlanPDF(btn) {
 // Inject CSS for modals, toasts, and typing animation
 const style = document.createElement('style');
 style.textContent = `
-  /* PDF Download Bar */
+  /* ── Theme tokens ── */
+  :root, [data-theme="light"] {
+    --modal-bg:               #ffffff;
+    --modal-border:           #e2e8f0;
+    --modal-sep:              #f1f5f9;
+    --modal-title:            #1e293b;
+    --modal-subtitle:         #64748b;
+    --modal-close-bg:         #f1f5f9;
+    --modal-close-hover-bg:   #e2e8f0;
+    --modal-close-color:      #64748b;
+    --modal-close-hover-color:#1e293b;
+    --form-label:             #475569;
+    --form-input-bg:          #f8fafc;
+    --form-input-border:      #e2e8f0;
+    --form-input-color:       #1e293b;
+    --form-input-focus-bg:    #ffffff;
+    --toggle-bg:              #ffffff;
+    --toggle-border:          #e2e8f0;
+    --toggle-color:           #64748b;
+    --cancel-bg:              #ffffff;
+    --cancel-border:          #e2e8f0;
+    --cancel-color:           #64748b;
+    --cancel-hover-color:     #1e293b;
+    --history-empty:          #475569;
+    --history-user-bg:        #ede9fe;
+    --history-ai-bg:          #f1f5f9;
+    --history-text:           #334155;
+    --fw-card-bg:             #ffffff;
+    --fw-card-border:         #e2e8f0;
+    --fw-card-active-bg:      #f5f3ff;
+    --fw-label:               #1e293b;
+    --fw-tagline:             #64748b;
+    --fw-desc:                #94a3b8;
+    --quick-btn-bg:           #ffffff;
+    --pdf-bar-bg:             linear-gradient(135deg,#f5f3ff,#ede9fe);
+    --pdf-label-color:        #5b21b6;
+  }
+  [data-theme="dark"] {
+    --modal-bg:               #1a1d2e;
+    --modal-border:           #2d3452;
+    --modal-sep:              #2d3452;
+    --modal-title:            #e2e8f0;
+    --modal-subtitle:         #94a3b8;
+    --modal-close-bg:         #2d3452;
+    --modal-close-hover-bg:   #3d4a6b;
+    --modal-close-color:      #94a3b8;
+    --modal-close-hover-color:#e2e8f0;
+    --form-label:             #94a3b8;
+    --form-input-bg:          #12141f;
+    --form-input-border:      #2d3452;
+    --form-input-color:       #e2e8f0;
+    --form-input-focus-bg:    #1a1d2e;
+    --toggle-bg:              #12141f;
+    --toggle-border:          #2d3452;
+    --toggle-color:           #94a3b8;
+    --cancel-bg:              #12141f;
+    --cancel-border:          #2d3452;
+    --cancel-color:           #94a3b8;
+    --cancel-hover-color:     #e2e8f0;
+    --history-empty:          #94a3b8;
+    --history-user-bg:        #251f4a;
+    --history-ai-bg:          #1a1d2e;
+    --history-text:           #cbd5e1;
+    --fw-card-bg:             #12141f;
+    --fw-card-border:         #2d3452;
+    --fw-card-active-bg:      #1c1a3a;
+    --fw-label:               #e2e8f0;
+    --fw-tagline:             #94a3b8;
+    --fw-desc:                #64748b;
+    --quick-btn-bg:           #1a1d2e;
+    --pdf-bar-bg:             linear-gradient(135deg,#1c1a3a,#251f4a);
+    --pdf-label-color:        #a78bfa;
+  }
+
+  /* PDF bar */
   .pdf-download-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 12px;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-    border: 1.5px solid #c4b5fd;
-    border-radius: 10px;
-    gap: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding: 10px 14px;
+    background: var(--pdf-bar-bg);
+    border: 1.5px solid #c4b5fd; border-radius: 10px; gap: 10px;
   }
-  .pdf-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #5b21b6;
-  }
+  .pdf-label { font-size: 0.82rem; font-weight: 600; color: var(--pdf-label-color); }
   .pdf-download-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 16px;
-    background: #4f46e5;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.83rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-    white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 16px; background: #6c63ff; color: white;
+    border: none; border-radius: 8px; font-size: 0.83rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap;
   }
-  .pdf-download-btn:hover { background: #4338ca; transform: translateY(-1px); }
+  .pdf-download-btn:hover { background: #5548e8; transform: translateY(-1px); }
   .pdf-download-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-  /* Typing animation */
+  /* Typing */
   .typing-dots { animation: typingBounce 1.4s infinite ease-in-out; }
   @keyframes typingBounce {
-    0%, 60%, 100% { transform: translateY(0); }
+    0%,60%,100% { transform: translateY(0); }
     30% { transform: translateY(-4px); }
   }
   .message-content { white-space: pre-wrap; }
 
-  /* Quick prompts in welcome */
-  .quick-prompts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 20px;
-  }
+  /* Quick prompts */
+  .quick-prompts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
   .quick-prompt-btn {
-    padding: 10px 16px;
-    border-radius: 20px;
-    border: 2px solid var(--primary-light, #e0e7ff);
-    background: white;
-    color: var(--primary-color, #4f46e5);
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    padding: 10px 16px; border-radius: 20px;
+    border: 2px solid rgba(108,99,255,0.3);
+    background: var(--quick-btn-bg); color: #6c63ff;
+    font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; font-family: inherit;
   }
-  .quick-prompt-btn:hover {
-    background: var(--primary-color, #4f46e5);
-    color: white;
-    border-color: var(--primary-color, #4f46e5);
-    transform: translateY(-1px);
-  }
+  .quick-prompt-btn:hover { background: #6c63ff; color: white; border-color: #6c63ff; transform: translateY(-1px); }
   .welcome-icon { font-size: 3rem; margin-bottom: 12px; }
 
-  /* Modal Overlay */
+  /* Modal overlay */
   .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; transition: opacity 0.3s ease;
   }
   .modal-overlay.visible { opacity: 1; }
 
-  /* Modal Panel */
+  /* Modal panel */
   .modal-panel {
-    background: #fff;
-    border-radius: 20px;
-    width: 100%;
-    max-width: 520px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+    background: var(--modal-bg);
+    border: 0.5px solid var(--modal-border);
+    border-radius: 20px; width: 100%; max-width: 520px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
     transform: translateY(20px) scale(0.97);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.25s;
     overflow: hidden;
   }
   .modal-overlay.visible .modal-panel { transform: translateY(0) scale(1); }
-  .modal-panel-wide { max-width: 600px; }
+  .modal-panel-wide { max-width: 640px; }
 
-  /* Modal Header */
+  /* Modal header */
   .modal-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
+    display: flex; align-items: center; gap: 14px;
     padding: 24px 24px 20px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--modal-sep);
   }
-  .modal-header-icon { font-size: 2rem; line-height: 1; }
-  .modal-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 0; }
-  .modal-subtitle { font-size: 0.82rem; color: #64748b; margin: 2px 0 0; }
+  .modal-title { font-size: 1.2rem; font-weight: 700; color: var(--modal-title); margin: 0; }
+  .modal-subtitle { font-size: 0.82rem; color: var(--modal-subtitle); margin: 2px 0 0; }
   .modal-close-btn {
-    margin-left: auto;
-    background: #f1f5f9;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: #64748b;
-    transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center;
+    margin-left: auto; background: var(--modal-close-bg);
+    border: none; width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 0.85rem; color: var(--modal-close-color);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .modal-close-btn:hover { background: #e2e8f0; color: #1e293b; }
+  .modal-close-btn:hover { background: var(--modal-close-hover-bg); color: var(--modal-close-hover-color); }
 
-  /* Modal Body */
+  /* Modal body */
   .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
   .modal-body.history-scroll { max-height: 380px; overflow-y: auto; }
 
-  /* Form Elements */
+  /* Form */
   .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
   .form-row { display: flex; gap: 14px; }
-  .form-label { font-size: 0.82rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-input {
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 2px solid #e2e8f0;
-    font-size: 0.93rem;
-    color: #1e293b;
-    font-family: inherit;
-    transition: border-color 0.2s;
-    background: #f8fafc;
-    width: 100%;
+  .form-label {
+    font-size: 0.78rem; font-weight: 700; color: var(--form-label);
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
-  .form-input:focus { outline: none; border-color: #4f46e5; background: white; }
+  .form-input {
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid var(--form-input-border);
+    font-size: 0.93rem; color: var(--form-input-color);
+    font-family: inherit; background: var(--form-input-bg); width: 100%;
+    transition: border-color 0.2s, background 0.25s, color 0.25s;
+  }
+  .form-input:focus { outline: none; border-color: #6c63ff; background: var(--form-input-focus-bg); }
+  .form-input::placeholder { color: var(--modal-subtitle); }
+  select.form-input {
+    appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+  }
 
   /* Toggle buttons */
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
   .toggle-btn {
-    padding: 7px 14px;
-    border-radius: 20px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    font-size: 0.83rem;
-    font-weight: 500;
-    color: #64748b;
-    cursor: pointer;
+    padding: 8px 18px; border-radius: 20px;
+    border: 1.5px solid var(--toggle-border);
+    background: var(--toggle-bg); color: var(--toggle-color);
+    font-size: 0.83rem; font-weight: 500; cursor: pointer;
+    font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    display: inline-flex; align-items: center; line-height: 1.4;
     transition: all 0.15s;
-    font-family: inherit;
   }
-  .toggle-btn:hover { border-color: #4f46e5; color: #4f46e5; }
-  .toggle-btn.active { background: #4f46e5; border-color: #4f46e5; color: white; }
+  .toggle-btn:hover { border-color: #6c63ff; color: #6c63ff; }
+  .toggle-btn.active { background: #6c63ff; border-color: #6c63ff; color: white; }
 
-  /* Modal Footer */
+  /* Modal footer */
   .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+    padding: 16px 24px; border-top: 1px solid var(--modal-sep);
+    display: flex; gap: 10px; justify-content: flex-end;
   }
   .modal-cancel-btn {
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    color: #64748b;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
+    padding: 10px 20px; border-radius: 10px;
+    border: 1.5px solid var(--cancel-border);
+    background: var(--cancel-bg); color: var(--cancel-color);
+    font-size: 0.9rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s;
   }
-  .modal-cancel-btn:hover { border-color: #94a3b8; color: #1e293b; }
-  .modal-cancel-btn.danger { color: #ef4444; border-color: #fca5a5; }
-  .modal-cancel-btn.danger:hover { background: #fef2f2; }
+  .modal-cancel-btn:hover { border-color: #6c63ff; color: var(--cancel-hover-color); }
+  .modal-cancel-btn.danger { color: #ef4444; border-color: #f87171; }
+  .modal-cancel-btn.danger:hover { background: rgba(239,68,68,0.08); }
   .modal-action-btn {
-    padding: 10px 22px;
-    border-radius: 10px;
-    border: none;
-    background: #4f46e5;
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
+    padding: 10px 22px; border-radius: 10px; border: none;
+    background: #6c63ff; color: white; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
     display: flex; align-items: center; gap: 6px;
   }
-  .modal-action-btn:hover { background: #4338ca; transform: translateY(-1px); }
+  .modal-action-btn:hover { background: #5548e8; transform: translateY(-1px); }
 
-  /* History Items */
-  .history-empty { text-align: center; padding: 40px 20px; color: #475569; }
-  .history-item {
-    padding: 12px 14px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-  }
-  .history-item.user { background: #ede9fe; }
-  .history-item.ai { background: #f1f5f9; }
+  /* History */
+  .history-empty { text-align: center; padding: 40px 20px; color: var(--history-empty); }
+  .history-item { padding: 12px 14px; border-radius: 10px; margin-bottom: 8px; border: 0.5px solid var(--modal-border); }
+  .history-item.user { background: var(--history-user-bg); }
+  .history-item.ai { background: var(--history-ai-bg); }
   .history-item-meta { display: flex; justify-content: space-between; margin-bottom: 4px; }
-  .history-role { font-size: 0.78rem; font-weight: 700; color: #4f46e5; }
-  .history-time { font-size: 0.75rem; color: #94a3b8; }
-  .history-text { font-size: 0.88rem; color: #334155; line-height: 1.5; }
+  .history-role { font-size: 0.78rem; font-weight: 700; color: #6c63ff; }
+  .history-time { font-size: 0.75rem; color: var(--modal-subtitle); }
+  .history-text { font-size: 0.88rem; color: var(--history-text); line-height: 1.5; }
 
-  /* Framework Cards */
-  .framework-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
+  /* Framework cards */
+  .framework-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
   .framework-card {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    background: white;
-    text-align: left;
-    cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 12px 14px; border-radius: 12px;
+    border: 1.5px solid var(--fw-card-border);
+    background: var(--fw-card-bg);
+    text-align: left; cursor: pointer; font-family: inherit;
     transition: all 0.2s ease;
-    font-family: inherit;
   }
-  .framework-card:hover {
-    border-color: #94a3b8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
-  .framework-card.active {
-    border-color: #4f46e5;
-    background: #f5f3ff;
-    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
-  }
-  .fw-emoji { font-size: 1.5rem; line-height: 1; margin-bottom: 2px; }
-  .fw-label { font-size: 0.9rem; font-weight: 700; }
-  .fw-tagline { font-size: 0.72rem; color: #64748b; font-style: italic; line-height: 1.3; margin-top: 1px; }
-  .fw-desc { font-size: 0.75rem; color: #94a3b8; line-height: 1.4; margin-top: 4px; }
-  .framework-card.active .fw-tagline { color: #4f46e5; }
-  .framework-card.active .fw-desc { color: #6366f1; }
+  .framework-card:hover { border-color: #6c63ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .framework-card.active { border-color: #6c63ff; background: var(--fw-card-active-bg); box-shadow: 0 0 0 3px rgba(108,99,255,0.18); }
+  .fw-label { font-size: 0.9rem; font-weight: 700; color: var(--fw-label); }
+  .fw-tagline { font-size: 0.72rem; color: var(--fw-tagline); font-style: italic; line-height: 1.3; margin-top: 1px; }
+  .fw-desc { font-size: 0.75rem; color: var(--fw-desc); line-height: 1.4; margin-top: 4px; }
+  .framework-card.active .fw-label { color: #6c63ff; }
+  .framework-card.active .fw-tagline { color: #6c63ff; }
+  .framework-card.active .fw-desc { color: #818cf8; }
 
   /* Toast */
   .toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
+    position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #1e293b;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    z-index: 2000;
-    opacity: 0;
-    transition: all 0.3s ease;
-    pointer-events: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    background: #1e293b; color: white; padding: 12px 24px;
+    border-radius: 30px; font-size: 0.88rem; font-weight: 500;
+    z-index: 2000; opacity: 0; transition: all 0.3s ease;
+    pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
   }
   .toast.toast-error { background: #ef4444; }
   .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }

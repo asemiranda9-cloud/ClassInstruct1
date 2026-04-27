@@ -309,6 +309,7 @@
 </div><!-- /layout -->
 
 <div class="toast" id="toast"></div>
+<script src="../activity_log.js"></script>
 <script src="Grades.js"></script>
 </body>
 </html>

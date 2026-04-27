@@ -477,10 +477,12 @@ async function saveStudent() {
       const idx = students.findIndex(s => s.id === editingId);
       if (idx !== -1) students[idx] = { ...updated };
       toast('Student updated successfully!', 'success');
+      if (window.CILog) CILog.push('student_updated', 'Student updated', buildFullName(updated) + (data.section ? ' · ' + data.section : ''));
     } else {
       const created = await apiPost(data);
       students.push({ ...created });
       toast('Student added successfully!', 'success');
+      if (window.CILog) CILog.push('student_added', 'Student enrolled', buildFullName(created) + (data.section ? ' · ' + data.section : ''));
     }
     closeFormModal();
     applyFilters();
@@ -583,9 +585,11 @@ function closeConfirm() {
 document.getElementById('confirmDeleteBtn').onclick = async function() {
   if (!deleteTargetId) return;
   try {
+    const target = students.find(s => s.id === deleteTargetId);
     await apiDelete(deleteTargetId);
     students = students.filter(s => s.id !== deleteTargetId);
     toast('Student deleted.', 'danger');
+    if (window.CILog && target) CILog.push('student_deleted', 'Student removed', buildFullName(target) + (target.section ? ' · ' + target.section : ''));
     closeConfirm();
     applyFilters();
   } catch (e) {
@@ -1423,6 +1427,7 @@ async function _commitImport() {
   applyFilters();
   populateSections();
   toast(`Imported ${ok} student${ok!==1?'s':''}${fail?' ('+fail+' failed)':''}`, ok > 0 ? 'success' : 'danger');
+  if (window.CILog && ok > 0) CILog.push('student_imported', `${ok} student${ok!==1?'s':''} imported`, fail ? `${fail} failed` : 'All successful');
 }
 
 // ═══════════════════════════════════════════

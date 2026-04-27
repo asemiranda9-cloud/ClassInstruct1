@@ -145,6 +145,13 @@
       if (e.data && e.data.type === 'CI_PROFILE_UPDATED') {
         loadSidebarProfile();
       }
+      // Relay activity updates from any iframe page → dashboard iframe
+      if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') {
+        const frame = document.getElementById('mainFrame');
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'CI_ACTIVITY_UPDATE' }, '*');
+        }
+      }
     });
 
     // ── Iframe nav ──
