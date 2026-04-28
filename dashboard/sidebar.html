@@ -48,7 +48,7 @@
         </a>
 
         <div class="nav-lbl" style="margin-top:6px;">Academics</div>
-        <a class="ni" href="Student/Grades.php" onclick="navTo(this,'Student/Grades.php'); return false;">
+        <a class="ni" href="Grades/Grades.php" onclick="navTo(this,'Grades/Grades.php'); return false;">
           <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           Grades
         </a>
@@ -66,16 +66,16 @@
 
       <!-- Bottom Utility Nav -->
       <div class="sb-bottom">
-        <a class="ni" href="Settings.html" onclick="navTo(this, 'Settings.html'); return false;">
+        <a class="ni" href="Settings/Settings.html" onclick="navTo(this, 'Settings/Settings.html'); return false;">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
           Settings
           <span class="dot"></span>
         </a>
-        <a class="ni" href="support.html" onclick="navTo(this, 'support.html'); return false;">
+        <a class="ni" href="Support/support.html" onclick="navTo(this, 'Support/support.html'); return false;">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           Support
         </a>
-        <a class="ni danger" href="logout.php" onclick="navTo(this, 'logout.php'); return false;">
+        <a class="ni danger" href="logout/logout.php" onclick="navTo(this, 'logout/logout.php'); return false;">
           <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Log out
         </a>
@@ -106,78 +106,6 @@
   </div><!-- /app -->
 
   <script src="shared.js"></script>
-  <script>
-    // ── Populate sidebar profile card from storage ──
-    function loadSidebarProfile() {
-      const firstName = sessionStorage.getItem('ci_first_name') || '';
-      const lastName  = sessionStorage.getItem('ci_last_name')  || '';
-      const email     = sessionStorage.getItem('ci_email')      || '';
-
-      const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Teacher';
-      const initial  = (firstName[0] || email[0] || 'T').toUpperCase();
-
-      document.getElementById('sbUserName').textContent = fullName;
-
-      // Avatar: custom upload > Google/Gravatar photo > initial
-      const customPhoto = localStorage.getItem('ci_custom_photo') || '';
-      const googlePhoto = localStorage.getItem('ci_google_photo')
-                          || sessionStorage.getItem('ci_picture') || '';
-      const photo = customPhoto || googlePhoto;
-
-      const img     = document.getElementById('sbAvatarImg');
-      const initial_el = document.getElementById('sbAvatarInitial');
-
-      if (photo) {
-        img.src           = photo;
-        img.style.display = 'block';
-        initial_el.style.display = 'none';
-      } else {
-        initial_el.textContent   = initial;
-        initial_el.style.display = '';
-        img.style.display        = 'none';
-      }
-    }
-
-    loadSidebarProfile();
-
-    // Re-sync when profile page saves new data (postMessage from iframe)
-    window.addEventListener('message', function (e) {
-      if (e.data && e.data.type === 'CI_PROFILE_UPDATED') {
-        loadSidebarProfile();
-      }
-      // Relay activity updates from any iframe page → dashboard iframe
-      if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') {
-        const frame = document.getElementById('mainFrame');
-        if (frame && frame.contentWindow) {
-          frame.contentWindow.postMessage({ type: 'CI_ACTIVITY_UPDATE' }, '*');
-        }
-      }
-    });
-
-    // ── Open profile in iframe (keeps sidebar visible) ──
-    function openProfile() {
-      document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-      const frame = document.getElementById('mainFrame');
-      frame.src = 'profile.html';
-      frame.onload = function () {
-        const saved = localStorage.getItem('theme') || 'light';
-        try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
-        try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
-      };
-    }
-
-    // ── Iframe nav ──
-    function navTo(el, url) {
-      document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-      el.classList.add('active');
-      const frame = document.getElementById('mainFrame');
-      frame.src = url;
-      frame.onload = function () {
-        const saved = localStorage.getItem('theme') || 'light';
-        try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
-        try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
-      };
-    }
-  </script>
+  <script src="sidebar.js"></script>
 </body>
 </html>

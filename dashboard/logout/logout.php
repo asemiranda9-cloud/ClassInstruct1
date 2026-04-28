@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Log Out · ClassInstruct</title>
-  <link rel="stylesheet" href="sidebar.css" />
+  <link rel="stylesheet" href="../sidebar.css" />
   <link rel="stylesheet" href="logout.css" />
 </head>
 <body data-page="logout">
@@ -28,7 +28,7 @@
   </div>
 
 </div>
-<script src="shared.js"></script>
+<script src="../shared.js"></script>
 <script src="logout.js"></script>
 </body>
 </html>

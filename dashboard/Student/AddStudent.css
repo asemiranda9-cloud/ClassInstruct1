@@ -462,3 +462,130 @@ tr:hover td { background: #fafbff; }
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
+/* ══════════════════════════════════════════
+   IMPORT MODAL — CSS variables & component styles
+   (moved from inline <style> in Student.html)
+══════════════════════════════════════════ */
+
+/* ── Import modal CSS variables (light) ── */
+:root {
+  --import-tab-border:      #e0e7ff;
+  --import-tab-active-bg:   #eef2ff;
+  --import-tab-inactive-bg: #f8fafc;
+  --import-dropzone-border: #c7d2fe;
+  --import-dropzone-bg:     #fafbff;
+  --import-bulk-bg:         linear-gradient(135deg,#fafbff,#f0f2ff);
+  --import-table-border:    #e2e8f0;
+  --import-cell-bg:         #ffffff;
+  --import-cell-border:     #c7d2fe;
+}
+/* ── Dark mode overrides ── */
+[data-theme="dark"] {
+  --import-tab-border:      rgba(108,99,255,0.22);
+  --import-tab-active-bg:   rgba(108,99,255,0.18);
+  --import-tab-inactive-bg: #13131f;
+  --import-dropzone-border: rgba(108,99,255,0.30);
+  --import-dropzone-bg:     #13131f;
+  --import-bulk-bg:         linear-gradient(135deg,#1a1a2e,#17172a);
+  --import-table-border:    rgba(255,255,255,0.06);
+  --import-cell-bg:         #1a1a2e;
+  --import-cell-border:     rgba(108,99,255,0.22);
+}
+
+/* Import table horizontal scroll */
+#importStep3 .import-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 1px solid var(--import-table-border);
+}
+#importStep3 .import-table-scroll::-webkit-scrollbar { height: 6px; }
+#importStep3 .import-table-scroll::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 3px; }
+#importStep3 .import-table-scroll::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 3px; opacity: 0.6; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Drop zones */
+#importDropZone:hover, #importExcelDropZone:hover {
+  border-color: var(--primary-color); background: var(--primary-light);
+}
+#importDropZone.drag-over, #importExcelDropZone.drag-over {
+  border-color: var(--primary-color); background: var(--primary-light); transform: scale(1.01);
+}
+
+/* Row highlights */
+.import-row-warn td { background: rgba(245,158,11,0.05); }
+.import-row-dup  td { background: rgba(239,68,68,0.05); }
+
+/* Preview table inputs & selects */
+#importPreviewBody input[type=text],
+#importPreviewBody input[type=date],
+#importPreviewBody select {
+  background: var(--import-cell-bg);
+  border: 1px solid var(--import-cell-border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+#importPreviewBody input::placeholder { color: var(--text-light); }
+#importPreviewBody input[type=text]:focus,
+#importPreviewBody input[type=date]:focus,
+#importPreviewBody select:focus {
+  outline: none;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+#importPreviewBody input[type=text]:hover,
+#importPreviewBody input[type=date]:hover,
+#importPreviewBody select:hover { border-color: var(--primary-color) !important; opacity: 0.85; }
+
+/* Preview table thead */
+#importStep3 thead tr  { background: var(--bg-input) !important; }
+#importStep3 thead th  { color: var(--text-secondary); border-bottom: 1px solid var(--import-table-border); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+#importStep3 tbody td  { border-bottom: 1px solid var(--import-table-border); color: var(--text-primary); }
+#importStep3 tbody tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+[data-theme="dark"] #importStep3 tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+/* Tab buttons */
+.import-tab-btn.active          { background: var(--import-tab-active-bg)   !important; color: var(--primary-color) !important; }
+.import-tab-btn:not(.active)    { background: var(--import-tab-inactive-bg) !important; color: var(--text-secondary) !important; }
+.import-tab-btn:not(.active):hover { background: var(--import-dropzone-bg) !important; color: var(--primary-color) !important; }
+
+/* Bulk header controls */
+#bulkEditHeader select,
+#bulkEditHeader input {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--import-tab-border) !important;
+}
+#bulkEditHeader select option { background: var(--bg-card); color: var(--text-primary); }
+
+/* Excel icon */
+.excel-icon-wrap { background: #d1fae5; color: #065f46; }
+[data-theme="dark"] .excel-icon-wrap { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+
+/* Excel file preview strip */
+#importExcelPreviewWrap { display: none; }
+#importExcelPreviewWrap[style*="block"] { display: flex !important; }
+
+/* Flatpickr dark mode */
+[data-theme="dark"] .flatpickr-calendar {
+  background: #17172a;
+  border-color: rgba(108,99,255,0.22);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  color: #e8e8f4;
+}
+[data-theme="dark"] .flatpickr-day { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-day:hover { background: rgba(108,99,255,0.18); border-color: transparent; }
+[data-theme="dark"] .flatpickr-day.selected { background: #6c63ff; border-color: #6c63ff; color: #fff; }
+[data-theme="dark"] .flatpickr-day.today { border-color: #6c63ff; }
+[data-theme="dark"] .flatpickr-months { background: #1a1a2e; border-radius: 8px 8px 0 0; }
+[data-theme="dark"] .flatpickr-month { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-current-month input.cur-year { color: #e8e8f4; }
+[data-theme="dark"] .flatpickr-weekday { color: #8888aa; }
+[data-theme="dark"] .flatpickr-prev-month svg, [data-theme="dark"] .flatpickr-next-month svg { fill: #8888aa; }
+[data-theme="dark"] .flatpickr-prev-month:hover svg, [data-theme="dark"] .flatpickr-next-month:hover svg { fill: #6c63ff; }
+[data-theme="dark"] .flatpickr-day.flatpickr-disabled { color: #55556e; }

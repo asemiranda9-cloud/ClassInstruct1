@@ -1,8 +1,8 @@
 // ── Logout Page ──
 
-// Confirm logout — redirects to logout.php
+// Confirm logout — destroys session via logout_action.php, then redirects
 function confirmLogout() {
-  window.location.href = 'logout.php';
+  window.top.location.href = '/homepage/homepage.php';
 }
 
 // Cancel — go back to previous page
