@@ -189,98 +189,14 @@ function escapeAttr(str) {
   return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-async function handleSendMessage() {
-  if (isSending) return;
-  const userMessage = chatInput.value.trim();
-  if (!userMessage) return;
-
-  isSending = true;
-  sendBtn.disabled = true;
-  chatInput.disabled = true;
-
-  addUserMessage(userMessage);
-  chatInput.value = "";
-
-  // Show typing indicator while waiting for the first chunk
-  const typingDiv = document.createElement("div");
-  typingDiv.className = "ai-message typing-message";
-  typingDiv.innerHTML = '<div class="message-content"><span class="typing-dots">● ● ●</span> Thinking...</div>';
-  chatMessages.appendChild(typingDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-
-  // Create the live AI message bubble (hidden until first chunk arrives)
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "ai-message";
-  const contentDiv = document.createElement("div");
-  contentDiv.className = "message-content";
-  messageDiv.appendChild(contentDiv);
-
-  let firstChunk = true;
-
-  try {
-    const fullText = await streamMessageFromGemini(userMessage, (accumulated) => {
-      if (firstChunk) {
-        typingDiv.remove();
-        chatMessages.appendChild(messageDiv);
-        firstChunk = false;
-      }
-      contentDiv.innerHTML = formatMessage(accumulated);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
-
-    // After streaming is done, attach PDF button if this was a lesson plan
-    const lpMeta = pendingLessonPlanMeta;
-    pendingLessonPlanMeta = null;
-    if (lpMeta && fullText) {
-      const pdfBar = document.createElement("div");
-      pdfBar.className = "pdf-download-bar";
-      pdfBar.innerHTML = `
-        <span class="pdf-label">Lesson Plan Ready</span>
-        <button class="pdf-download-btn" onclick="downloadLessonPlanPDF(this)"
-          data-text="${escapeAttr(fullText)}"
-          data-subject="${escapeAttr(lpMeta.subject)}"
-          data-grade="${escapeAttr(lpMeta.grade)}"
-          data-topic="${escapeAttr(lpMeta.topic)}"
-          data-framework="${escapeAttr(lpMeta.frameworkLabel)}"
-          data-duration="${escapeAttr(lpMeta.duration)}">
-          Download PDF
-        </button>`;
-      messageDiv.appendChild(pdfBar);
-    }
-
-    if (fullText) { chatHistory.push({ role: 'ai', text: fullText, timestamp: new Date() }); saveChat(); }
-
-  } catch (error) {
-    typingDiv.remove();
-    let errorMessage = error.message;
-    if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-      errorMessage = "Cannot connect to server. Make sure the server is running on localhost:3000";
-    }
-    addAiMessage(errorMessage, true);
-  } finally {
-    isSending = false;
-    sendBtn.disabled = false;
-    chatInput.disabled = false;
-    chatInput.focus();
-  }
-}
-
-// Initial event listeners — will be replaced by handleSendMessageWithFile below
-sendBtn.addEventListener("click", handleSendMessage);
-chatInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    handleSendMessage();
-  }
-});
 
 // ============================================
 // FILE ATTACHMENT — images + documents + link review
 // ============================================
-let attachedFile      = null;   // File object
 let attachedImageB64  = null;   // base64 string (images only)
 let attachedImageMime = null;   // mime type (images only)
 let attachedDocText   = null;   // extracted plain text (PDF / DOCX / TXT)
+let attachedFileName  = null;   // filename for display
 
 const fileInput          = document.getElementById('file-input');
 const attachBtn          = document.getElementById('attach-btn');
@@ -432,7 +348,7 @@ if (attachBtn && fileInput) {
       return;
     }
 
-    attachedFile = file;
+    attachedFileName = file.name;
     if (attachmentName)  attachmentName.textContent = file.name;
     if (attachmentPreview) attachmentPreview.style.display = 'flex';
     if (attachBtn) attachBtn.style.color = 'var(--primary-color, #4f46e5)';
@@ -442,10 +358,10 @@ if (attachBtn && fileInput) {
 }
 
 function clearAttachment() {
-  attachedFile      = null;
   attachedImageB64  = null;
   attachedImageMime = null;
   attachedDocText   = null;
+  attachedFileName  = null;
   if (fileInput)          fileInput.value = '';
   if (attachmentPreview)  attachmentPreview.style.display = 'none';
   if (attachBtn)          attachBtn.style.color = '';
@@ -505,7 +421,7 @@ async function fetchLinkText(url) {
 window.handleSendMessageWithFile = async function() {
   if (isSending) return;
   const rawInput = chatInput.value.trim();
-  if (!rawInput && !attachedFile) return;
+  if (!rawInput && !attachedFileName) return;
 
   isSending = true;
   sendBtn.disabled  = true;
@@ -515,7 +431,7 @@ window.handleSendMessageWithFile = async function() {
   const imageB64  = attachedImageB64;
   const imageMime = attachedImageMime;
   const docText   = attachedDocText;
-  const fileName  = attachedFile ? attachedFile.name : null;
+  const fileName  = attachedFileName;
   const isVideoFile = window._pendingVideoUpload && !!imageB64 && imageMime?.startsWith('video/');
   window._pendingVideoUpload = false;
   clearAttachment();
@@ -687,10 +603,8 @@ window.handleSendMessageWithFile = async function() {
   }
 };
 
-// Re-wire send button and Enter key
-sendBtn.removeEventListener('click', handleSendMessage);
+// Wire send button and Enter key
 sendBtn.addEventListener('click', window.handleSendMessageWithFile);
-chatInput.removeEventListener('keydown', handleSendMessage);
 chatInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault();
@@ -825,7 +739,7 @@ function newChat() {
 function useQuickPrompt(text) {
   chatInput.value = text;
   chatInput.focus();
-  handleSendMessage();
+  window.handleSendMessageWithFile();
 }
 
 // 3. LESSON PLAN GENERATOR
@@ -1007,7 +921,7 @@ function generateLessonPlan() {
   const prompt = fw.prompt(subject, grade, topic, duration);
   if (window.CILog) CILog.push('lesson_plan', 'Lesson Plan Generated', `${subject} · ${grade} · ${topic}`);
   chatInput.value = prompt;
-  handleSendMessage();
+  window.handleSendMessageWithFile();
 }
 
 // 4. INTERACTIVE QUIZ GENERATOR
@@ -1101,7 +1015,7 @@ function generateQuiz() {
   const prompt = `Create a ${diff} difficulty quiz for ${grade} students on the topic: "${topic}". Generate ${count} ${type} questions. For multiple choice, include 4 options (A, B, C, D) and mark the correct answer. Include an answer key at the end. Format clearly and number each question.`;
   if (window.CILog) CILog.push('quiz_generated', 'Quiz Generated', `${topic} · ${grade} · ${count} ${type} questions`);
   chatInput.value = prompt;
-  handleSendMessage();
+  window.handleSendMessageWithFile();
 }
 
 // 5. CHAT HISTORY
@@ -1367,299 +1281,8 @@ async function downloadLessonPlanPDF(btn) {
   }
 }
 
-// Inject CSS for modals, toasts, and typing animation
-const style = document.createElement('style');
-style.textContent = `
-  /* ── Theme tokens ── */
-  :root, [data-theme="light"] {
-    --modal-bg:               #ffffff;
-    --modal-border:           #e2e8f0;
-    --modal-sep:              #f1f5f9;
-    --modal-title:            #1e293b;
-    --modal-subtitle:         #64748b;
-    --modal-close-bg:         #f1f5f9;
-    --modal-close-hover-bg:   #e2e8f0;
-    --modal-close-color:      #64748b;
-    --modal-close-hover-color:#1e293b;
-    --form-label:             #475569;
-    --form-input-bg:          #f8fafc;
-    --form-input-border:      #e2e8f0;
-    --form-input-color:       #1e293b;
-    --form-input-focus-bg:    #ffffff;
-    --toggle-bg:              #ffffff;
-    --toggle-border:          #e2e8f0;
-    --toggle-color:           #64748b;
-    --cancel-bg:              #ffffff;
-    --cancel-border:          #e2e8f0;
-    --cancel-color:           #64748b;
-    --cancel-hover-color:     #1e293b;
-    --history-empty:          #475569;
-    --history-user-bg:        #ede9fe;
-    --history-ai-bg:          #f1f5f9;
-    --history-text:           #334155;
-    --fw-card-bg:             #ffffff;
-    --fw-card-border:         #e2e8f0;
-    --fw-card-active-bg:      #f5f3ff;
-    --fw-label:               #1e293b;
-    --fw-tagline:             #64748b;
-    --fw-desc:                #94a3b8;
-    --quick-btn-bg:           #ffffff;
-    --pdf-bar-bg:             linear-gradient(135deg,#f5f3ff,#ede9fe);
-    --pdf-label-color:        #5b21b6;
-  }
-  [data-theme="dark"] {
-    --modal-bg:               #1a1d2e;
-    --modal-border:           #2d3452;
-    --modal-sep:              #2d3452;
-    --modal-title:            #e2e8f0;
-    --modal-subtitle:         #94a3b8;
-    --modal-close-bg:         #2d3452;
-    --modal-close-hover-bg:   #3d4a6b;
-    --modal-close-color:      #94a3b8;
-    --modal-close-hover-color:#e2e8f0;
-    --form-label:             #94a3b8;
-    --form-input-bg:          #12141f;
-    --form-input-border:      #2d3452;
-    --form-input-color:       #e2e8f0;
-    --form-input-focus-bg:    #1a1d2e;
-    --toggle-bg:              #12141f;
-    --toggle-border:          #2d3452;
-    --toggle-color:           #94a3b8;
-    --cancel-bg:              #12141f;
-    --cancel-border:          #2d3452;
-    --cancel-color:           #94a3b8;
-    --cancel-hover-color:     #e2e8f0;
-    --history-empty:          #94a3b8;
-    --history-user-bg:        #251f4a;
-    --history-ai-bg:          #1a1d2e;
-    --history-text:           #cbd5e1;
-    --fw-card-bg:             #12141f;
-    --fw-card-border:         #2d3452;
-    --fw-card-active-bg:      #1c1a3a;
-    --fw-label:               #e2e8f0;
-    --fw-tagline:             #94a3b8;
-    --fw-desc:                #64748b;
-    --quick-btn-bg:           #1a1d2e;
-    --pdf-bar-bg:             linear-gradient(135deg,#1c1a3a,#251f4a);
-    --pdf-label-color:        #a78bfa;
-  }
-
-  /* PDF bar */
-  .pdf-download-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 12px; padding: 10px 14px;
-    background: var(--pdf-bar-bg);
-    border: 1.5px solid #c4b5fd; border-radius: 10px; gap: 10px;
-  }
-  .pdf-label { font-size: 0.82rem; font-weight: 600; color: var(--pdf-label-color); }
-  .pdf-download-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 16px; background: #6c63ff; color: white;
-    border: none; border-radius: 8px; font-size: 0.83rem; font-weight: 600;
-    cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap;
-  }
-  .pdf-download-btn:hover { background: #5548e8; transform: translateY(-1px); }
-  .pdf-download-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-  /* Typing */
-  .typing-dots { animation: typingBounce 1.4s infinite ease-in-out; }
-  @keyframes typingBounce {
-    0%,60%,100% { transform: translateY(0); }
-    30% { transform: translateY(-4px); }
-  }
-  .message-content { white-space: pre-wrap; }
-
-  /* Quick prompts */
-  .quick-prompts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
-  .quick-prompt-btn {
-    padding: 10px 16px; border-radius: 20px;
-    border: 2px solid rgba(108,99,255,0.3);
-    background: var(--quick-btn-bg); color: #6c63ff;
-    font-size: 0.85rem; font-weight: 500; cursor: pointer;
-    transition: all 0.2s; font-family: inherit;
-  }
-  .quick-prompt-btn:hover { background: #6c63ff; color: white; border-color: #6c63ff; transform: translateY(-1px); }
-  .welcome-icon { font-size: 3rem; margin-bottom: 12px; }
-
-  /* Modal overlay */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(4px); z-index: 1000;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px; opacity: 0; transition: opacity 0.3s ease;
-  }
-  .modal-overlay.visible { opacity: 1; }
-
-  /* Modal panel */
-  .modal-panel {
-    background: var(--modal-bg);
-    border: 0.5px solid var(--modal-border);
-    border-radius: 20px; width: 100%; max-width: 520px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
-    transform: translateY(20px) scale(0.97);
-    transition: transform 0.3s ease, background 0.25s;
-    overflow: visible;
-  }
-  .modal-overlay.visible .modal-panel { transform: translateY(0) scale(1); }
-  .modal-panel-wide { max-width: 640px; }
-  .modal-header { border-radius: 20px 20px 0 0; overflow: hidden; }
-  .modal-footer { border-radius: 0 0 20px 20px; overflow: hidden; }
-
-  /* Modal header */
-  .modal-header {
-    display: flex; align-items: center; gap: 14px;
-    padding: 24px 24px 20px;
-    border-bottom: 1px solid var(--modal-sep);
-  }
-  .modal-title { font-size: 1.2rem; font-weight: 700; color: var(--modal-title); margin: 0; }
-  .modal-subtitle { font-size: 0.82rem; color: var(--modal-subtitle); margin: 2px 0 0; }
-  .modal-close-btn {
-    margin-left: auto; background: var(--modal-close-bg);
-    border: none; width: 32px; height: 32px; border-radius: 50%;
-    cursor: pointer; font-size: 0.85rem; color: var(--modal-close-color);
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .modal-close-btn:hover { background: var(--modal-close-hover-bg); color: var(--modal-close-hover-color); }
-
-  /* Modal body */
-  .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-  .modal-body.history-scroll { max-height: 380px; overflow-y: auto; }
-
-  /* Form */
-  .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .form-row { display: flex; gap: 14px; }
-  .form-label {
-    font-size: 0.78rem; font-weight: 700; color: var(--form-label);
-    text-transform: uppercase; letter-spacing: 0.06em;
-  }
-  .form-input {
-    padding: 10px 14px; border-radius: 10px;
-    border: 1.5px solid var(--form-input-border);
-    font-size: 0.93rem; color: var(--form-input-color);
-    font-family: inherit; background: var(--form-input-bg); width: 100%;
-    transition: border-color 0.2s, background 0.25s, color 0.25s;
-  }
-  .form-input:focus { outline: none; border-color: #6c63ff; background: var(--form-input-focus-bg); }
-  .form-input::placeholder { color: var(--modal-subtitle); }
-  select.form-input {
-    appearance: none; cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
-  }
-
-  /* Toggle buttons */
-  .toggle-group {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    margin-top: 4px !important;
-    width: 100% !important;
-    align-items: center !important;
-  }
-  .toggle-btn,
-  .toggle-btn:not([class*="active"]) {
-    all: unset !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 8px 18px !important;
-    border-radius: 20px !important;
-    border: 1.5px solid var(--toggle-border, #e2e8f0) !important;
-    background: var(--toggle-bg, #f8fafc) !important;
-    color: var(--toggle-color, #475569) !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    font-family: inherit !important;
-    white-space: nowrap !important;
-    text-align: center !important;
-    line-height: 1 !important;
-    transition: background 0.15s, border-color 0.15s, color 0.15s !important;
-    box-sizing: border-box !important;
-    flex-shrink: 0 !important;
-    position: relative !important;
-    overflow: hidden !important;
-    min-height: unset !important;
-    height: auto !important;
-    width: auto !important;
-  }
-  .toggle-btn::before,
-  .toggle-btn::after {
-    display: none !important;
-    content: none !important;
-  }
-  .toggle-btn:hover {
-    border-color: #6c63ff !important;
-    background: rgba(108,99,255,0.08) !important;
-    color: #6c63ff !important;
-  }
-  .toggle-btn.active {
-    background: #6c63ff !important;
-    border-color: #6c63ff !important;
-    color: #ffffff !important;
-  }
-
-  /* Modal footer */
-  .modal-footer {
-    padding: 16px 24px; border-top: 1px solid var(--modal-sep);
-    display: flex; gap: 10px; justify-content: flex-end;
-  }
-  .modal-cancel-btn {
-    padding: 10px 20px; border-radius: 10px;
-    border: 1.5px solid var(--cancel-border);
-    background: var(--cancel-bg); color: var(--cancel-color);
-    font-size: 0.9rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s;
-  }
-  .modal-cancel-btn:hover { border-color: #6c63ff; color: var(--cancel-hover-color); }
-  .modal-cancel-btn.danger { color: #ef4444; border-color: #f87171; }
-  .modal-cancel-btn.danger:hover { background: rgba(239,68,68,0.08); }
-  .modal-action-btn {
-    padding: 10px 22px; border-radius: 10px; border: none;
-    background: #6c63ff; color: white; font-size: 0.9rem; font-weight: 600;
-    cursor: pointer; font-family: inherit; transition: all 0.2s;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .modal-action-btn:hover { background: #5548e8; transform: translateY(-1px); }
-
-  /* History */
-  .history-empty { text-align: center; padding: 40px 20px; color: var(--history-empty); }
-  .history-item { padding: 12px 14px; border-radius: 10px; margin-bottom: 8px; border: 0.5px solid var(--modal-border); }
-  .history-item.user { background: var(--history-user-bg); }
-  .history-item.ai { background: var(--history-ai-bg); }
-  .history-item-meta { display: flex; justify-content: space-between; margin-bottom: 4px; }
-  .history-role { font-size: 0.78rem; font-weight: 700; color: #6c63ff; }
-  .history-time { font-size: 0.75rem; color: var(--modal-subtitle); }
-  .history-text { font-size: 0.88rem; color: var(--history-text); line-height: 1.5; }
-
-  /* Framework cards */
-  .framework-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-  .framework-card {
-    display: flex; flex-direction: column; gap: 3px;
-    padding: 12px 14px; border-radius: 12px;
-    border: 1.5px solid var(--fw-card-border);
-    background: var(--fw-card-bg);
-    text-align: left; cursor: pointer; font-family: inherit;
-    transition: all 0.2s ease;
-  }
-  .framework-card:hover { border-color: #6c63ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-  .framework-card.active { border-color: #6c63ff; background: var(--fw-card-active-bg); box-shadow: 0 0 0 3px rgba(108,99,255,0.18); }
-  .fw-label { font-size: 0.9rem; font-weight: 700; color: var(--fw-label); }
-  .fw-tagline { font-size: 0.72rem; color: var(--fw-tagline); font-style: italic; line-height: 1.3; margin-top: 1px; }
-  .fw-desc { font-size: 0.75rem; color: var(--fw-desc); line-height: 1.4; margin-top: 4px; }
-  .framework-card.active .fw-label { color: #6c63ff; }
-  .framework-card.active .fw-tagline { color: #6c63ff; }
-  .framework-card.active .fw-desc { color: #818cf8; }
-
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 30px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #1e293b; color: white; padding: 12px 24px;
-    border-radius: 30px; font-size: 0.88rem; font-weight: 500;
-    z-index: 2000; opacity: 0; transition: all 0.3s ease;
-    pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  }
-  .toast.toast-error { background: #ef4444; }
-  .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-`;
-document.head.appendChild(style);
+// Load CSS for modals, toasts, and typing animation
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = 'app.css';
+document.head.appendChild(link);

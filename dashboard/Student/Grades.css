@@ -204,10 +204,86 @@ input[type=number]::-webkit-outer-spin-button{
   -webkit-appearance:none;
   margin:0;
 }
-select:focus,input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.1);}
-select{cursor:pointer;padding-right:28px;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 8px center;}
+select, input[type=text], input[type=number] {
+  height: 34px;
+  padding: 0 32px 0 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-200);
+  background: var(--white);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-700);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7588' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  flex-shrink: 0;
+}
+select:hover, input[type=text]:hover, input[type=number]:hover {
+  border-color: var(--gray-300);
+}
+select:focus, input[type=text]:focus, input[type=number]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+  background-color: var(--white);
+}
+select::placeholder, input[type=text]::placeholder {
+  color: var(--gray-400);
+}
+
+/* ── Filter bar select IDs — clean & modern ── */
+#subjectSel,
+#gradingPeriodSel,
+#quarterSel,
+#gradeSel,
+#sectionSel {
+  height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 12px;
+  color: var(--gray-600);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23adb5bd' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+#subjectSel:hover,
+#gradingPeriodSel:hover,
+#quarterSel:hover,
+#gradeSel:hover,
+#sectionSel:hover {
+  border-color: var(--gray-300);
+  background-color: var(--gray-50);
+  color: var(--gray-800);
+}
+#subjectSel:focus,
+#gradingPeriodSel:focus,
+#quarterSel:focus,
+#gradeSel:focus,
+#sectionSel:focus {
+  border-color: var(--primary);
+  background-color: var(--white);
+  color: var(--gray-800);
+  box-shadow: 0 0 0 2px rgba(108,99,255,.10);
+}
+#subjectSel option,
+#gradingPeriodSel option,
+#quarterSel option,
+#gradeSel option,
+#sectionSel option {
+  background: var(--white);
+  color: var(--gray-700);
+}
 
 /* ── Tabs ── */
 .tabs{
@@ -532,18 +608,55 @@ html[data-theme="dark"] .filters-bar {
 html[data-theme="dark"] select,
 html[data-theme="dark"] input[type=text],
 html[data-theme="dark"] input[type=number] {
-  background: #1a1a2e;
+  background-color: #1a1a2e;
   border-color: rgba(255,255,255,0.10);
   color: #e8e8f4;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888aa' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238888aa' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
+}
+html[data-theme="dark"] select:hover,
+html[data-theme="dark"] input[type=text]:hover,
+html[data-theme="dark"] input[type=number]:hover {
+  border-color: rgba(255,255,255,0.18);
 }
 html[data-theme="dark"] select:focus,
 html[data-theme="dark"] input[type=text]:focus,
 html[data-theme="dark"] input[type=number]:focus {
   border-color: #6c63ff;
-  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+  background-color: #1e1e35;
+}
+
+/* ── Filter bar select IDs — dark mode ── */
+html[data-theme="dark"] #subjectSel,
+html[data-theme="dark"] #gradingPeriodSel,
+html[data-theme="dark"] #quarterSel,
+html[data-theme="dark"] #gradeSel,
+html[data-theme="dark"] #sectionSel {
+ 
+  border-color: transparent;
+  color: #94a3b8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+html[data-theme="dark"] #subjectSel:hover,
+html[data-theme="dark"] #gradingPeriodSel:hover,
+html[data-theme="dark"] #quarterSel:hover,
+html[data-theme="dark"] #gradeSel:hover,
+html[data-theme="dark"] #sectionSel:hover {
+  border-color: rgba(255,255,255,0.12);
+  background-color: #1e1e35;
+  color: #e8e8f4;
+}
+html[data-theme="dark"] #subjectSel:focus,
+html[data-theme="dark"] #gradingPeriodSel:focus,
+html[data-theme="dark"] #quarterSel:focus,
+html[data-theme="dark"] #gradeSel:focus,
+html[data-theme="dark"] #sectionSel:focus {
+  border-color: #6c63ff;
+  background-color: #1e1e35;
+  color: #e8e8f4;
+  box-shadow: 0 0 0 2px rgba(108,99,255,0.15);
 }
 
 /* ── Buttons ── */
