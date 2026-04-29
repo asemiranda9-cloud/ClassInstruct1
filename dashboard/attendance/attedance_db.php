@@ -374,6 +374,13 @@ function getSummary($conn) {
     $fromDate    = sprintf('%04d-%02d-01', $year, $month);
     $toDate      = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
 
+    $grade   = $_GET['grade']   ?? '';
+    $section = $_GET['section'] ?? '';
+    $gradeEsc   = $grade   ? $conn->real_escape_string($grade)   : '';
+    $sectionEsc = $section ? $conn->real_escape_string($section) : '';
+    $gradeFilter   = $gradeEsc   ? " AND s.grade='{$gradeEsc}'"   : '';
+    $sectionFilter = $sectionEsc ? " AND s.section='{$sectionEsc}'" : '';
+
     // Overall totals
     $overall = $conn->query(
         "SELECT status, COUNT(*) AS cnt FROM attendance
@@ -394,6 +401,7 @@ function getSummary($conn) {
          FROM students s
          LEFT JOIN attendance a ON a.student_id = s.id
                                AND a.date BETWEEN '$fromDate' AND '$toDate'
+         WHERE 1=1 $gradeFilter $sectionFilter
          GROUP BY s.grade, s.section
          ORDER BY s.grade ASC, s.section ASC"
     );

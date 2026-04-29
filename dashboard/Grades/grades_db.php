@@ -556,8 +556,11 @@ function saveWeights($conn) {
     $pt  = (int)($data['performance_tasks_pct'] ?? 50);
     $qa  = (int)($data['quarterly_assessment_pct'] ?? 20);
     if ($ww + $pt + $qa !== 100) { http_response_code(400); echo json_encode(['error' => 'Weights must total 100%']); return; }
-    $conn->query("UPDATE grade_weights SET written_works_pct=$ww, performance_tasks_pct=$pt, quarterly_assessment_pct=$qa WHERE subject='__default__'");
+    $wtStmt = $conn->prepare("UPDATE grade_weights SET written_works_ppt=?, performance_tasks_ppt=?, quarterly_assessment_ppt=? WHERE subject='__default__'");
+    $wtStmt->bind_param('iii', $ww, $pt, $qa);
+    $wtStmt->execute();
     echo json_encode(['success' => true]);
+    $wtStmt->close();
 }
 
 // ── POST save_gpa (replace all scales) ──

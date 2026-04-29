@@ -109,7 +109,7 @@ if (!empty($user['lockout_until'])) {
         );
     }
     // Cooldown passed — clear the lockout timestamp, keep attempt counter
-    $conn->query("UPDATE users SET lockout_until = NULL WHERE id = {$userId}");
+    $conn->prepare("UPDATE users SET lockout_until = NULL WHERE id = ?")->bind_param('i', $userId)->execute();
     $user['lockout_until'] = null;
 }
 
@@ -118,7 +118,9 @@ if (!password_verify($password, $user['password_hash'])) {
     $newAttempts = $attempts + 1;
 
     if ($newAttempts >= PERM_LIMIT) {
-        $conn->query("UPDATE users SET login_attempts = {$newAttempts}, perm_locked = 1 WHERE id = {$userId}");
+        $permStmt = $conn->prepare("UPDATE users SET login_attempts = ?, perm_locked = 1 WHERE id = ?");
+        $permStmt->bind_param('ii', $newAttempts, $userId);
+        $permStmt->execute();
         json_fail(
             'Your account has been locked due to too many failed attempts.',
             403,
@@ -128,7 +130,9 @@ if (!password_verify($password, $user['password_hash'])) {
 
     if ($newAttempts >= SOFT_LIMIT && empty($user['lockout_until'])) {
         $until = date('Y-m-d H:i:s', time() + SOFT_LOCKOUT_SECS);
-        $conn->query("UPDATE users SET login_attempts = {$newAttempts}, lockout_until = '{$until}' WHERE id = {$userId}");
+        $softStmt = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE id = ?");
+        $softStmt->bind_param('isi', $newAttempts, $until, $userId);
+        $softStmt->execute();
         json_fail(
             'Too many failed attempts. Please try again in 30 minutes.',
             429,
@@ -136,7 +140,9 @@ if (!password_verify($password, $user['password_hash'])) {
         );
     }
 
-    $conn->query("UPDATE users SET login_attempts = {$newAttempts} WHERE id = {$userId}");
+    $attemptsStmt = $conn->prepare("UPDATE users SET login_attempts = ? WHERE id = ?");
+    $attemptsStmt->bind_param('ii', $newAttempts, $userId);
+    $attemptsStmt->execute();
 
     // How many attempts remain before the NEXT threshold
     $nextThreshold = $newAttempts < SOFT_LIMIT ? SOFT_LIMIT : PERM_LIMIT;
@@ -150,7 +156,9 @@ if (!password_verify($password, $user['password_hash'])) {
 }
 
 // ─── Correct password — reset counters ───────────────────────────────────────
-$conn->query("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE id = {$userId}");
+$resetStmt = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE id = ?");
+$resetStmt->bind_param('i', $userId);
+$resetStmt->execute();
 
 // ─── Generate & store OTP ─────────────────────────────────────────────────────
 $otp     = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);

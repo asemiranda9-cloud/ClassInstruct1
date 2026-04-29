@@ -90,7 +90,9 @@ if (!empty($_GET['token']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
             $step = 'error';
             $pageError = 'This reset link is invalid or has already been used.';
         } elseif (empty($user['unlock_token_exp']) || time() > strtotime($user['unlock_token_exp'])) {
-            $conn->query("UPDATE users SET unlock_token = NULL, unlock_token_exp = NULL WHERE id = {$user['id']}");
+            $expiredStmt = $conn->prepare("UPDATE users SET unlock_token = NULL, unlock_token_exp = NULL WHERE id = ?");
+            $expiredStmt->bind_param('i', $user['id']);
+            $expiredStmt->execute();
             $step = 'error';
             $pageError = 'This reset link has expired. Please request a new one.';
         } else {
@@ -156,11 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $expiry    = date('Y-m-d H:i:s', time() + TOKEN_EXPIRY_SECS);
                     $firstName = $user['first_name'];
 
-                    $conn->query(
-                        "UPDATE users
-                         SET unlock_token = '{$tokenHash}', unlock_token_exp = '{$expiry}'
-                         WHERE id = {$user['id']}"
-                    );
+                    $conn->prepare(
+                        "UPDATE users SET unlock_token = ?, unlock_token_exp = ? WHERE id = ?"
+                    )->bind_param('ssi', $tokenHash, $expiry, $user['id'])->execute();
 
                     $resetUrl = $appUrl . '/forgot_password.php?token=' . $rawToken;
 
@@ -221,18 +221,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $step = 'error';
                 $pageError = 'This reset link is invalid or has already been used.';
             } elseif (empty($user['unlock_token_exp']) || time() > strtotime($user['unlock_token_exp'])) {
-                $conn->query("UPDATE users SET unlock_token = NULL, unlock_token_exp = NULL WHERE id = {$user['id']}");
+                $expiredStmt = $conn->prepare("UPDATE users SET unlock_token = NULL, unlock_token_exp = NULL WHERE id = ?");
+                $expiredStmt->bind_param('i', $user['id']);
+                $expiredStmt->execute();
                 $step = 'error';
                 $pageError = 'This reset link has expired. Please request a new one.';
             } else {
                 $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-                $conn->query(
+                $resetStmt = $conn->prepare(
                     "UPDATE users
-                     SET password_hash = '{$conn->real_escape_string($newHash)}',
-                         unlock_token = NULL, unlock_token_exp = NULL,
+                     SET password_hash = ?, unlock_token = NULL, unlock_token_exp = NULL,
                          perm_locked = 0, login_attempts = 0, lockout_until = NULL
-                     WHERE id = {$user['id']}"
+                     WHERE id = ?"
                 );
+                $resetStmt->bind_param('si', $newHash, $user['id']);
+                $resetStmt->execute();
                 $step = 'success';
             }
         }

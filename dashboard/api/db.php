@@ -132,13 +132,16 @@ function addStudent($conn) {
 
     // Only enforce uniqueness when an actual ID was supplied
     if ($studentId !== null) {
-        $sid   = $conn->real_escape_string($studentId);
-        $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid'");
-        if ($check && $check->num_rows > 0) {
+        $checkStmt = $conn->prepare("SELECT id FROM students WHERE student_id = ?");
+        $checkStmt->bind_param('s', $studentId);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        if ($checkResult->num_rows > 0) {
             http_response_code(409);
             echo json_encode(['error' => 'Student ID / LRN already exists']);
             return;
         }
+        $checkStmt->close();
     }
 
     $stmt = $conn->prepare(
@@ -165,9 +168,13 @@ function addStudent($conn) {
 
     if ($stmt->execute()) {
         $newId = $conn->insert_id;
-        $row = $conn->query("SELECT * FROM students WHERE id = $newId")->fetch_assoc();
+        $rowStmt = $conn->prepare("SELECT * FROM students WHERE id = ?");
+        $rowStmt->bind_param('i', $newId);
+        $rowStmt->execute();
+        $row = $rowStmt->get_result()->fetch_assoc();
         http_response_code(201);
         echo json_encode(mapRow($row));
+        $rowStmt->close();
     } else {
         http_response_code(500);
         echo json_encode(['error' => $stmt->error]);
@@ -196,13 +203,16 @@ function updateStudent($conn, $id) {
 
     // Only check uniqueness (excluding self) when a real ID is provided
     if ($studentId !== null) {
-        $sid   = $conn->real_escape_string($studentId);
-        $check = $conn->query("SELECT id FROM students WHERE student_id = '$sid' AND id != $id");
-        if ($check && $check->num_rows > 0) {
+        $uidCheck = $conn->prepare("SELECT id FROM students WHERE student_id = ? AND id != ?");
+        $uidCheck->bind_param('si', $studentId, $id);
+        $uidCheck->execute();
+        $uidResult = $uidCheck->get_result();
+        if ($uidResult->num_rows > 0) {
             http_response_code(409);
             echo json_encode(['error' => 'Student ID / LRN already exists']);
             return;
         }
+        $uidCheck->close();
     }
 
     $stmt = $conn->prepare("
@@ -228,8 +238,12 @@ function updateStudent($conn, $id) {
     );
 
     if ($stmt->execute()) {
-        $row = $conn->query("SELECT * FROM students WHERE id = $id")->fetch_assoc();
+        $rowStmt = $conn->prepare("SELECT * FROM students WHERE id = ?");
+        $rowStmt->bind_param('i', $id);
+        $rowStmt->execute();
+        $row = $rowStmt->get_result()->fetch_assoc();
         echo json_encode(mapRow($row));
+        $rowStmt->close();
     } else {
         http_response_code(500);
         echo json_encode(['error' => $stmt->error]);
