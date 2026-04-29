@@ -169,7 +169,7 @@
       margin-bottom: 32px;
     }
 
-    .section-tag .line { width: 40px; height: 1px; background: var(--border); }
+    .section-tag .line { width: 40px; height: 1px; background: var(--dark); }
 
     .section-tag span {
       font-family: 'JetBrains Mono', monospace;
@@ -269,13 +269,34 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 24px 64px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
+      padding: 16px 32px;
+      background-color: rgba(255, 255, 255, 0.7); /* semi-transparent white */
+      backdrop-filter: blur(10px); /* glassy blur effect */
+      border-radius: 50px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      width: 95%;
+      margin: 20px auto;
+      position: fixed; /* key part */
+      top: 2px;        /* sticks when scrolling */
       z-index: 1000;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+
+    }
+    .nav-menu {
+    display: flex;
+    gap: 20px; /* space between links */
+    align-items: center;
+    }
+
+    .nav-menu .nav-link {
+    text-decoration: none;
+    color: #333;
+    font-family: sans-serif;
+    padding: 8px 12px;
+    transition: color 0.3s ease;
+    }
+
+    .nav-menu .nav-link:hover {
+    color: #b8860b; /* gold hover effect */
     }
 
     .navbar > .btn-primary { width: auto; flex-shrink: 0; }
@@ -297,13 +318,13 @@
       margin-right: 8px;}
 
     .logo-mark i {
-      color: #4b2e83; /* dark purple cap */
+      color: #1a1a1a; /* dark purple cap */
       font-size: 20px; }
 
     .logo-text { 
       font-size: 20px;
       font-weight: 600;
-      color: #333; }
+      color: #1a1a1a; }
 
     .nav-links { display: flex; align-items: center; gap: 32px; }
 
@@ -317,7 +338,7 @@
       
     }
 
-    .nav-links a:hover { color: var(--dark); }
+    .nav-links a:hover { color: #b8860b; }
 
     /* =============================================
        HERO
@@ -328,14 +349,15 @@
       flex-direction: column;
       align-items: center;
       padding: 128px 64px 144px;
-      overflow: hidden;
+      
     }
 
     .hero-bg {
       position: absolute;
       inset: 0;
       background: url('https://cdn.wonder.so/images/019d44da-e731-707b-938e-e22b33072424/60e721895e12f8c274dc4bfb1ba1f8d289a8a66860aa9625aa60deffa4cf0c4b.jpg') center/cover no-repeat;
-      opacity: 0.06;
+      opacity: 0.35;
+      z-index: -1;
     }
 
     .hero-content {
@@ -894,276 +916,6 @@
     .footer-bottom span { color: rgba(250, 250, 248, 0.3); font-size: 12px; }
 
     /* =============================================
-       SIGN-IN MODAL
-    ============================================= */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-
-    .modal-overlay.active { opacity: 1; visibility: visible; }
-
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(17, 24, 39, 0.55);
-      backdrop-filter: blur(4px);
-    }
-
-    .modal-box {
-      position: relative;
-      z-index: 1;
-      background: var(--white);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-xl);
-      width: 100%;
-      max-width: 420px;
-      overflow: hidden;
-      transform: translateY(24px) scale(0.97);
-      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-      opacity: 0;
-    }
-
-    .modal-overlay.active .modal-box { transform: translateY(0) scale(1); opacity: 1; }
-
-    .modal-accent { height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
-
-    .modal-inner { padding: 2rem 2rem 2.5rem; }
-
-    .modal-close {
-      position: absolute;
-      top: 1rem; right: 1rem;
-      background: var(--gray-100);
-      border: none;
-      cursor: pointer;
-      width: 32px; height: 32px;
-      border-radius: var(--radius-full);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--gray-500);
-      font-size: 1.1rem;
-      transition: background var(--transition), color var(--transition);
-    }
-
-    .modal-close:hover { background: var(--gray-200); color: var(--gray-800); }
-
-    .modal-brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
-
-    .modal-brand-icon {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-base);
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1rem;
-    }
-
-    .modal-brand-name { font-weight: 700; font-size: 1rem; color: var(--gray-900); }
-
-    .modal-title { font-size: 1.375rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.375rem; }
-    .modal-subtitle { font-size: 0.875rem; color: var(--gray-500); margin-bottom: 1.75rem; line-height: 1.5; }
-
-    /* Modal form */
-    .form-group { margin-bottom: 1.25rem; }
-
-    .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-700); margin-bottom: 0.375rem; }
-
-    .input-wrap { position: relative; }
-
-    .form-input {
-      width: 100%;
-      padding: 0.75rem 0.875rem 0.75rem 2.5rem;
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      font-family: inherit;
-      font-size: 0.9375rem;
-      color: var(--gray-900);
-      background: var(--gray-50);
-      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-      outline: none;
-    }
-
-    .form-input:focus { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
-    .form-input.error { border-color: var(--error); }
-
-    .field-error { font-size: 0.8125rem; color: var(--error); margin-top: 0.375rem; display: none; }
-    .field-error.show { display: block; }
-
-    /* Modal primary button override */
-    .modal-inner .btn-primary {
-      width: 100%;
-      padding: 0.8125rem 1.5rem;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border-radius: var(--radius-md);
-      font-size: 0.9375rem;
-      font-weight: 600;
-      box-shadow: var(--shadow-md);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .modal-inner .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-      transition: left 0.5s;
-    }
-
-    .modal-inner .btn-primary:hover:not(:disabled)::before { left: 100%; }
-    .modal-inner .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
-    .modal-inner .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-
-    .spinner {
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      display: none;
-    }
-
-    .btn-primary.loading .btn-label { display: none; }
-    .btn-primary.loading .spinner  { display: block; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; }
-    .divider-line { flex: 1; height: 1px; background: var(--gray-200); }
-    .divider-text { font-size: 0.75rem; color: var(--gray-400); font-weight: 500; white-space: nowrap; }
-
-    .btn-google {
-      width: 100%;
-      padding: 0.75rem 1.25rem;
-      background: var(--white);
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      font-family: inherit;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: var(--gray-700);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.625rem;
-      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
-    }
-
-    .btn-google:hover { border-color: var(--gray-300); background: var(--gray-50); box-shadow: var(--shadow-md); }
-    #btnRegister:hover { background: var(--primary-dark) !important; border-color: var(--primary-dark) !important; box-shadow: var(--shadow-md); }
-    .btn-google svg { flex-shrink: 0; }
-
-    .modal-footer-note { margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--gray-400); }
-    .modal-footer-note a { color: var(--primary); font-weight: 500; cursor: pointer; }
-    .modal-footer-note a:hover { color: var(--primary-dark); }
-
-    /* OTP */
-    .otp-email-display {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      background: rgba(99, 102, 241, 0.08);
-      color: var(--primary-dark);
-      padding: 0.25rem 0.75rem;
-      border-radius: var(--radius-full);
-      font-size: 0.8125rem;
-      font-weight: 500;
-      margin-bottom: 1.75rem;
-    }
-
-    .otp-inputs { display: flex; gap: 0.625rem; justify-content: center; margin-bottom: 1.25rem; }
-
-    .otp-digit {
-      width: 52px; height: 58px;
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius-md);
-      background: var(--gray-50);
-      font-family: inherit;
-      font-size: 1.5rem;
-      font-weight: 700;
-      text-align: center;
-      color: var(--gray-900);
-      outline: none;
-      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
-      caret-color: var(--primary);
-    }
-
-    .otp-digit:focus { border-color: var(--primary); background: var(--white); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
-    .otp-digit.filled { border-color: var(--primary-light); background: var(--white); }
-    .otp-digit.error-shake { border-color: var(--error); animation: shake 0.4s ease; }
-
-    @keyframes shake {
-      0%,100% { transform: translateX(0); }
-      20% { transform: translateX(-6px); }
-      40% { transform: translateX(6px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(4px); }
-    }
-
-    .otp-meta { display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; margin-bottom: 1.5rem; }
-    .otp-timer { color: var(--gray-500); display: flex; align-items: center; gap: 0.375rem; }
-    .otp-timer-count { font-weight: 600; color: var(--gray-700); font-variant-numeric: tabular-nums; }
-
-    .btn-resend {
-      background: none; border: none; cursor: pointer;
-      color: var(--primary); font-family: inherit;
-      font-size: 0.8125rem; font-weight: 500; padding: 0;
-      transition: color var(--transition);
-    }
-
-    .btn-resend:hover:not(:disabled) { color: var(--primary-dark); }
-    .btn-resend:disabled { color: var(--gray-400); cursor: not-allowed; }
-
-    .otp-error { text-align: center; font-size: 0.8125rem; color: var(--error); margin-bottom: 1rem; min-height: 1.2em; }
-
-    .btn-back {
-      background: none; border: none; cursor: pointer;
-      color: var(--gray-500); font-family: inherit;
-      font-size: 0.8125rem;
-      display: inline-flex; align-items: center; gap: 0.375rem;
-      padding: 0; margin-bottom: 1.5rem;
-      transition: color var(--transition);
-    }
-
-    .btn-back:hover { color: var(--gray-800); }
-
-    /* Success */
-    .success-step { text-align: center; padding: 0.5rem 0 0.25rem; }
-
-    .success-icon {
-      width: 64px; height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 1.25rem;
-      font-size: 1.875rem;
-      box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
-      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-    .success-title { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; }
-    .success-msg   { font-size: 0.875rem; color: var(--gray-500); line-height: 1.6; margin-bottom: 1.75rem; }
-
-    /* Step panels */
-    .step { display: none; }
-    .step.active { display: block; }
-
-    /* =============================================
        INTERACTIVE ELEMENTS - PERFORMANCE
     ============================================= */
     button, .btn-primary, .btn-secondary, .btn-secondary-dark,
@@ -1223,9 +975,15 @@
 <body>
 
   <!-- Skip to main content for accessibility -->
-  <a href="#main-content" class="sr-only">Skip to main content</a>
 
-  <!-- ===== NAVBAR ===== -->
+  <!-- ===== MAIN CONTENT ===== -->
+  <main id="main-content">
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+
+      <!-- ===== NAVBAR ===== -->
   <nav class="navbar">
     <div class="logo">
       <a href="#main-content" class="logo-link">
@@ -1241,317 +999,10 @@
       <a href="#about" class="nav-link font-sans">About</a>
       <a href="#contact" class="nav-link font-sans">Contact</a>
     </div>
-    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-      <span class="hamburger-line"></span>
-      <span class="hamburger-line"></span>
-      <span class="hamburger-line"></span>
-    </button>
-    <button class="btn-primary font-sans open-signin">Sign In</button>
+    
+    <a href="login.php" class="btn-primary font-sans">Sign In</a>
   </nav>
 
-  <!-- ===== SIGN-IN MODAL ===== -->
-  <div class="modal-overlay" id="signInModal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-backdrop" id="modalBackdrop"></div>
-
-    <div class="modal-box">
-      <div class="modal-accent"></div>
-      <button class="modal-close" id="closeModal" aria-label="Close sign in">✕</button>
-
-      <div class="modal-inner">
-
-        <!-- Brand -->
-        <div class="modal-brand">
-          <div class="modal-brand-icon">🎓</div>
-          <span class="modal-brand-name">ClassInstruct</span>
-        </div>
-
-        <!-- STEP 1 : Email -->
-        <div class="step active" id="stepEmail">
-          <h2 class="modal-title" id="modal-title">Welcome back</h2>
-          <p class="modal-subtitle">Enter your Gmail address to continue. We'll send a one-time code to verify it's you.</p>
-
-          <div class="form-group">
-            <label for="emailInput">Email address</label>
-            <div class="input-wrap">
-              <input
-                class="form-input"
-                type="email"
-                id="emailInput"
-                placeholder="✉ you@example.com"
-                autocomplete="email"
-                inputmode="email"
-              >
-            </div>
-            <span class="field-error" id="emailError">Please enter a valid email address.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="passwordInput">Password</label>
-            <div class="input-wrap" style="position:relative;">
-              <input
-                class="form-input"
-                type="password"
-                id="passwordInput"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                style="padding-left:2.5rem;"
-              >
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
-              
-            </div>
-            <span class="field-error" id="passwordError">Please enter your password.</span>
-          </div>
-
-          <!-- Forgot / Unlock links -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;margin-top:-0.25rem;">
-            <a id="linkForgotPassword"
-               style="font-size:0.8125rem;color:var(--primary);font-weight:500;cursor:pointer;text-decoration:none;"
-               onmouseover="this.style.textDecoration='underline'"
-               onmouseout="this.style.textDecoration='none'">
-              🔑 Forgot password?
-            </a>
-            <a id="linkUnlockAccount"
-               style="font-size:0.8125rem;color:var(--gray-500);font-weight:500;cursor:pointer;text-decoration:none;display:none;"
-               onmouseover="this.style.color='var(--primary)';this.style.textDecoration='underline'"
-               onmouseout="this.style.color='var(--gray-500)';this.style.textDecoration='none'">
-              🔓 Unlock account
-            </a>
-          </div>
-
-          <button class="btn-primary" id="btnSendOtp">
-            <span class="btn-label">Send verification code</span>
-            <div class="spinner"></div>
-          </button>
-
-          <div class="divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">or</span>
-            <div class="divider-line"></div>
-          </div>
-
-          <button class="btn-google" id="btnRegister" style="background:var(--primary);color:#fff;border-color:var(--primary);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
-            Register
-          </button>
-
-          <p class="modal-footer-note">
-            Don't have an account? <a id="linkSignUp">Sign up free</a>
-          </p>
-        </div>
-
-        <!-- STEP 2 : OTP -->
-        <div class="step" id="stepOtp">
-          <button class="btn-back" id="btnBack">← Back</button>
-
-          <h2 class="modal-title">Check your email</h2>
-          <p class="modal-subtitle">We sent a 6-digit code to</p>
-          <div class="otp-email-display" id="otpEmailDisplay">✉ you@gmail.com</div>
-
-          <div class="otp-inputs" id="otpInputs" role="group" aria-label="6-digit verification code">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 1">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 2">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 3">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 4">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 5">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 6">
-          </div>
-
-          <div class="otp-error" id="otpError"></div>
-
-          <div class="otp-meta">
-            <span class="otp-timer">
-              ⏱ Code expires in <span class="otp-timer-count" id="timerCount">2:00</span>
-            </span>
-            <button class="btn-resend" id="btnResend" disabled>Resend code</button>
-          </div>
-
-          <button class="btn-primary" id="btnVerifyOtp">
-            <span class="btn-label">Verify & Sign In</span>
-            <div class="spinner"></div>
-          </button>
-
-          <p class="modal-footer-note">Didn't receive it? Check your spam folder or <a id="linkResend2">resend</a>.</p>
-        </div>
-
-        <!-- STEP 3 : Success -->
-        <div class="step" id="stepSuccess">
-          <div class="success-step">
-            <div class="success-icon">✓</div>
-            <h2 class="success-title">You're signed in!</h2>
-            <p class="success-msg">Welcome back to <strong>ClassInstruct</strong>.<br>Redirecting you to your dashboard…</p>
-            <button class="btn-primary" id="btnGoToDashboard">
-              <span class="btn-label">Go to Dashboard →</span>
-              <div class="spinner"></div>
-            </button>
-          </div>
-        </div>
-
-      </div><!-- /.modal-inner -->
-    </div><!-- /.modal-box -->
-  </div><!-- /.modal-overlay -->
-
-  <!-- ===== REGISTER MODAL ===== -->
-  <div class="modal-overlay" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="reg-modal-title">
-    <div class="modal-backdrop" id="regModalBackdrop"></div>
-
-    <div class="modal-box" style="max-width:460px;">
-      <div class="modal-accent"></div>
-      <button class="modal-close" id="closeRegModal" aria-label="Close register">✕</button>
-
-      <div class="modal-inner">
-
-        <!-- Brand -->
-        <div class="modal-brand">
-          <div class="modal-brand-icon">🎓</div>
-          <span class="modal-brand-name">ClassInstruct</span>
-        </div>
-
-        <!-- STEP REG-1 : Registration Form -->
-        <div class="step active" id="regStepForm">
-          <h2 class="modal-title" id="reg-modal-title">Create your account</h2>
-          <p class="modal-subtitle">Join thousands of educators. It's completely free.</p>
-
-          <div class="form-group">
-            <label for="regFirstName">First Name</label>
-            <div class="input-wrap">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">👤</span>
-              <input class="form-input" type="text" id="regFirstName" placeholder="Juan" autocomplete="given-name">
-            </div>
-            <span class="field-error" id="regFirstNameError">Please enter your first name.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="regLastName">Last Name</label>
-            <div class="input-wrap">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">👤</span>
-              <input class="form-input" type="text" id="regLastName" placeholder="dela Cruz" autocomplete="family-name">
-            </div>
-            <span class="field-error" id="regLastNameError">Please enter your last name.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="regGender">Gender</label>
-            <div class="input-wrap">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;z-index:1;">⚧</span>
-              <select class="form-input" id="regGender" autocomplete="sex" style="padding-left:2.5rem;cursor:pointer;background:var(--white);">
-                <option value="">Select your gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Prefer not to say</option>
-              </select>
-            </div>
-            <span class="field-error" id="regGenderError">Please select your gender.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="regEmail">Email address</label>
-            <div class="input-wrap">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">✉</span>
-              <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" inputmode="email">
-            </div>
-            <span class="field-error" id="regEmailError">Please enter a valid email address.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="regPassword">Password</label>
-            <div class="input-wrap" style="position:relative;">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
-              <input class="form-input" type="password" id="regPassword" placeholder="At least 8 characters" autocomplete="new-password">
-              
-            </div>
-            <span class="field-error" id="regPasswordError">Password must be at least 8 characters.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="regPasswordConfirm">Confirm Password</label>
-            <div class="input-wrap" style="position:relative;">
-              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;">🔒</span>
-              <input class="form-input" type="password" id="regPasswordConfirm" placeholder="Re-enter your password" autocomplete="new-password">
-              
-            </div>
-            <span class="field-error" id="regPasswordConfirmError">Passwords do not match.</span>
-          </div>
-
-          <!-- Password strength bar -->
-          <div style="margin-bottom:1.25rem;">
-            <div style="height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden;">
-              <div id="regStrengthBar" style="height:100%;width:0%;border-radius:2px;transition:width 0.3s,background 0.3s;"></div>
-            </div>
-            <span id="regStrengthLabel" style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;display:block;"></span>
-          </div>
-
-          <button class="btn-primary" id="btnRegisterSubmit">
-            <span class="btn-label">Create Account & Send Code</span>
-            <div class="spinner"></div>
-          </button>
-
-          <p class="modal-footer-note" style="margin-top:1rem;">
-            Already have an account? <a id="linkBackToSignIn">Sign in</a>
-          </p>
-        </div>
-
-        <!-- STEP REG-2 : OTP Verification -->
-        <div class="step" id="regStepOtp">
-          <button class="btn-back" id="regBtnBack">← Back</button>
-
-          <h2 class="modal-title">Verify your email</h2>
-          <p class="modal-subtitle">We sent a 6-digit code to</p>
-          <div class="otp-email-display" id="regOtpEmailDisplay">✉ you@gmail.com</div>
-
-          <div class="otp-inputs" id="regOtpInputs" role="group" aria-label="6-digit verification code">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 1">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 2">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 3">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 4">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 5">
-            <input class="otp-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 6">
-          </div>
-
-          <div class="otp-error" id="regOtpError"></div>
-
-          <div class="otp-meta">
-            <span class="otp-timer">
-              ⏱ Code expires in <span class="otp-timer-count" id="regTimerCount">2:00</span>
-            </span>
-            <button class="btn-resend" id="regBtnResend" disabled>Resend code</button>
-          </div>
-
-          <button class="btn-primary" id="regBtnVerifyOtp">
-            <span class="btn-label">Verify & Complete Registration</span>
-            <div class="spinner"></div>
-          </button>
-
-          <p class="modal-footer-note">Didn't receive it? Check your spam folder or <a id="regLinkResend2">resend</a>.</p>
-        </div>
-
-        <!-- STEP REG-3 : Success -->
-        <div class="step" id="regStepSuccess">
-          <div class="success-step">
-            <div class="success-icon">🎉</div>
-            <h2 class="success-title">Account Created!</h2>
-            <p class="success-msg">Welcome to <strong>ClassInstruct</strong>!<br>Your account is ready. Please sign in to continue.</p>
-            <button class="btn-primary" id="regBtnGoToDashboard">
-              <span class="btn-label">Sign In →</span>
-              <div class="spinner"></div>
-            </button>
-          </div>
-        </div>
-
-      </div><!-- /.modal-inner -->
-    </div><!-- /.modal-box -->
-  </div><!-- /#registerModal -->
-
-  <!-- ===== MAIN CONTENT ===== -->
-  <main id="main-content">
-
-    <!-- ===== HERO ===== -->
-    <section class="hero">
-      <div class="hero-bg"></div>
       <div class="section-tag" style="position:relative; z-index:10;">
         <div class="line"></div>
         <div class="line"></div>
@@ -1566,7 +1017,7 @@
           ClassInstruct transforms your instructional materials into structured lesson plans, interactive assessments, and mastery-level insights — completely free, so you can focus on what matters most.
         </p>
         <div class="hero-cta">
-          <button class="btn-primary font-sans open-signin">Get Started — Free</button>
+          <a href="login.php" class="btn-primary font-sans">Get Started — Free</a>
           <a href="#" class="btn-secondary font-sans">Watch Demo</a>
         </div>
       </div>
@@ -1789,7 +1240,7 @@
       </h2>
       <p class="cta-desc font-sans">ClassInstruct is completely free for all educators. Start organizing your instructional materials, generating assessments, and gaining mastery-level insights today.</p>
       <div class="cta-buttons">
-        <button class="btn-primary font-sans open-signin">
+        <a href="login.php" class="btn-primary font-sans">
           Get Started — Free
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1890,34 +1341,11 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <span class="font-sans">© 2025 ClassInstruct. All rights reserved.</span>
+      <span class="font-sans">© 2026 ClassInstruct. All rights reserved.</span>
     </div>
   </footer>
 
   <script src="scripts.js"></script>
-  <script src="signin_modal_wired.js"></script>
-  <script src="register_modal.js"></script>
-  <script>
-    // ── Forgot Password & Unlock Account link handlers ──────────────────────
-    (function () {
-      function getEmailValue() {
-        const el = document.getElementById('emailInput');
-        return el ? el.value.trim() : '';
-      }
-
-      document.getElementById('linkForgotPassword').addEventListener('click', function () {
-        const email = getEmailValue();
-        window.location.href = BASE + '/forgot_password.php'
-          + (email ? '?email=' + encodeURIComponent(email) : '');
-      });
-
-      document.getElementById('linkUnlockAccount').addEventListener('click', function () {
-        const email = getEmailValue();
-        window.location.href = BASE + '/unlock_account.php'
-          + (email ? '?email=' + encodeURIComponent(email) : '');
-      });
-    })();
-  </script>
 
 </body>
 </html>
