@@ -64,8 +64,9 @@
     ══════════════════════════════ */
     .auth-page {
       display: grid;
-      grid-template-columns: 1fr 480px;
-      min-height: 100vh;
+      grid-template-columns: 1fr 560px;
+      height: 100vh;
+      overflow: hidden;
     }
 
     /* ── Left hero panel ── */
@@ -76,6 +77,7 @@
       justify-content: space-between;
       padding: 48px 56px;
       overflow: hidden;
+      height: 100vh;
     }
 
     .auth-hero-bg {
@@ -164,9 +166,10 @@
       background: #fafaf8;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 40px 48px;
+      padding: 32px 48px;
       overflow-y: auto;
       position: relative;
+      height: 100vh;
     }
     .auth-form-panel::before {
       content: '';
@@ -174,12 +177,12 @@
       background: linear-gradient(90deg, var(--gold), #f5c842, var(--gold));
     }
 
-    .auth-form-wrap { width:100%; max-width:380px; }
+    .auth-form-wrap { width:100%; max-width:440px; }
 
     /* ── Tab switcher ── */
     .auth-tabs {
       display: flex; background: var(--gray-100);
-      border-radius: 10px; padding: 4px; margin-bottom: 32px; gap: 4px;
+      border-radius: 10px; padding: 4px; margin-bottom: 20px; gap: 4px;
     }
     .auth-tab {
       flex:1; padding:9px 16px; border:none; background:transparent;
@@ -189,15 +192,49 @@
     }
     .auth-tab.active { background:#fff; color:var(--dark); box-shadow:0 1px 4px rgba(0,0,0,.12); }
 
-    /* Panel show/hide */
-    .auth-panel-section { display: none; }
-    .auth-panel-section.active { display: block; }
+    /* ── Sliding panel container ── */
+    .auth-panels-slider {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .auth-panel-section {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(60px);
+      transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity  0.38s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform, opacity;
+    }
+
+    .auth-panel-section.slide-out-left {
+      transform: translateX(-60px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .auth-panel-section.slide-out-right {
+      transform: translateX(60px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .auth-panel-section.active {
+      position: relative;
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
 
     /* ══════════════════════════════
        MODAL STYLES — copied verbatim
        from homepage.php <style>
     ══════════════════════════════ */
-    .modal-brand { display:flex; align-items:center; gap:.5rem; margin-bottom:1.5rem; }
+    .modal-brand { display:flex; align-items:center; gap:.5rem; margin-bottom:1rem; }
     .modal-brand-icon {
       width:36px; height:36px; border-radius:var(--radius-base);
       background:linear-gradient(135deg,var(--primary),var(--primary-dark));
@@ -206,30 +243,35 @@
     }
     .modal-brand-name { font-weight:700; font-size:1rem; color:var(--gray-900); }
 
-    .modal-title { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:700; color:var(--gray-900); margin-bottom:.375rem; line-height:1.2; }
-    .modal-subtitle { font-size:.875rem; color:var(--gray-500); margin-bottom:1.75rem; line-height:1.5; }
+    .modal-title { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--gray-900); margin-bottom:.25rem; line-height:1.2; }
+    .modal-subtitle { font-size:.875rem; color:var(--gray-500); margin-bottom:1.1rem; line-height:1.5; }
 
-    .form-group { margin-bottom:1.25rem; }
-    .form-group label { display:block; font-size:.875rem; font-weight:500; color:var(--gray-700); margin-bottom:.375rem; }
+    /* Register-specific tighter spacing */
+    #sectionRegister .modal-brand { margin-bottom:.75rem; }
+    #sectionRegister .modal-title { font-size:1.3rem; margin-bottom:.2rem; }
+    #sectionRegister .modal-subtitle { margin-bottom:.9rem; }
+
+    .form-group { margin-bottom:.9rem; }
+    .form-group label { display:block; font-size:.875rem; font-weight:500; color:var(--gray-700); margin-bottom:.3rem; }
     .input-wrap { position:relative; }
 
     .form-input {
-      width:100%; padding:.75rem .875rem .75rem 2.5rem;
+      width:100%; padding:.6rem .875rem .6rem 2.5rem;
       border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
-      font-family:inherit; font-size:.9375rem; color:var(--gray-900);
+      font-family:inherit; font-size:.9rem; color:var(--gray-900);
       background:var(--white); outline:none;
       transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
     }
     .form-input:focus { border-color:var(--primary); background:var(--white); box-shadow:0 0 0 3px rgba(184,134,11,.12); }
     .form-input.error { border-color:var(--error); }
 
-    .field-error { font-size:.8125rem; color:var(--error); margin-top:.375rem; display:none; }
+    .field-error { font-size:.8125rem; color:var(--error); margin-top:.25rem; display:none; }
     .field-error.show { display:block; }
 
     /* Buttons */
     .btn-primary {
       display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      width:100%; padding:.8125rem 1.5rem;
+      width:100%; padding:.75rem 1.5rem;
       background:linear-gradient(135deg,var(--primary),var(--primary-dark));
       border:none; border-radius:var(--radius-md);
       font-family:inherit; font-size:.9375rem; font-weight:600; color:#fff;
@@ -255,12 +297,12 @@
     .btn-primary.loading .spinner   { display:block; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    .divider { display:flex; align-items:center; gap:.75rem; margin:1.25rem 0; }
+    .divider { display:flex; align-items:center; gap:.75rem; margin:.9rem 0; }
     .divider-line { flex:1; height:1px; background:var(--gray-200); }
     .divider-text { font-size:.75rem; color:var(--gray-400); font-weight:500; white-space:nowrap; }
 
     .btn-google {
-      width:100%; padding:.75rem 1.25rem; background:var(--white);
+      width:100%; padding:.7rem 1.25rem; background:var(--white);
       border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
       font-family:inherit; font-size:.9375rem; font-weight:500; color:var(--gray-700);
       cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.625rem;
@@ -270,7 +312,7 @@
     #btnRegister { background:var(--primary); color:#fff; border-color:var(--primary); }
     #btnRegister:hover { background:var(--primary-dark) !important; border-color:var(--primary-dark) !important; }
 
-    .modal-footer-note { margin-top:1.5rem; text-align:center; font-size:.8125rem; color:var(--gray-400); }
+    .modal-footer-note { margin-top:.9rem; text-align:center; font-size:.8125rem; color:var(--gray-400); }
     .modal-footer-note a { color:var(--primary); font-weight:500; cursor:pointer; }
     .modal-footer-note a:hover { color:var(--primary-dark); }
 
@@ -347,9 +389,9 @@
 
     /* Responsive */
     @media (max-width:900px) {
-      .auth-page { grid-template-columns:1fr; }
+      .auth-page { grid-template-columns:1fr; height:auto; overflow:visible; }
       .auth-hero  { display:none; }
-      .auth-form-panel { padding:40px 24px; }
+      .auth-form-panel { padding:40px 24px; height:auto; min-height:100vh; }
     }
     @media (max-width:480px) {
       .otp-digit { width:44px; height:52px; font-size:1.25rem; }
@@ -377,6 +419,7 @@
         <div class="hero-logo-mark"><i class="fa-solid fa-graduation-cap"></i></div>
         <span class="hero-brand-name">ClassInstruct</span>
       </div>
+      <a href="homepage.php" class="back-home" style="margin-top:14px;">← Back to home</a>
     </div>
 
     <div class="auth-hero-inner hero-copy">
@@ -386,17 +429,11 @@
       </div>
       <h1 class="hero-headline">Teach Smarter,<br><em>Not Harder.</em></h1>
       <p class="hero-desc">ClassInstruct transforms your instructional materials into structured lesson plans, interactive assessments, and mastery-level insights — completely free.</p>
-      <div class="hero-pills">
-        <span class="hero-pill"><span class="hero-pill-dot"></span>Free for all educators</span>
-        <span class="hero-pill"><span class="hero-pill-dot"></span>Curriculum-aligned AI</span>
-        <span class="hero-pill"><span class="hero-pill-dot"></span>Mastery-level analytics</span>
-        <span class="hero-pill"><span class="hero-pill-dot"></span>No credit card needed</span>
-      </div>
+
     </div>
 
     <div class="hero-footer">
       <span>© 2025 ClassInstruct</span>
-      <a href="homepage.php" class="back-home">← Back to home</a>
     </div>
   </div>
 
@@ -409,6 +446,9 @@
         <button class="auth-tab active" id="tabSignIn"   onclick="switchTab('signin')">Sign In</button>
         <button class="auth-tab"        id="tabRegister" onclick="switchTab('register')">Register</button>
       </div>
+
+      <!-- Sliding panels wrapper -->
+      <div class="auth-panels-slider" id="authPanelsSlider">
 
       <!-- ══════════════════════════════════════
            SIGN-IN SECTION
@@ -545,41 +585,45 @@
           <h2 class="modal-title">Create your account</h2>
           <p class="modal-subtitle">Join thousands of educators. It's completely free.</p>
 
-          <div class="form-group">
-            <label for="regFirstName">First Name</label>
-            <div class="input-wrap">
-              <input class="form-input" type="text" id="regFirstName" placeholder="Juan" autocomplete="given-name">
+          <!-- First Name + Last Name on same row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem;">
+            <div>
+              <label for="regFirstName" style="display:block;font-size:.875rem;font-weight:500;color:var(--gray-700);margin-bottom:.375rem;">First Name</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="regFirstName" placeholder="Juan" autocomplete="given-name" style="padding-left:.875rem;">
+              </div>
+              <span class="field-error" id="regFirstNameError"></span>
             </div>
-            <span class="field-error" id="regFirstNameError"></span>
+            <div>
+              <label for="regLastName" style="display:block;font-size:.875rem;font-weight:500;color:var(--gray-700);margin-bottom:.375rem;">Last Name</label>
+              <div class="input-wrap">
+                <input class="form-input" type="text" id="regLastName" placeholder="dela Cruz" autocomplete="family-name" style="padding-left:.875rem;">
+              </div>
+              <span class="field-error" id="regLastNameError"></span>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="regLastName">Last Name</label>
-            <div class="input-wrap">
-              <input class="form-input" type="text" id="regLastName" placeholder="dela Cruz" autocomplete="family-name">
+          <!-- Gender + Email on same row -->
+          <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:.6rem;margin-bottom:.9rem;">
+            <div>
+              <label for="regGender" style="display:block;font-size:.875rem;font-weight:500;color:var(--gray-700);margin-bottom:.375rem;">Gender</label>
+              <div class="input-wrap">
+                <select class="form-input" id="regGender" autocomplete="sex" style="padding-left:.875rem;cursor:pointer;background:var(--white);font-size:.875rem;">
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <span class="field-error" id="regGenderError"></span>
             </div>
-            <span class="field-error" id="regLastNameError"></span>
-          </div>
-
-          <div class="form-group">
-            <label for="regGender">Gender</label>
-            <div class="input-wrap">
-              <select class="form-input" id="regGender" autocomplete="sex" style="padding-left:2.5rem;cursor:pointer;background:var(--white);">
-                <option value="">Select your gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Prefer not to say</option>
-              </select>
+            <div>
+              <label for="regEmail" style="display:block;font-size:.875rem;font-weight:500;color:var(--gray-700);margin-bottom:.375rem;">Email address</label>
+              <div class="input-wrap">
+                <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" style="padding-left:.875rem;">
+              </div>
+              <span class="field-error" id="regEmailError"></span>
             </div>
-            <span class="field-error" id="regGenderError"></span>
-          </div>
-
-          <div class="form-group">
-            <label for="regEmail">Email address</label>
-            <div class="input-wrap">
-              <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" inputmode="email">
-            </div>
-            <span class="field-error" id="regEmailError"></span>
           </div>
 
           <div class="form-group">
@@ -599,11 +643,11 @@
           </div>
 
           <!-- Password strength bar -->
-          <div style="margin-bottom:1.25rem;">
+          <div style="margin-bottom:.75rem;">
             <div style="height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden;">
               <div id="regStrengthBar"></div>
             </div>
-            <span id="regStrengthLabel" style="font-size:.75rem;color:var(--gray-400);margin-top:4px;display:block;"></span>
+            <span id="regStrengthLabel" style="font-size:.75rem;color:var(--gray-400);margin-top:3px;display:block;"></span>
           </div>
 
           <button class="btn-primary" id="btnRegisterSubmit">
@@ -662,6 +706,8 @@
 
       </div><!-- /sectionRegister -->
 
+      </div><!-- /auth-panels-slider -->
+
     </div><!-- /auth-form-wrap -->
   </div><!-- /auth-form-panel -->
 
@@ -675,23 +721,69 @@ const BASE     = window.location.pathname.replace(/\/[^\/]+$/, '');
 const REG_BASE = BASE;
 
 /* ══════════════════════════════════════════════════════
-   TAB SWITCHER
+   TAB SWITCHER — with slide animation
 ══════════════════════════════════════════════════════ */
+let currentTab = 'signin';
+
 function switchTab(which) {
-  const si  = document.getElementById('sectionSignIn');
-  const reg = document.getElementById('sectionRegister');
+  if (which === currentTab) return;
+
+  const si   = document.getElementById('sectionSignIn');
+  const reg  = document.getElementById('sectionRegister');
   const tSi  = document.getElementById('tabSignIn');
   const tReg = document.getElementById('tabRegister');
+  const slider = document.getElementById('authPanelsSlider');
 
-  if (which === 'signin') {
-    si.classList.add('active');    reg.classList.remove('active');
-    tSi.classList.add('active');   tReg.classList.remove('active');
-    document.getElementById('emailInput').focus();
-  } else {
-    reg.classList.add('active');   si.classList.remove('active');
-    tReg.classList.add('active');  tSi.classList.remove('active');
-    document.getElementById('regFirstName').focus();
-  }
+  const outgoing = which === 'register' ? si  : reg;
+  const incoming = which === 'register' ? reg : si;
+  const slideInFrom  = which === 'register' ? 'translateX(60px)'  : 'translateX(-60px)';
+
+  // Fix slider height to current height before transition
+  slider.style.height = slider.offsetHeight + 'px';
+
+  // Slide outgoing panel out
+  outgoing.classList.remove('active');
+  outgoing.classList.add(which === 'register' ? 'slide-out-left' : 'slide-out-right');
+
+  // Position incoming panel off-screen (no transition yet)
+  incoming.style.transition = 'none';
+  incoming.style.transform = slideInFrom;
+  incoming.style.opacity = '0';
+  incoming.style.position = 'absolute';
+  incoming.style.pointerEvents = 'none';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // Re-enable transition and slide in
+      incoming.style.transition = '';
+      incoming.style.transform = '';
+      incoming.style.opacity = '';
+      incoming.style.position = '';
+      incoming.style.pointerEvents = '';
+      incoming.classList.add('active');
+
+      // Update tab buttons
+      if (which === 'signin') {
+        tSi.classList.add('active');   tReg.classList.remove('active');
+      } else {
+        tReg.classList.add('active');  tSi.classList.remove('active');
+      }
+
+      currentTab = which;
+
+      // Release fixed height after transition completes
+      setTimeout(() => {
+        slider.style.height = '';
+        outgoing.classList.remove('slide-out-left', 'slide-out-right');
+        // Focus first field
+        if (which === 'signin') {
+          document.getElementById('emailInput').focus();
+        } else {
+          document.getElementById('regFirstName').focus();
+        }
+      }, 400);
+    });
+  });
 }
 
 /* ══════════════════════════════════════════════════════
