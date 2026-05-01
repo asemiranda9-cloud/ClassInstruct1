@@ -191,9 +191,9 @@ function buildRegEmail(string $otp, string $firstName, string $email): string
             <!-- Body -->
             <tr><td style="padding:40px 40px 32px;">
               <div style="margin-bottom:28px;">
-                <span style="font-size:18px;font-weight:700;color:#111827;">🎓 ClassInstruct</span>
+                <span style="font-size:18px;font-weight:700;color:#111827;">ClassInstruct</span>
               </div>
-              <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 8px;">Welcome, {$firstName}! 🎉</h1>
+              <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 8px;">Welcome, {$firstName}! </h1>
               <p style="font-size:14px;color:#6b7280;margin:0 0 8px;line-height:1.6;">
                 Thanks for creating a ClassInstruct account. Enter the code below to complete your registration.
               </p>
@@ -205,7 +205,7 @@ function buildRegEmail(string $otp, string $firstName, string $email): string
               <!-- Warning -->
               <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:28px;">
                 <p style="margin:0;font-size:13px;color:#92400e;">
-                  🔒 Never share this code with anyone. ClassInstruct staff will never ask for it.
+                  Never share this code with anyone. ClassInstruct staff will never ask for it.
                 </p>
               </div>
               <p style="font-size:13px;color:#9ca3af;margin:0;">
@@ -216,7 +216,7 @@ function buildRegEmail(string $otp, string $firstName, string $email): string
             <!-- Footer -->
             <tr><td style="padding:20px 40px;background:#f9fafb;border-top:1px solid #e5e7eb;">
               <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-                © 2025 ClassInstruct · AI-Powered Teaching Platform
+                ©2026 ClassInstruct · AI-Powered Teaching Platform
               </p>
             </td></tr>
           </table>

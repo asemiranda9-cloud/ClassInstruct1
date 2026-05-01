@@ -73,7 +73,8 @@ $stmt->close();
 if (!$user) json_fail('No account found with that email address.');
 
 if (empty($user['password_hash'])) {
-    json_fail("This account uses Google sign-in. Please use the 'Continue with Google' button.");
+    json_fail("This account was registered differently. Please contact support.");
+
 }
 
 $userId   = (int) $user['id'];
