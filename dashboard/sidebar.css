@@ -27,6 +27,9 @@
   --sb-bottom-color: #9a94c4;
   --sb-danger-hover: #d63a3a;
   --sb-danger-hover-bg: rgba(220,60,60,0.07);
+  --sb-collapse-btn: #b5b0d8;
+  --sb-collapse-btn-hover: #6c63ff;
+  --sb-collapse-btn-hover-bg: rgba(108,99,255,0.10);
   --main-bg: #f7f5ff;
   --content-bg: #ffffff;
   --text-primary: #1e1a4a;
@@ -71,6 +74,9 @@
   --sb-bottom-color: #44445a;
   --sb-danger-hover: #ff7373;
   --sb-danger-hover-bg: rgba(255,80,80,0.08);
+  --sb-collapse-btn: #3a3a55;
+  --sb-collapse-btn-hover: #a89fff;
+  --sb-collapse-btn-hover-bg: rgba(108,99,255,0.12);
   --main-bg: #0b0b15;
   --content-bg: #13131f;
   --text-primary: #e8e8f4;
@@ -109,11 +115,148 @@ html, body {
   flex-direction: column;
   flex-shrink: 0;
   border-right: 0.5px solid var(--sb-border);
-  transition: background 0.25s, border-color 0.25s;
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1),
+              background 0.25s,
+              border-color 0.25s;
+  overflow: hidden;
 }
 
+/* ── Collapsed state ── */
+.sb.sb-collapsed {
+  width: 56px;
+}
+
+/* ── Collapsed: hide all text, labels, extras ── */
+.sb.sb-collapsed .sb-name,
+.sb.sb-collapsed .nav-lbl,
+.sb.sb-collapsed .ni > span,
+.sb.sb-collapsed .sb-profile-info,
+.sb.sb-collapsed .sb-profile-chevron,
+.sb.sb-collapsed .theme-toggle-wrap,
+.sb.sb-collapsed .sb-uname,
+.sb.sb-collapsed .sb-urole,
+.sb.sb-collapsed .badge {
+  display: none;
+}
+
+/* Collapsed: hide the collapse button text, show centered arrow */
+.sb.sb-collapsed .sb-brand {
+  justify-content: center;
+  padding: 18px 0 14px;
+  gap: 0;
+}
+.sb.sb-collapsed .sb-collapse-btn {
+  margin-left: 0;
+}
+
+/* Collapsed: nav items become icon-only squares */
+.sb.sb-collapsed .nav {
+  padding: 8px 8px 0;
+}
+.sb.sb-collapsed .ni {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+  width: 40px;
+  margin: 1px auto;
+}
+.sb.sb-collapsed .ni > svg {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+}
+
+/* Collapsed: bottom nav */
+.sb.sb-collapsed .sb-bottom {
+  padding: 6px 8px 4px;
+}
+.sb.sb-collapsed .sb-bottom .ni {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+  width: 40px;
+  margin: 1px auto;
+}
+
+/* Collapsed: profile shows avatar only */
+.sb.sb-collapsed .sb-profile {
+  justify-content: center;
+  padding: 8px 0;
+  margin: 4px 8px 8px;
+}
+.sb.sb-collapsed .sb-div {
+  margin: 0 8px;
+}
+
+/* Collapsed: hide active left bar (no room) */
+.sb.sb-collapsed .ni.active::before {
+  display: none;
+}
+
+/* Collapsed: active dot still shows on icon */
+.sb.sb-collapsed .ni .ni-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin-left: 0;
+}
+
+/* Tooltip on hover when collapsed */
+.sb.sb-collapsed .ni {
+  position: relative;
+}
+.sb.sb-collapsed .ni::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--sb-bg);
+  border: 0.5px solid var(--sb-border);
+  color: var(--sb-item-hover-color);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: var(--shadow);
+  z-index: 100;
+  transition: opacity 0.15s;
+}
+.sb.sb-collapsed .ni:hover::after {
+  opacity: 1;
+}
+
+/* ── Collapse Button ── */
+.sb-collapse-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--sb-collapse-btn);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.sb-collapse-btn:hover {
+  color: var(--sb-collapse-btn-hover);
+  background: var(--sb-collapse-btn-hover-bg);
+}
+.sb-collapse-btn svg {
+  width: 15px; height: 15px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+/* Rotate arrow when collapsed */
+.sb.sb-collapsed .sb-collapse-btn svg { transform: rotate(180deg); }
+
 /* ── Brand ── */
-.sb-brand { display: flex; align-items: center; gap: 10px; padding: 22px 16px 18px; }
+.sb-brand { display: flex; align-items: center; gap: 10px; padding: 22px 16px 18px; transition: padding 0.25s, justify-content 0.25s; }
 .sb-logo-mark {
   width: 32px; height: 32px;
   background: var(--logo-bg);
@@ -124,23 +267,24 @@ html, body {
 }
 .sb-logo-mark svg { width: 17px; height: 17px; }
 .sb-name { color: var(--sb-name); font-size: 14.5px; font-weight: 700; letter-spacing: 0.1px; transition: color 0.25s; }
-.sb-div { height: 0.5px; background: var(--sb-div); margin: 0 14px; transition: background 0.25s; }
+.sb-div { height: 0.5px; background: var(--sb-div); margin: 0 14px; transition: background 0.25s, margin 0.25s; }
 
 /* ── Nav ── */
-.nav { padding: 10px 9px 0; flex: 1; overflow-y: auto; }
+.nav { padding: 10px 9px 0; flex: 1; overflow-y: auto; transition: padding 0.25s; }
 .nav::-webkit-scrollbar { display: none; }
 .nav-lbl {
   font-size: 9.5px; color: var(--sb-section-lbl);
   text-transform: uppercase; letter-spacing: 0.9px;
   padding: 8px 8px 3px; font-weight: 600;
-  transition: color 0.25s;
+  transition: color 0.25s, opacity 0.15s;
+  overflow: hidden;
 }
 .ni {
   display: flex; align-items: center; gap: 9px;
   padding: 8px 10px; border-radius: 7px;
   color: var(--sb-item-color); font-size: 12.5px; font-weight: 500;
   margin-bottom: 1px; text-decoration: none;
-  transition: background 0.12s, color 0.12s; cursor: pointer;
+  transition: background 0.12s, color 0.12s, padding 0.25s, gap 0.25s; cursor: pointer;
   position: relative;
 }
 .ni:hover { background: var(--sb-item-hover-bg); color: var(--sb-item-hover-color); }
@@ -154,21 +298,33 @@ html, body {
   content: ''; position: absolute; left: 0; top: 20%; height: 60%;
   width: 2.5px; background: var(--sb-dot); border-radius: 0 2px 2px 0;
 }
-.dot { margin-left: auto; width: 5px; height: 5px; background: var(--sb-dot); border-radius: 50%; }
+
+/* Active dot — hidden on ALL items, only shown on the active one */
+.ni .ni-dot {
+  margin-left: auto;
+  width: 5px; height: 5px;
+  background: var(--sb-dot);
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.ni.active .ni-dot { opacity: 1; }
 .badge {
   margin-left: auto; background: var(--badge-bg); color: var(--badge-color);
-  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
 }
 
 /* ── Bottom ── */
-.sb-bottom { padding: 6px 9px 4px; border-top: 0.5px solid var(--sb-border); transition: border-color 0.25s; }
+.sb-bottom { padding: 6px 9px 4px; border-top: 0.5px solid var(--sb-border); transition: border-color 0.25s, padding 0.25s; }
 .sb-bottom .ni { color: var(--sb-bottom-color); font-size: 12px; }
 .sb-bottom .ni:hover { color: var(--sb-item-hover-color); background: var(--sb-item-hover-bg); }
 .sb-bottom .ni.danger:hover { color: var(--sb-danger-hover); background: var(--sb-danger-hover-bg); }
 .sb-bottom .ni.danger:hover svg { stroke: var(--sb-danger-hover); }
 
 /* ── Theme Toggle ── */
-.theme-toggle-wrap { padding: 6px 14px 2px; display: flex; align-items: center; justify-content: space-between; }
+.theme-toggle-wrap { padding: 6px 14px 2px; display: flex; align-items: center; justify-content: space-between; transition: opacity 0.15s; }
 .theme-toggle-label { font-size: 11px; color: var(--sb-section-lbl); font-weight: 500; }
 .toggle-btn {
   width: 34px; height: 19px;
@@ -194,7 +350,7 @@ html, body {
   background: var(--sb-profile-bg);
   border: 0.5px solid var(--sb-profile-border);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, padding 0.25s, margin 0.25s;
 }
 .sb-profile:hover { background: var(--sb-profile-hover-bg); border-color: var(--sb-profile-hover-border); }
 .sb-avatar {
@@ -204,7 +360,7 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   color: white; font-size: 13px; font-weight: 700; flex-shrink: 0;
 }
-.sb-profile-info { flex: 1; min-width: 0; }
+.sb-profile-info { flex: 1; min-width: 0; overflow: hidden; transition: opacity 0.15s, width 0.2s; }
 .sb-uname { color: var(--sb-uname); font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.25s; }
 .sb-urole { color: var(--sb-urole); font-size: 11px; margin-top: 1px; transition: color 0.25s; }
 .sb-profile-chevron { color: var(--sb-chevron); transition: color 0.12s; flex-shrink: 0; }

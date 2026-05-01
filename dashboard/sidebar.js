@@ -1,3 +1,19 @@
+// ── Active nav persistence (survives reload) ──
+function getStoredNav() {
+  return sessionStorage.getItem('ci_active_nav') || 'dashboard.php';
+}
+
+function setStoredNav(url) {
+  sessionStorage.setItem('ci_active_nav', url);
+}
+
+function restoreActiveNav() {
+  const stored = getStoredNav();
+  document.querySelectorAll('.ni[data-url]').forEach(n => {
+    n.classList.toggle('active', n.dataset.url === stored);
+  });
+}
+
 // ── Populate sidebar profile card from storage ──
 function loadSidebarProfile() {
   const firstName = sessionStorage.getItem('ci_first_name') || '';
@@ -9,34 +25,43 @@ function loadSidebarProfile() {
 
   document.getElementById('sbUserName').textContent = fullName;
 
-  // Avatar: custom upload > Google/Gravatar photo > initial
   const customPhoto = localStorage.getItem('ci_custom_photo') || '';
   const googlePhoto = localStorage.getItem('ci_google_photo')
                       || sessionStorage.getItem('ci_picture') || '';
   const photo = customPhoto || googlePhoto;
 
-  const img        = document.getElementById('sbAvatarImg');
-  const initialEl  = document.getElementById('sbAvatarInitial');
+  const img       = document.getElementById('sbAvatarImg');
+  const initialEl = document.getElementById('sbAvatarInitial');
 
   if (photo) {
-    img.src                  = photo;
-    img.style.display        = 'block';
-    initialEl.style.display  = 'none';
+    img.src                 = photo;
+    img.style.display       = 'block';
+    initialEl.style.display = 'none';
   } else {
-    initialEl.textContent    = initial;
-    initialEl.style.display  = '';
-    img.style.display        = 'none';
+    initialEl.textContent   = initial;
+    initialEl.style.display = '';
+    img.style.display       = 'none';
   }
 }
 
 loadSidebarProfile();
+restoreActiveNav();
 
-// Re-sync when profile page saves new data (postMessage from iframe)
+// Load stored page into iframe on startup
+(function initFrame() {
+  const stored = getStoredNav();
+  const frame  = document.getElementById('mainFrame');
+  if (frame && frame.src && !frame.src.endsWith(stored)) {
+    frame.src = stored;
+    frame.onload = () => applyThemeToFrame(frame);
+  }
+})();
+
+// Re-sync when profile page saves new data
 window.addEventListener('message', function (e) {
   if (e.data && e.data.type === 'CI_PROFILE_UPDATED') {
     loadSidebarProfile();
   }
-  // Relay activity updates from any iframe page → dashboard iframe
   if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') {
     const frame = document.getElementById('mainFrame');
     if (frame && frame.contentWindow) {
@@ -45,27 +70,41 @@ window.addEventListener('message', function (e) {
   }
 });
 
-// ── Open profile in iframe (keeps sidebar visible) ──
-function openProfile() {
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  const frame = document.getElementById('mainFrame');
-  frame.src = 'Profile/profile.html';
-  frame.onload = function () {
-    const saved = localStorage.getItem('theme') || 'light';
-    try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
-    try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
-  };
+function applyThemeToFrame(frame) {
+  const saved = localStorage.getItem('theme') || 'light';
+  try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
+  try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
 }
 
-// ── Iframe nav ──
-function navTo(el, url) {
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  el.classList.add('active');
+// ── Open profile in iframe ──
+function openProfile() {
+  document.querySelectorAll('.ni[data-url]').forEach(n => n.classList.remove('active'));
   const frame = document.getElementById('mainFrame');
-  frame.src = url;
-  frame.onload = function () {
-    const saved = localStorage.getItem('theme') || 'light';
-    try { frame.contentWindow.document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
-    try { frame.contentWindow.postMessage({ type: 'CI_SET_THEME', theme: saved }, '*'); } catch(e) {}
-  };
+  frame.src   = 'Profile/profile.html';
+  frame.onload = () => applyThemeToFrame(frame);
 }
+
+// ── Iframe nav (persists across reload) ──
+function navTo(el, url) {
+  document.querySelectorAll('.ni[data-url]').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  setStoredNav(url);
+  const frame = document.getElementById('mainFrame');
+  frame.src   = url;
+  frame.onload = () => applyThemeToFrame(frame);
+}
+
+// ── Sidebar collapse ──
+(function initCollapse() {
+  const sb      = document.querySelector('.sb');
+  const btn     = document.getElementById('sbCollapseBtn');
+  const COLLAPSED = 'sb-collapsed';
+
+  const stored = localStorage.getItem('ci_sb_collapsed') === 'true';
+  if (stored) sb.classList.add(COLLAPSED);
+
+  btn.addEventListener('click', function () {
+    const isNowCollapsed = sb.classList.toggle(COLLAPSED);
+    localStorage.setItem('ci_sb_collapsed', isNowCollapsed);
+  });
+})();
