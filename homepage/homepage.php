@@ -24,8 +24,8 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #fafaf8;
-      color: #1a1a1a;
+      background: #f5f4ff;
+      color: #1a1a2e;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       overflow-x: hidden;
@@ -57,7 +57,7 @@
       border: 0;
     }
 
-    :focus-visible { outline: 2px solid #b8860b; outline-offset: 2px; }
+    :focus-visible { outline: 2px solid #6c63ff; outline-offset: 2px; }
     :focus:not(:focus-visible) { outline: none; }
 
     /* =============================================
@@ -71,40 +71,48 @@
        CSS VARIABLES
     ============================================= */
     :root {
-      /* Brand */
-      --gold:        #b8860b;
-      --gold-dark:   #a07609;
-      --off-white:   #fafaf8;
-      --dark:        #1a1a1a;
-      --mid:         #6b6b6b;
-      --border:      #e8e4df;
-      --surface:     #f5f3f0;
+      /* ── Brand ── */
+      --primary:       #6c63ff;
+      --primary-dark:  #5548e8;
+      --primary-light: rgba(108,99,255,0.10);
+      --primary-glow:  rgba(108,99,255,0.25);
+      --accent:        #a78bfa;   /* soft violet accent */
 
-      /* Modal palette */
-      --primary:      #b8860b;
-      --primary-dark: #a07609;
-      --primary-light: #f5f3f0;
-      --secondary:    #fafaf8;
-      --success:      #10b981;
-      --error:        #ef4444;
-      --white:        #ffffff;
-      --gray-50:      #f9fafb;
-      --gray-100:     #f3f4f6;
-      --gray-200:     #e5e7eb;
-      --gray-300:     #d1d5db;
-      --gray-400:     #9ca3af;
-      --gray-500:     #6b7280;
-      --gray-700:     #374151;
-      --gray-800:     #1f2937;
-      --gray-900:     #111827;
-      --shadow-md:    0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg:    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --shadow-xl:    0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-      --radius-base:  0.5rem;
-      --radius-md:    0.75rem;
-      --radius-xl:    1.5rem;
-      --radius-full:  9999px;
-      --transition:   250ms ease;
+      /* ── Surface / layout ── */
+      --off-white:  #f5f4ff;
+      --dark:       #1a1a2e;
+      --mid:        #6b7280;
+      --border:     #e5e4f8;
+      --surface:    #f0effe;
+
+      /* ── Semantic ── */
+      --success:    #10b981;
+      --error:      #ef4444;
+      --white:      #ffffff;
+
+      /* ── Gray scale ── */
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-300:   #d1d5db;
+      --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
+      --gray-700:   #374151;
+      --gray-800:   #1f2937;
+      --gray-900:   #111827;
+
+      /* ── Shadows ── */
+      --shadow-sm:  0 1px 3px rgba(108,99,255,0.08);
+      --shadow-md:  0 4px 6px -1px rgba(108,99,255,0.12), 0 2px 4px -2px rgba(0,0,0,0.08);
+      --shadow-lg:  0 10px 15px -3px rgba(108,99,255,0.15), 0 4px 6px -4px rgba(0,0,0,0.08);
+      --shadow-xl:  0 20px 25px -5px rgba(108,99,255,0.18), 0 8px 10px -6px rgba(0,0,0,0.10);
+
+      /* ── Radii & timing ── */
+      --radius-base: 0.5rem;
+      --radius-md:   0.75rem;
+      --radius-xl:   1.5rem;
+      --radius-full: 9999px;
+      --transition:  250ms ease;
     }
 
     /* =============================================
@@ -150,8 +158,8 @@
     }
 
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 5px rgba(184, 134, 11, 0.3); }
-      50% { box-shadow: 0 0 20px rgba(184, 134, 11, 0.6); }
+      0%, 100% { box-shadow: 0 0 5px rgba(108,99,255,0.3); }
+      50%       { box-shadow: 0 0 22px rgba(108,99,255,0.65); }
     }
 
     @keyframes float {
@@ -169,7 +177,7 @@
       margin-bottom: 32px;
     }
 
-    .section-tag .line { width: 40px; height: 1px; background: var(--dark); }
+    .section-tag .line { width: 40px; height: 1px; background: var(--primary); }
 
     .section-tag span {
       font-family: 'JetBrains Mono', monospace;
@@ -177,7 +185,7 @@
       font-weight: 500;
       letter-spacing: 1.8px;
       text-transform: uppercase;
-      color: var(--gold);
+      color: var(--primary);
     }
 
     /* =============================================
@@ -188,7 +196,7 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      background: var(--gold);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #fff;
       font-size: 14px;
       font-weight: 500;
@@ -203,12 +211,13 @@
       white-space: nowrap;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.3);
     }
 
     .btn-primary:hover { 
-      background: var(--gold-dark);
+      background: linear-gradient(135deg, var(--primary-dark), #4438d0);
       transform: translateY(-3px);
-      box-shadow: 0 8px 16px rgba(184, 134, 11, 0.3);
+      box-shadow: 0 8px 22px rgba(108,99,255,0.45);
     }
 
     .btn-primary:active {
@@ -222,21 +231,22 @@
       align-items: center;
       gap: 12px;
       background: transparent;
-      color: var(--dark);
+      color: var(--primary);
       font-size: 14px;
       font-weight: 500;
       letter-spacing: 0.42px;
       padding: 14px 32px;
       border-radius: 6px;
-      border: 1px solid var(--dark);
+      border: 1.5px solid var(--primary);
       cursor: pointer;
       text-decoration: none;
       transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .btn-secondary:hover { 
-      background: rgba(0, 0, 0, 0.04);
+      background: var(--primary-light);
       transform: translateY(-3px);
+      box-shadow: 0 4px 14px rgba(108,99,255,0.15);
     }
 
     .btn-secondary-dark {
@@ -250,16 +260,16 @@
       letter-spacing: 0.42px;
       padding: 14px 32px;
       border-radius: 6px;
-      border: 1px solid rgba(250, 250, 248, 0.3);
+      border: 1px solid rgba(255,255,255,0.3);
       cursor: pointer;
       text-decoration: none;
       transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .btn-secondary-dark:hover {
-      background: rgba(250, 250, 248, 0.1);
+      background: rgba(255,255,255,0.1);
       transform: translateY(-3px);
-      border-color: rgba(250, 250, 248, 0.5);
+      border-color: rgba(255,255,255,0.5);
     }
 
     /* =============================================
@@ -296,7 +306,7 @@
     }
 
     .nav-menu .nav-link:hover {
-    color: #b8860b; /* gold hover effect */
+    color: #6c63ff;
     }
 
     .navbar > .btn-primary { width: auto; flex-shrink: 0; }
@@ -310,7 +320,7 @@
 
     .logo-mark { width: 40px;
       height: 40px;
-      background: linear-gradient(100deg, #b8860b, #f5f3f0); /* gold to beige gradient */
+      background: linear-gradient(100deg, #6c63ff, #a78bfa);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -318,13 +328,13 @@
       margin-right: 8px;}
 
     .logo-mark i {
-      color: #1a1a1a; /* dark purple cap */
+      color: #ffffff;
       font-size: 20px; }
 
     .logo-text { 
       font-size: 20px;
       font-weight: 600;
-      color: #1a1a1a; }
+      color: var(--dark); }
 
     .nav-links { display: flex; align-items: center; gap: 32px; }
 
@@ -338,7 +348,7 @@
       
     }
 
-    .nav-links a:hover { color: #b8860b; }
+    .nav-links a:hover { color: #6c63ff; }
 
     /* =============================================
        HERO
@@ -378,7 +388,7 @@
       color: var(--dark);
     }
 
-    .hero h1 em { color: var(--gold); font-style: italic; }
+    .hero h1 em { color: var(--primary); font-style: italic; }
 
     .hero-description {
       max-width: 560px;
@@ -448,13 +458,23 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent);
+      background: linear-gradient(90deg, transparent, rgba(108, 99, 255, 0.08), transparent);
       transition: left 0.5s ease;
       pointer-events: none;
     }
 
-    .feature-card:hover::before {
-      left: 100%;
+    .feature-card:hover,
+    .step-card:hover,
+    .value-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 32px rgba(108,99,255,0.18);
+      border-color: rgba(108,99,255,0.35);
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 32px rgba(108,99,255,0.18);
+      border-color: rgba(108,99,255,0.35);
     }
 
     
@@ -474,7 +494,7 @@
     .feature-icon svg {
       width: 20px; 
       height: 20px;
-      stroke: var(--gold);
+      stroke: var(--primary);
       fill: none;
       stroke-width: 2;
       stroke-linecap: round;
@@ -534,19 +554,18 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent);
+      background: linear-gradient(90deg, transparent, rgba(108, 99, 255, 0.08), transparent);
       transition: left 0.5s ease;
       pointer-events: none;
     }
 
-    .step-card:hover::before {
-      left: 100%;
-    }
+    .feature-card:hover::before,
+    .step-card:hover::before { left: 100%; }
 
     .step-number {
       font-family: 'Playfair Display', serif;
       font-size: 24px;
-      color: var(--gold);
+      color: var(--primary);
       margin-bottom: 32px;
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -579,7 +598,7 @@
 
     .step-icon-area svg {
       width: 28px; height: 28px;
-      stroke: var(--gold);
+      stroke: var(--primary);
       fill: none;
       stroke-width: 1.5;
       stroke-linecap: round;
@@ -624,7 +643,7 @@
       right: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(184, 134, 11, 0.1) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
@@ -641,7 +660,7 @@
       justify-content: center;
     }
     .stars svg { width: 16px; height: 16px; }
-    .stars.red  svg { stroke: #ff3000;    fill: #ff3000; }
+    .stars svg { stroke: var(--primary); fill: var(--primary); }
 
     .testimonial-card blockquote {
       font-family: 'Playfair Display', serif;
@@ -677,11 +696,11 @@
       margin-bottom: 4px;
     }
 
-    .about-title h2 em { color: var(--gold); font-style: italic; }
+    .about-title h2 em { color: var(--primary); font-style: italic; }
 
     .about-title .accent {
       display: block;
-      color: var(--gold);
+      color: var(--primary);
       font-family: 'Playfair Display', serif;
       font-size: 40px;
       font-style: italic;
@@ -708,7 +727,7 @@
 
     .value-card svg {
       width: 20px; height: 20px;
-      stroke: var(--gold);
+      stroke: var(--primary);
       fill: none;
       stroke-width: 1.5;
       stroke-linecap: round;
@@ -737,7 +756,7 @@
       padding: 144px 64px;
     }
 
-    .cta-section .section-tag .line { background: rgba(250, 250, 248, 0.2); }
+    .cta-section .section-tag .line { background: rgba(255,255,255,0.2); }
 
     .cta-section h2 {
       font-family: 'Playfair Display', serif;
@@ -748,12 +767,12 @@
       color: var(--off-white);
     }
 
-    .cta-section h2 em { color: var(--gold); font-style: italic; display: block; margin-bottom: 32px; }
+    .cta-section h2 em { color: var(--primary); font-style: italic; display: block; margin-bottom: 32px; }
 
     .cta-section .cta-desc {
       max-width: 520px;
       margin-bottom: 48px;
-      color: rgba(250, 250, 248, 0.5);
+      color: rgba(255,255,255,0.5);
       font-size: 18px;
       line-height: 1.75;
       text-align: center;
@@ -799,7 +818,7 @@
 
     .contact-icon svg {
       width: 20px; height: 20px;
-      stroke: var(--gold);
+      stroke: var(--primary);
       fill: none;
       stroke-width: 1.5;
       stroke-linecap: round;
@@ -807,7 +826,7 @@
     }
 
     .contact-label { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 4px; }
-    .contact-value { font-size: 14px; color: var(--gold); }
+    .contact-value { font-size: 14px; color: var(--primary); }
 
     .contact-form {
       flex: 1;
@@ -847,7 +866,7 @@
 
     .form-field input:focus,
     .form-field select:focus,
-    .form-field textarea:focus { border-bottom-color: var(--gold); }
+    .form-field textarea:focus { border-bottom-color: #6c63ff; }
 
     .form-field textarea { height: 128px; resize: none; }
     .form-field select { color: rgba(107, 107, 107, 0.5); appearance: none; }
@@ -857,7 +876,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: var(--gold);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #fff;
       font-family: 'Inter', sans-serif;
       font-size: 14px;
@@ -867,15 +886,20 @@
       border-radius: 6px;
       border: none;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.3);
     }
 
-    .submit-btn:hover { background: var(--gold-dark); }
+    .submit-btn:hover {
+      background: linear-gradient(135deg, var(--primary-dark), #4438d0);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(108,99,255,0.4);
+    }
 
     /* =============================================
        FOOTER
     ============================================= */
-    .footer { background: var(--dark); border-top: 1px solid rgba(250, 250, 248, 0.1); }
+    .footer { background: var(--dark); border-top: 1px solid rgba(255,255,255,0.1); }
 
     .footer-content { display: flex; padding: 64px; gap: 80px; }
 
@@ -883,11 +907,11 @@
 
     .footer-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
 
-    .footer-logo .logo-mark { width: 20px; height: 20px; background: var(--gold); border-radius: 4px; }
+    .footer-logo .logo-mark { width: 20px; height: 20px; background: var(--primary); border-radius: 4px; }
 
     .footer-logo .logo-text { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--off-white); }
 
-    .footer-tagline { max-width: 300px; color: rgba(250, 250, 248, 0.4); font-size: 14px; line-height: 1.75; }
+    .footer-tagline { max-width: 300px; color: rgba(255,255,255,0.4); font-size: 14px; line-height: 1.75; }
 
     .footer-links-col { display: flex; flex-direction: column; }
 
@@ -901,19 +925,19 @@
       margin-bottom: 24px;
     }
 
-    .footer-links-col a { color: #6b6b6b; font-size: 14px; text-decoration: none; margin-bottom: 12px; transition: color 0.2s; }
+    .footer-links-col a { color: #8b8fa8; font-size: 14px; text-decoration: none; margin-bottom: 12px; transition: color 0.2s; }
     .footer-links-col a:last-child { margin-bottom: 0; }
-    .footer-links-col a:hover { color: var(--off-white); }
+    .footer-links-col a:hover { color: var(--accent); }
 
     .footer-bottom {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 24px 64px;
-      border-top: 1px solid rgba(250, 250, 248, 0.1);
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
 
-    .footer-bottom span { color: rgba(250, 250, 248, 0.3); font-size: 12px; }
+    .footer-bottom span { color: rgba(255,255,255,0.3); font-size: 12px; }
 
     /* =============================================
        INTERACTIVE ELEMENTS - PERFORMANCE
@@ -1138,7 +1162,7 @@
       <h2 class="section-title font-serif">What Educators Say</h2>
       <div class="testimonials-grid">
         <div class="testimonial-card">
-          <div class="stars red">
+          <div class="stars">
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -1153,7 +1177,7 @@
         </div>
 
         <div class="testimonial-card">
-          <div class="stars red">
+          <div class="stars">
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -1168,7 +1192,7 @@
         </div>
 
         <div class="testimonial-card">
-          <div class="stars red">
+          <div class="stars">
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>

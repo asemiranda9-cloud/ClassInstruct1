@@ -280,13 +280,13 @@ function initFeatureCardAnimations() {
 
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-12px) scale(1.02)';
-            this.style.boxShadow = '0 20px 40px rgba(184, 134, 11, 0.2)';
+            this.style.boxShadow = '0 20px 40px rgba(108, 99, 255, 0.2)';
             
             
 
             const title = this.querySelector('h3');
             if (title) {
-                title.style.color = '#b8860b';
+                title.style.color = '#6c63ff';
             }
         });
 
@@ -314,16 +314,16 @@ function initStepCardAnimations() {
 
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-12px) scale(1.02)';
-            this.style.boxShadow = '0 20px 40px rgba(184, 134, 11, 0.2)';
+            this.style.boxShadow = '0 20px 40px rgba(108, 99, 255, 0.2)';
             
             const title = this.querySelector('h3');
             if (title) {
-                title.style.color = '#b8860b';
+                title.style.color = '#6c63ff';
             }
 
             const stepNumber = this.querySelector('.step-number');
             if (stepNumber) {
-                stepNumber.style.color = '#b8860b';
+                stepNumber.style.color = '#6c63ff';
             }
         });
 
@@ -353,7 +353,7 @@ function initTestimonialAnimations() {
     testimonials.forEach((card, index) => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-16px) rotateX(2deg)';
-            this.style.boxShadow = '0 25px 50px rgba(184, 134, 11, 0.25)';
+            this.style.boxShadow = '0 25px 50px rgba(108, 99, 255, 0.25)';
 
             const stars = this.querySelectorAll('.stars svg');
             stars.forEach((star, i) => {
@@ -363,12 +363,12 @@ function initTestimonialAnimations() {
             const quote = this.querySelector('blockquote');
             if (quote) {
                 quote.style.transform = 'scale(1.02)';
-                quote.style.color = '#1a1a1a';
+                quote.style.color = '#1a1a2e';
             }
 
             const authorName = this.querySelector('.author-name');
             if (authorName) {
-                authorName.style.color = '#b8860b';
+                authorName.style.color = '#6c63ff';
                 authorName.style.fontWeight = '600';
             }
         });
@@ -406,29 +406,29 @@ function initValueCardsAnimations() {
     valueCards.forEach((card, index) => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-10px) scale(1.05)';
-            this.style.boxShadow = '0 15px 35px rgba(184, 134, 11, 0.2)';
+            this.style.boxShadow = '0 15px 35px rgba(108, 99, 255, 0.2)';
 
             const icon = this.querySelector('svg');
             if (icon) {
                 icon.style.transform = 'scale(1.2) rotate(5deg)';
-                icon.style.stroke = '#b8860b';
-                icon.style.fill = 'rgba(184, 134, 11, 0.1)';
+                icon.style.stroke = '#6c63ff';
+                icon.style.fill = 'rgba(108, 99, 255, 0.1)';
             }
 
             const title = this.querySelector('h3');
             if (title) {
-                title.style.color = '#b8860b';
+                title.style.color = '#6c63ff';
                 title.style.transform = 'translateY(-2px)';
             }
 
             const text = this.querySelector('p');
             if (text) {
-                text.style.color = '#1a1a1a';
+                text.style.color = '#1a1a2e';
                 text.style.fontWeight = '500';
             }
 
             if (this.classList.contains('featured')) {
-                this.style.background = 'linear-gradient(135deg, rgba(184, 134, 11, 0.08) 0%, rgba(184, 134, 11, 0.04) 100%)';
+                this.style.background = 'linear-gradient(135deg, rgba(108, 99, 255, 0.08) 0%, rgba(108, 99, 255, 0.04) 100%)';
             }
         });
 
@@ -507,7 +507,7 @@ function initButtonAnimations() {
     buttons.forEach(button => {
         button.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-3px)';
-            this.style.boxShadow = '0 8px 16px rgba(184, 134, 11, 0.3)';
+            this.style.boxShadow = '0 8px 16px rgba(108, 99, 255, 0.3)';
         });
 
         button.addEventListener('mouseleave', function() {

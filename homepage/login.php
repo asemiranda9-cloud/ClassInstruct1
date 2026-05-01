@@ -16,8 +16,8 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d0c08;
-      color: #1a1a1a;
+      background: #0a0818;
+      color: #1a1a2e;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
@@ -27,16 +27,16 @@
 
     /* ── CSS Variables — mirrors homepage exactly ── */
     :root {
-      --gold:          #b8860b;
-      --gold-dark:     #a07609;
-      --off-white:     #fafaf8;
-      --dark:          #1a1a1a;
+      --gold:          #6c63ff;
+      --gold-dark:     #5548e8;
+      --off-white:     #f5f4ff;
+      --dark:          #1a1a2e;
       --mid:           #6b6b6b;
-      --border:        #e8e4df;
-      --surface:       #f5f3f0;
-      --primary:       #b8860b;
-      --primary-dark:  #a07609;
-      --primary-light: #f5f3f0;
+      --border:        #e5e4f8;
+      --surface:       #ede9ff;
+      --primary:       #6c63ff;
+      --primary-dark:  #5548e8;
+      --primary-light: #ede9ff;
       --success:       #10b981;
       --error:         #ef4444;
       --white:         #ffffff;
@@ -89,26 +89,26 @@
 
     .auth-hero-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(140deg, rgba(13,12,8,.88) 0%, rgba(13,12,8,.6) 55%, rgba(184,134,11,.1) 100%);
+      background: linear-gradient(140deg, rgba(13,12,8,.88) 0%, rgba(13,12,8,.6) 55%, rgba(108,99,255,.1) 100%);
       z-index: 1;
     }
 
     /* Decorative rings */
     .hero-ring {
       position: absolute; border-radius: 50%;
-      border: 1px solid rgba(184,134,11,.16);
+      border: 1px solid rgba(108,99,255,.16);
       z-index: 1; pointer-events: none;
       animation: slowSpin 40s linear infinite;
     }
     .hero-ring-1 { width: 560px; height: 560px; top: -140px; right: -180px; }
-    .hero-ring-2 { width: 360px; height: 360px; top: 40px;   right: -50px;  border-color:rgba(184,134,11,.09); animation-direction:reverse; animation-duration:28s; }
-    .hero-ring-3 { width: 200px; height: 200px; bottom: 90px; left: 70px;  border-color:rgba(184,134,11,.13); }
+    .hero-ring-2 { width: 360px; height: 360px; top: 40px;   right: -50px;  border-color:rgba(108,99,255,.09); animation-direction:reverse; animation-duration:28s; }
+    .hero-ring-3 { width: 200px; height: 200px; bottom: 90px; left: 70px;  border-color:rgba(108,99,255,.13); }
     @keyframes slowSpin { to { transform: rotate(360deg); } }
 
     /* Floating orbs */
     .orb { position: absolute; border-radius: 50%; z-index: 1; pointer-events: none; animation: floatOrb 8s ease-in-out infinite; }
     .orb-1 { width:6px; height:6px; background:var(--gold);  opacity:.7; top:30%; right:22%; }
-    .orb-2 { width:4px; height:4px; background:#f5c842;       opacity:.5; top:55%; right:35%; animation-delay:2.5s; }
+    .orb-2 { width:4px; height:4px; background:#a78bfa;       opacity:.5; top:55%; right:35%; animation-delay:2.5s; }
     .orb-3 { width:5px; height:5px; background:var(--gold);  opacity:.6; top:70%; right:14%; animation-delay:5s; }
     @keyframes floatOrb { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-16px) scale(1.3)} }
 
@@ -118,12 +118,12 @@
     .hero-brand { display: flex; align-items: center; gap: 12px; }
     .hero-logo-mark {
       width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--gold), #f5c842);
+      background: linear-gradient(135deg, var(--gold), #a78bfa);
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(184,134,11,.45);
+      box-shadow: 0 4px 16px rgba(108,99,255,.45);
     }
-    .hero-logo-mark i { color: #1a1a1a; font-size: 20px; }
+    .hero-logo-mark i { color: #1a1a2e; font-size: 20px; }
     .hero-brand-name { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; color:#fff; letter-spacing:-.3px; }
 
     /* Hero copy */
@@ -141,7 +141,7 @@
     .hero-pills { display:flex; flex-wrap:wrap; gap:10px; }
     .hero-pill {
       display:inline-flex; align-items:center; gap:7px;
-      background:rgba(255,255,255,.07); border:1px solid rgba(184,134,11,.28);
+      background:rgba(255,255,255,.07); border:1px solid rgba(108,99,255,.28);
       border-radius:100px; padding:6px 14px; font-size:12px;
       color:rgba(255,255,255,.72); backdrop-filter:blur(4px);
     }
@@ -163,7 +163,7 @@
 
     /* ── Right form panel ── */
     .auth-form-panel {
-      background: #fafaf8;
+      background: #f5f4ff;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 32px 48px;
@@ -174,7 +174,7 @@
     .auth-form-panel::before {
       content: '';
       position: absolute; top:0; left:0; right:0; height:3px;
-      background: linear-gradient(90deg, var(--gold), #f5c842, var(--gold));
+      background: linear-gradient(90deg, var(--gold), #a78bfa, var(--gold));
     }
 
     .auth-form-wrap { width:100%; max-width:440px; }
@@ -262,7 +262,7 @@
       background:var(--white); outline:none;
       transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
     }
-    .form-input:focus { border-color:var(--primary); background:var(--white); box-shadow:0 0 0 3px rgba(184,134,11,.12); }
+    .form-input:focus { border-color:var(--primary); background:var(--white); box-shadow:0 0 0 3px rgba(108,99,255,.12); }
     .form-input.error { border-color:var(--error); }
 
     .field-error { font-size:.8125rem; color:var(--error); margin-top:.25rem; display:none; }
@@ -319,7 +319,7 @@
     /* OTP */
     .otp-email-display {
       display:inline-flex; align-items:center; gap:.375rem;
-      background:rgba(184,134,11,.08); color:var(--primary-dark);
+      background:rgba(108,99,255,.08); color:var(--primary-dark);
       padding:.25rem .75rem; border-radius:var(--radius-full);
       font-size:.8125rem; font-weight:500; margin-bottom:1.75rem;
     }
@@ -334,8 +334,8 @@
       transition:border-color var(--transition), box-shadow var(--transition), background var(--transition);
       caret-color:var(--primary);
     }
-    .otp-digit:focus { border-color:var(--primary); background:var(--white); box-shadow:0 0 0 3px rgba(184,134,11,.12); }
-    .otp-digit.filled { border-color:rgba(184,134,11,.4); background:var(--white); }
+    .otp-digit:focus { border-color:var(--primary); background:var(--white); box-shadow:0 0 0 3px rgba(108,99,255,.12); }
+    .otp-digit.filled { border-color:rgba(108,99,255,.4); background:var(--white); }
     .otp-digit.error-shake { border-color:var(--error); animation:shake .4s ease; }
 
     @keyframes shake {
@@ -1029,7 +1029,7 @@ function switchTab(which) {
     let banner = document.getElementById('ciTempLockBanner');
     if (!banner) {
       banner = document.createElement('div'); banner.id = 'ciTempLockBanner';
-      banner.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;font-size:14px;color:#92400e;line-height:1.6;text-align:center';
+      banner.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;font-size:14px;color:#3730a3;line-height:1.6;text-align:center';
       btnSendOtp.insertAdjacentElement('beforebegin', banner);
     }
     banner.style.display = 'block';
@@ -1057,15 +1057,15 @@ function switchTab(which) {
     if (!panel) {
       panel = document.createElement('div'); panel.id = 'ciLockedPanel';
       panel.innerHTML = `<div style="text-align:center;padding:4px 0 8px;">
-        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 0 8px rgba(184,134,11,.08);">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#ede9ff,#c4b5fd);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 0 8px rgba(108,99,255,.08);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         </div>
         <h3 style="font-size:18px;font-weight:700;color:#111827;margin:0 0 8px;">Account Locked</h3>
         <p style="font-size:13px;color:#6b7280;margin:0 0 24px;line-height:1.65;">Too many failed sign-in attempts. Unlock your account or reset your password to continue.</p>
-        <button id="ciUnlockBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;margin-bottom:10px;background:linear-gradient(135deg,#b8860b,#a07609);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(184,134,11,.3);">
+        <button id="ciUnlockBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;margin-bottom:10px;background:linear-gradient(135deg,#6c63ff,#5548e8);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(108,99,255,.3);">
           🔓 Unlock My Account
         </button>
-        <p style="margin-top:20px;font-size:12px;color:#9ca3af;">Need help? <a href="mailto:support@classinstruct.com" style="color:#b8860b;font-weight:500;">support@classinstruct.com</a></p>
+        <p style="margin-top:20px;font-size:12px;color:#9ca3af;">Need help? <a href="mailto:support@classinstruct.com" style="color:#6c63ff;font-weight:500;">support@classinstruct.com</a></p>
       </div>`;
       stepEmail.appendChild(panel);
       document.getElementById('ciUnlockBtn').addEventListener('click', () => {

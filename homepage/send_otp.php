@@ -44,19 +44,11 @@ $smtpFromName = $_ENV['SMTP_FROM_NAME'] ?? 'ClassInstruct';
 
 define('OTP_EXPIRY_SEC',    120);
 define('OTP_SESSION_KEY',   'ci_otp_data');
-define('SOFT_LIMIT',        3);     // wrong passwords before 30-min wait
+define('SOFT_LIMIT',        3);     // wrong passwords before 10s cooldown
 define('PERM_LIMIT',        6);     // total wrong passwords before permanent lock
-define('SOFT_LOCKOUT_SECS', 10);  // 30 minutes
+define('SOFT_LOCKOUT_SECS', 10);    // 10 second cooldown
 
 session_start();
-
-// ─── Rate limiting (OTP resend) ───────────────────────────────────────────────
-if (!empty($_SESSION['ci_otp_last_sent'])) {
-    $elapsed = time() - $_SESSION['ci_otp_last_sent'];
-    if ($elapsed < 60) {
-        json_fail('Please wait ' . (60 - $elapsed) . ' seconds before requesting another code.', 429);
-    }
-}
 
 // ─── Parse input ─────────────────────────────────────────────────────────────
 $body     = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -97,30 +89,45 @@ if ((int)$user['perm_locked'] === 1) {
 }
 
 // ─── Soft lockout ─────────────────────────────────────────────────────────────
+$justUnlocked = false;
 if (!empty($user['lockout_until'])) {
     $until = strtotime($user['lockout_until']);
     if (time() < $until) {
         $wait = $until - time();
-        $mins = (int) ceil($wait / 60);
+        $secs = (int) ceil($wait);
         json_fail(
-            "Too many failed attempts. Please try again in {$mins} minute" . ($mins === 1 ? '' : 's') . '.',
+            "Too many failed attempts. Please try again in {$secs} second" . ($secs === 1 ? '' : 's') . '.',
             429,
             ['temp_locked' => true, 'wait_seconds' => $wait]
         );
     }
     // Cooldown passed — clear the lockout timestamp, keep attempt counter
-    $conn->prepare("UPDATE users SET lockout_until = NULL WHERE id = ?")->bind_param('i', $userId)->execute();
+    $clearStmt = $conn->prepare("UPDATE users SET lockout_until = NULL WHERE id = ?");
+    $clearStmt->bind_param('i', $userId);
+    $clearStmt->execute();
+    $clearStmt->close();
     $user['lockout_until'] = null;
+    $justUnlocked = true;
+}
+
+// ─── Session rate limiting (OTP resend) — skip if DB lockout just cleared ────
+if (!$justUnlocked && !empty($_SESSION['ci_otp_last_sent'])) {
+    $elapsed = time() - $_SESSION['ci_otp_last_sent'];
+    if ($elapsed < 60) {
+        json_fail('Please wait ' . (60 - $elapsed) . ' seconds before requesting another code.', 429);
+    }
 }
 
 // ─── Verify password ──────────────────────────────────────────────────────────
 if (!password_verify($password, $user['password_hash'])) {
     $newAttempts = $attempts + 1;
 
+    // After cooldown, attempts was kept (e.g. 3). Next 3 wrong (4,5,6) → perm lock
     if ($newAttempts >= PERM_LIMIT) {
-        $permStmt = $conn->prepare("UPDATE users SET login_attempts = ?, perm_locked = 1 WHERE id = ?");
+        $permStmt = $conn->prepare("UPDATE users SET login_attempts = ?, perm_locked = 1, lockout_until = NULL WHERE id = ?");
         $permStmt->bind_param('ii', $newAttempts, $userId);
         $permStmt->execute();
+        $permStmt->close();
         json_fail(
             'Your account has been locked due to too many failed attempts.',
             403,
@@ -128,13 +135,15 @@ if (!password_verify($password, $user['password_hash'])) {
         );
     }
 
+    // First 3 wrong answers → 10s cooldown
     if ($newAttempts >= SOFT_LIMIT && empty($user['lockout_until'])) {
-        $until = date('Y-m-d H:i:s', time() + SOFT_LOCKOUT_SECS);
+        $until    = date('Y-m-d H:i:s', time() + SOFT_LOCKOUT_SECS);
         $softStmt = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE id = ?");
         $softStmt->bind_param('isi', $newAttempts, $until, $userId);
         $softStmt->execute();
+        $softStmt->close();
         json_fail(
-            'Too many failed attempts. Please try again in 30 minutes.',
+            'Too many failed attempts. Please try again in ' . SOFT_LOCKOUT_SECS . ' seconds.',
             429,
             ['temp_locked' => true, 'wait_seconds' => SOFT_LOCKOUT_SECS]
         );
@@ -143,8 +152,9 @@ if (!password_verify($password, $user['password_hash'])) {
     $attemptsStmt = $conn->prepare("UPDATE users SET login_attempts = ? WHERE id = ?");
     $attemptsStmt->bind_param('ii', $newAttempts, $userId);
     $attemptsStmt->execute();
+    $attemptsStmt->close();
 
-    // How many attempts remain before the NEXT threshold
+    // Remaining before next threshold
     $nextThreshold = $newAttempts < SOFT_LIMIT ? SOFT_LIMIT : PERM_LIMIT;
     $remaining     = $nextThreshold - $newAttempts;
 
@@ -159,6 +169,7 @@ if (!password_verify($password, $user['password_hash'])) {
 $resetStmt = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE id = ?");
 $resetStmt->bind_param('i', $userId);
 $resetStmt->execute();
+$resetStmt->close();
 
 // ─── Generate & store OTP ─────────────────────────────────────────────────────
 $otp     = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);

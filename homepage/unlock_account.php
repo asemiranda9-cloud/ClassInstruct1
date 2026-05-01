@@ -21,8 +21,9 @@
 
 declare(strict_types=1);
 
-error_reporting(0);
+error_reporting(E_ALL);
 ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
 // ─── Autoloader & env ────────────────────────────────────────────────────────
 $autoload = __DIR__ . '/vendor/autoload.php';
@@ -158,9 +159,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $expiry    = date('Y-m-d H:i:s', time() + TOKEN_EXPIRY_SECS);
                     $firstName = $user['first_name'];
 
-                    $conn->prepare(
+                    $updStmt = $conn->prepare(
                         "UPDATE users SET unlock_token = ?, unlock_token_exp = ? WHERE id = ?"
-                    )->bind_param('ssi', $tokenHash, $expiry, $user['id'])->execute();
+                    );
+                    $updStmt->bind_param('ssi', $tokenHash, $expiry, $user['id']);
+                    $updStmt->execute();
+                    $updStmt->close();
 
                     $unlockUrl = $appUrl . '/unlock_account.php?token=' . $rawToken;
 
@@ -252,7 +256,7 @@ function buildUnlockEmail(string $firstName, string $unlockUrl, string $email): 
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 16px;">
         <tr><td align="center">
           <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;max-width:480px;width:100%;">
-            <tr><td style="height:4px;background:linear-gradient(90deg,#b8860b,#f5f3f0);"></td></tr>
+            <tr><td style="height:4px;background:linear-gradient(90deg,#6c63ff,#ede9ff);"></td></tr>
             <tr><td style="padding:40px 40px 32px;">
               <div style="margin-bottom:24px;"><span style="font-size:18px;font-weight:700;color:#111827;">🎓 ClassInstruct</span></div>
               <div style="text-align:center;font-size:48px;margin-bottom:16px;">🔓</div>
@@ -262,15 +266,15 @@ function buildUnlockEmail(string $firstName, string $unlockUrl, string $email): 
                 This link expires in <strong>30 minutes</strong>.
               </p>
               <div style="text-align:center;margin:0 0 28px;">
-                <a href="{$unlockUrl}" style="display:inline-block;padding:14px 32px;background:#b8860b;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
+                <a href="{$unlockUrl}" style="display:inline-block;padding:14px 32px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
                   Unlock My Account
                 </a>
               </div>
               <p style="font-size:12px;color:#9ca3af;margin:0 0 16px;word-break:break-all;text-align:center;">
                 Or copy this link: {$unlockUrl}
               </p>
-              <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:24px;">
-                <p style="margin:0;font-size:13px;color:#92400e;">
+              <div style="background:#ede9ff;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:24px;">
+                <p style="margin:0;font-size:13px;color:#3730a3;">
                   🔒 If you didn't request this, your account is safe — just ignore this email.
                 </p>
               </div>
@@ -295,7 +299,7 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 16px;">
         <tr><td align="center">
           <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;max-width:480px;width:100%;">
-            <tr><td style="height:4px;background:linear-gradient(90deg,#b8860b,#f5f3f0);"></td></tr>
+            <tr><td style="height:4px;background:linear-gradient(90deg,#6c63ff,#ede9ff);"></td></tr>
             <tr><td style="padding:40px 40px 32px;">
               <div style="margin-bottom:24px;"><span style="font-size:18px;font-weight:700;color:#111827;">🎓 ClassInstruct</span></div>
               <div style="text-align:center;font-size:48px;margin-bottom:16px;">🔍</div>
@@ -322,184 +326,306 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Unlock Account — ClassInstruct</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --gold: #b8860b; --gold-dark: #a07609;
+      --gold: #6c63ff; --gold-dark: #5548e8; --gold-light: rgba(108,99,255,.12);
       --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
       --gray-400: #9ca3af; --gray-500: #6b7280; --gray-700: #374151;
       --gray-800: #1f2937; --gray-900: #111827;
       --error: #ef4444; --success: #10b981;
+      --white: #ffffff;
+      --radius: 0.75rem; --radius-full: 9999px;
+      --shadow-lg: 0 20px 48px rgba(0,0,0,.13);
+      --transition: 220ms ease;
     }
+
+    html, body { height: 100%; }
+
     body {
-      font-family: 'Inter', sans-serif;
-      background: #fafaf8;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0a0818;
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 24px 16px;
       color: var(--gray-900);
+      -webkit-font-smoothing: antialiased;
+      position: relative; overflow: hidden;
     }
+
+    .bg-ring {
+      position: fixed; border-radius: 50%;
+      border: 1px solid rgba(108,99,255,.1);
+      pointer-events: none; z-index: 0;
+      animation: slowSpin 40s linear infinite;
+    }
+    .bg-ring-1 { width: 700px; height: 700px; top: -200px; right: -200px; }
+    .bg-ring-2 { width: 480px; height: 480px; bottom: -120px; left: -160px; border-color: rgba(108,99,255,.07); animation-direction: reverse; animation-duration: 28s; }
+    .bg-orb {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      animation: floatOrb 8s ease-in-out infinite;
+    }
+    .bg-orb-1 { width: 5px; height: 5px; background: var(--gold); opacity: .6; top: 30%; right: 18%; }
+    .bg-orb-2 { width: 4px; height: 4px; background: #a78bfa; opacity: .4; bottom: 25%; left: 20%; animation-delay: 3s; }
+    @keyframes slowSpin { to { transform: rotate(360deg); } }
+    @keyframes floatOrb { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+
     .card {
+      position: relative; z-index: 1;
       background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
-      width: 100%; max-width: 440px;
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 460px;
       overflow: hidden;
+      animation: cardIn .4s cubic-bezier(.34,1.56,.64,1);
     }
-    .card-accent { height: 4px; background: linear-gradient(90deg, #b8860b, #f5f3f0); }
-    .card-body { padding: 40px 40px 36px; }
-    .brand { font-size: 16px; font-weight: 700; color: var(--gray-900); margin-bottom: 28px; }
-    .icon-wrap { text-align: center; font-size: 52px; margin-bottom: 16px; }
+    @keyframes cardIn { from { opacity:0; transform: translateY(24px) scale(.97); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+    /* Unlock accent — red→orange→purple to signal security alert */
+    .card-accent {
+      height: 3px;
+      background: linear-gradient(90deg, #ef4444, #f97316, #6c63ff);
+    }
+
+    .card-body { padding: 40px 44px 36px; }
+
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 32px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), #a78bfa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; box-shadow: 0 3px 10px rgba(108,99,255,.4);
+    }
+    .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; font-weight: 700; color: var(--gray-900);
+      letter-spacing: -.2px;
+    }
+
+    .icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      background: linear-gradient(135deg, rgba(239,68,68,.1), rgba(249,115,22,.08));
+      border: 1.5px solid rgba(239,68,68,.2);
+      box-shadow: 0 0 0 8px rgba(239,68,68,.05);
+      animation: popIn .45s cubic-bezier(.34,1.56,.64,1) .15s both;
+    }
+    @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+    .lock-notice {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #fff7ed; border: 1px solid #fed7aa;
+      border-radius: var(--radius); padding: 12px 14px;
+      font-size: .8125rem; color: #c2410c; margin-bottom: 22px;
+      line-height: 1.5;
+    }
+    .lock-notice i { margin-top: 1px; flex-shrink: 0; }
+
     h1 {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 22px; font-weight: 700;
-      color: var(--gray-900); margin: 0 0 10px;
-      text-align: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 24px; font-weight: 700;
+      color: var(--gray-900); margin: 0 0 8px;
+      text-align: center; letter-spacing: -.3px;
     }
     .subtitle {
       font-size: 14px; color: var(--gray-500);
-      line-height: 1.6; text-align: center; margin-bottom: 28px;
+      line-height: 1.65; text-align: center; margin-bottom: 28px;
     }
-    .form-group { margin-bottom: 16px; }
+
+    .form-group { margin-bottom: 18px; }
     label {
-      display: block; font-size: 12px; font-weight: 600;
+      display: block; font-size: .8125rem; font-weight: 500;
       color: var(--gray-700); margin-bottom: 6px;
-      letter-spacing: 0.4px; text-transform: uppercase;
     }
+
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: .875rem; top: 50%; transform: translateY(-50%);
+      color: var(--gray-400); font-size: 14px; pointer-events: none;
+    }
+
     input[type="email"],
     input[type="password"],
     input[type="text"] {
-      width: 100%; padding: 12px 44px 12px 14px;
+      width: 100%; padding: .75rem .875rem .75rem 2.5rem;
       border: 1.5px solid var(--gray-200);
-      border-radius: 10px; font-size: 14px; color: var(--gray-900);
-      background: #fff; outline: none; transition: border-color 200ms;
-      box-sizing: border-box;
+      border-radius: var(--radius); font-size: .9375rem;
+      font-family: inherit; color: var(--gray-900);
+      background: var(--white); outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
     }
-    input:focus { border-color: var(--gold); }
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+    }
     input.error { border-color: var(--error); }
-    .field-error { font-size: 12px; color: var(--error); margin-top: 5px; display: none; }
+
+    .field-error { font-size: .8125rem; color: var(--error); margin-top: .375rem; display: none; }
     .field-error.show { display: block; }
 
-    /* Password wrapper */
     .pw-wrap { position: relative; }
     .toggle-pw {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
       background: none; border: none; cursor: pointer;
       color: var(--gray-400); font-size: 15px; padding: 4px;
-      line-height: 1; display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: center; transition: color var(--transition);
     }
     .toggle-pw:hover { color: var(--gray-700); }
 
-    /* Strength bar */
     .strength-bar {
-      height: 4px; border-radius: 9999px;
+      height: 4px; border-radius: var(--radius-full);
       background: var(--gray-200); margin-top: 8px; overflow: hidden;
     }
     .strength-fill {
-      height: 100%; width: 0%; border-radius: 9999px;
+      height: 100%; width: 0%; border-radius: var(--radius-full);
       transition: width 300ms, background 300ms;
     }
     .strength-label { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
     .btn-primary {
-      display: block; width: 100%; padding: 13px;
-      background: var(--gold); color: #fff; border: none;
-      border-radius: 10px; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: background 200ms, opacity 200ms;
-      margin-top: 8px; text-align: center; text-decoration: none;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: .875rem 1.5rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #fff; border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: .9375rem; font-weight: 600;
+      cursor: pointer; position: relative; overflow: hidden;
+      box-shadow: 0 4px 14px rgba(108,99,255,.35);
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+      margin-top: 4px; text-decoration: none;
     }
-    .btn-primary:hover { background: var(--gold-dark); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+      transition: left .5s;
+    }
+    .btn-primary:hover:not(:disabled)::before { left: 100%; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,.45); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 
-    .back-link { display: block; text-align: center; margin-top: 18px; font-size: 13px; color: var(--gray-500); }
+    .back-link {
+      display: block; text-align: center; margin-top: 20px;
+      font-size: .8125rem; color: var(--gray-400);
+    }
     .back-link a { color: var(--gold); font-weight: 600; text-decoration: none; }
     .back-link a:hover { text-decoration: underline; }
 
     .alert-error {
+      display: flex; align-items: flex-start; gap: 10px;
       background: #fef2f2; border: 1px solid #fecaca;
-      border-radius: 10px; padding: 12px 16px;
-      font-size: 13px; color: #b91c1c; margin-bottom: 18px;
+      border-radius: var(--radius); padding: 12px 14px;
+      font-size: .8125rem; color: #b91c1c; margin-bottom: 20px;
     }
+    .alert-error i { margin-top: 1px; flex-shrink: 0; }
 
-    .state-box { text-align: center; }
-    .state-box .big-icon { font-size: 56px; margin-bottom: 16px; }
-    .state-box h2 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gray-900); margin-bottom: 10px; }
-    .state-box p { font-size: 14px; color: var(--gray-500); line-height: 1.6; margin-bottom: 24px; }
+    .state-box { text-align: center; padding: 8px 0; }
+    .state-icon {
+      width: 76px; height: 76px; border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 34px;
+      animation: popIn .45s cubic-bezier(.34,1.56,.64,1) .1s both;
+    }
+    .state-icon.sent    { background: linear-gradient(135deg,#dbeafe,#bfdbfe); box-shadow: 0 0 0 8px rgba(59,130,246,.08); }
+    .state-icon.success { background: linear-gradient(135deg,#d1fae5,#a7f3d0); box-shadow: 0 0 0 8px rgba(16,185,129,.08); }
+    .state-icon.error   { background: linear-gradient(135deg,#fee2e2,#fecaca); box-shadow: 0 0 0 8px rgba(239,68,68,.08); }
+
+    .state-box h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px; color: var(--gray-900); margin-bottom: 10px;
+    }
+    .state-box p { font-size: 14px; color: var(--gray-500); line-height: 1.65; margin-bottom: 20px; }
+    .state-box .btn-primary { max-width: 260px; margin: 0 auto; }
 
     .card-footer {
-      padding: 16px 40px;
+      padding: 14px 44px;
       background: var(--gray-50);
       border-top: 1px solid var(--gray-200);
-      font-size: 12px; color: var(--gray-400); text-align: center;
+      font-size: 11px; color: var(--gray-400); text-align: center;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: .5px;
     }
   </style>
 </head>
 <body>
 
+<div class="bg-ring bg-ring-1"></div>
+<div class="bg-ring bg-ring-2"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
 <div class="card">
   <div class="card-accent"></div>
   <div class="card-body">
 
-    <div class="brand">🎓 ClassInstruct</div>
+    <div class="brand">
+      <div class="brand-icon">🎓</div>
+      <span class="brand-name">ClassInstruct</span>
+    </div>
 
     <?php if ($step === 'form'): ?>
-      <!-- ── REQUEST FORM ── -->
-      <div class="icon-wrap">🔓</div>
-      <h1>Unlock Account</h1>
-      <p class="subtitle">Enter your email and we'll send you a link to unlock your account and set a new password.</p>
+      <div class="icon-wrap">🔒</div>
+      <h1>Account Locked</h1>
+      <p class="subtitle">Too many failed sign-in attempts. Enter your email and we'll send a secure link to unlock your account.</p>
+
+      <div class="lock-notice">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Your account has been temporarily locked for security. Unlocking will let you set a new password.</span>
+      </div>
 
       <?php if ($pageError): ?>
-        <div class="alert-error"><?= htmlspecialchars($pageError) ?></div>
+        <div class="alert-error"><i class="fa-solid fa-circle-exclamation"></i><?= htmlspecialchars($pageError) ?></div>
       <?php endif; ?>
 
       <form method="POST" action="unlock_account.php" novalidate id="unlockForm">
         <input type="hidden" name="step" value="send">
         <div class="form-group">
-          <label for="emailInput">Email Address</label>
-          <input
-            type="email"
-            id="emailInput"
-            name="email"
-            value="<?= htmlspecialchars($prefillEmail) ?>"
-            placeholder="you@example.com"
-            autocomplete="email"
-            required
-          >
+          <label for="emailInput">Email address</label>
+          <div class="input-wrap">
+            <span class="input-icon"><i class="fa-regular fa-envelope"></i></span>
+            <input type="email" id="emailInput" name="email"
+              value="<?= htmlspecialchars($prefillEmail) ?>"
+              placeholder="you@example.com" autocomplete="email" required>
+          </div>
           <div class="field-error" id="emailError"></div>
         </div>
         <button type="submit" class="btn-primary" id="submitBtn">
-          Send Unlock Link
+          <i class="fa-solid fa-unlock"></i>
+          <span class="btn-label">Send Unlock Link</span>
         </button>
       </form>
 
-      <p class="back-link">Remember your password? <a href="homepage.php">Sign in</a></p>
+      <p class="back-link">Remember your password? <a href="homepage.php">← Sign in</a></p>
 
     <?php elseif ($step === 'sent'): ?>
-      <!-- ── EMAIL SENT ── -->
       <div class="state-box">
-        <div class="big-icon">📧</div>
+        <div class="state-icon sent">📧</div>
         <h2>Check Your Email</h2>
-        <p>
-          If a matching account exists, we've sent an unlock link to your inbox.<br>
-          The link expires in <strong>30 minutes</strong>.
-        </p>
-        <p style="font-size:12px;color:var(--gray-400);">
+        <p>If a matching account exists, we've sent an unlock link to your inbox.<br>The link expires in <strong>30 minutes</strong>.</p>
+        <p style="font-size:12px;color:var(--gray-400);margin-bottom:24px;">
           Didn't receive it? Check your spam folder, or
-          <a href="unlock_account.php" style="color:var(--gold);font-weight:600;">try again</a>.
+          <a href="unlock_account.php" style="color:var(--gold);font-weight:600;text-decoration:none;">try again</a>.
         </p>
+        <a href="homepage.php" class="btn-primary" style="text-decoration:none;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Sign In
+        </a>
       </div>
 
     <?php elseif ($step === 'reset_form'): ?>
-      <!-- ── NEW PASSWORD FORM ── -->
       <div class="icon-wrap">🔐</div>
       <h1>Set New Password</h1>
       <p class="subtitle">Choose a strong password. Your account will be unlocked immediately after.</p>
 
       <?php if ($pageError): ?>
-        <div class="alert-error"><?= htmlspecialchars($pageError) ?></div>
+        <div class="alert-error"><i class="fa-solid fa-circle-exclamation"></i><?= htmlspecialchars($pageError) ?></div>
       <?php endif; ?>
 
       <form method="POST" action="unlock_account.php" novalidate id="resetForm">
@@ -509,14 +635,9 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
         <div class="form-group">
           <label for="pwInput">New Password</label>
           <div class="pw-wrap">
-            <input
-              type="password"
-              id="pwInput"
-              name="password"
-              placeholder="Min. 8 characters"
-              autocomplete="new-password"
-              required
-            >
+            <input type="password" id="pwInput" name="password"
+              placeholder="Min. 8 characters" autocomplete="new-password"
+              style="padding-left:.875rem;" required>
             <button type="button" class="toggle-pw" id="togglePw1" aria-label="Show password">
               <i class="fa-regular fa-eye"></i>
             </button>
@@ -529,14 +650,9 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
         <div class="form-group">
           <label for="pwConfirmInput">Confirm Password</label>
           <div class="pw-wrap">
-            <input
-              type="password"
-              id="pwConfirmInput"
-              name="password_confirm"
-              placeholder="Repeat your password"
-              autocomplete="new-password"
-              required
-            >
+            <input type="password" id="pwConfirmInput" name="password_confirm"
+              placeholder="Repeat your password" autocomplete="new-password"
+              style="padding-left:.875rem;" required>
             <button type="button" class="toggle-pw" id="togglePw2" aria-label="Show password">
               <i class="fa-regular fa-eye"></i>
             </button>
@@ -545,40 +661,38 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
         </div>
 
         <button type="submit" class="btn-primary" id="resetBtn">
-          Save Password &amp; Unlock Account
+          <i class="fa-solid fa-lock-open"></i>
+          <span class="btn-label">Save Password &amp; Unlock Account</span>
         </button>
       </form>
 
     <?php elseif ($step === 'success'): ?>
-      <!-- ── SUCCESS ── -->
       <div class="state-box">
-        <div class="big-icon">✅</div>
+        <div class="state-icon success">🔓</div>
         <h2>Account Unlocked!</h2>
-        <p>Your password has been updated and your account is now unlocked. You can sign in normally.</p>
-        <a href="homepage.php" class="btn-primary" style="display:inline-block;width:auto;padding:13px 32px;">
-          Go to Sign In
+        <p>Your password has been updated and your account is fully unlocked. You can now sign in normally.</p>
+        <a href="homepage.php" class="btn-primary" style="text-decoration:none;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Go to Sign In
         </a>
       </div>
 
     <?php elseif ($step === 'error'): ?>
-      <!-- ── ERROR ── -->
       <div class="state-box">
-        <div class="big-icon">❌</div>
+        <div class="state-icon error">⛔</div>
         <h2>Link Invalid</h2>
         <p><?= htmlspecialchars($pageError) ?></p>
-        <a href="unlock_account.php" class="btn-primary" style="display:inline-block;width:auto;padding:13px 32px;">
-          Request New Link
+        <a href="unlock_account.php" class="btn-primary" style="text-decoration:none;">
+          <i class="fa-solid fa-rotate-right"></i> Request New Link
         </a>
       </div>
 
     <?php endif; ?>
   </div>
 
-  <div class="card-footer">© 2025 ClassInstruct · AI-Powered Teaching Platform</div>
+  <div class="card-footer">© 2025 CLASSINSTRUCT · AI-POWERED TEACHING PLATFORM</div>
 </div>
 
 <script>
-  // ── Send form validation ──────────────────────────────────────────────────
   const unlockForm = document.getElementById('unlockForm');
   if (unlockForm) {
     unlockForm.addEventListener('submit', function(e) {
@@ -594,8 +708,9 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
       }
       input.classList.remove('error');
       err.classList.remove('show');
-      document.getElementById('submitBtn').disabled = true;
-      document.getElementById('submitBtn').textContent = 'Sending…';
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.querySelector('.btn-label').textContent = 'Sending…';
     });
     document.getElementById('emailInput')?.addEventListener('input', function() {
       this.classList.remove('error');
@@ -603,10 +718,8 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
     });
   }
 
-  // ── Reset form ────────────────────────────────────────────────────────────
   const resetForm = document.getElementById('resetForm');
   if (resetForm) {
-    // Show/hide toggles
     function setupToggle(btnId, inputId) {
       const btn = document.getElementById(btnId);
       const inp = document.getElementById(inputId);
@@ -620,7 +733,6 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
     setupToggle('togglePw1', 'pwInput');
     setupToggle('togglePw2', 'pwConfirmInput');
 
-    // Strength meter
     const pwInput       = document.getElementById('pwInput');
     const strengthFill  = document.getElementById('strengthFill');
     const strengthLabel = document.getElementById('strengthLabel');
@@ -633,57 +745,37 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
       if (/[A-Z]/.test(v)) score++;
       if (/[0-9]/.test(v)) score++;
       if (/[^A-Za-z0-9]/.test(v)) score++;
-
       const colors = ['#ef4444','#f97316','#eab308','#22c55e','#10b981'];
       const labels = ['Very weak','Weak','Fair','Strong','Very strong'];
       const pct    = ['20%','40%','60%','80%','100%'];
-
-      strengthFill.style.width      = v.length ? pct[score - 1] || '20%' : '0%';
-      strengthFill.style.background = v.length ? colors[score - 1] : '';
-      strengthLabel.textContent     = v.length ? labels[score - 1] : '';
+      strengthFill.style.width      = v.length ? pct[score-1] || '20%' : '0%';
+      strengthFill.style.background = v.length ? colors[score-1] : '';
+      strengthLabel.textContent     = v.length ? labels[score-1] : '';
     });
 
-    // Submit validation
     resetForm.addEventListener('submit', function(e) {
-      const pw      = document.getElementById('pwInput');
-      const pwc     = document.getElementById('pwConfirmInput');
-      const pwErr   = document.getElementById('pwError');
-      const pwcErr  = document.getElementById('pwConfirmError');
+      const pw    = document.getElementById('pwInput');
+      const pwc   = document.getElementById('pwConfirmInput');
+      const pwErr = document.getElementById('pwError');
+      const pwcErr= document.getElementById('pwConfirmError');
       let valid = true;
-
       if (pw.value.length < 8) {
-        pw.classList.add('error');
-        pwErr.textContent = 'Password must be at least 8 characters.';
-        pwErr.classList.add('show');
-        valid = false;
-      } else {
-        pw.classList.remove('error');
-        pwErr.classList.remove('show');
-      }
-
+        pw.classList.add('error'); pwErr.textContent = 'Password must be at least 8 characters.'; pwErr.classList.add('show'); valid = false;
+      } else { pw.classList.remove('error'); pwErr.classList.remove('show'); }
       if (pw.value !== pwc.value) {
-        pwc.classList.add('error');
-        pwcErr.textContent = 'Passwords do not match.';
-        pwcErr.classList.add('show');
-        valid = false;
-      } else {
-        pwc.classList.remove('error');
-        pwcErr.classList.remove('show');
-      }
-
+        pwc.classList.add('error'); pwcErr.textContent = 'Passwords do not match.'; pwcErr.classList.add('show'); valid = false;
+      } else { pwc.classList.remove('error'); pwcErr.classList.remove('show'); }
       if (!valid) { e.preventDefault(); return; }
-
-      document.getElementById('resetBtn').disabled    = true;
-      document.getElementById('resetBtn').textContent = 'Saving…';
+      const btn = document.getElementById('resetBtn');
+      btn.disabled = true;
+      btn.querySelector('.btn-label').textContent = 'Saving…';
     });
 
     document.getElementById('pwInput')?.addEventListener('input', function() {
-      this.classList.remove('error');
-      document.getElementById('pwError').classList.remove('show');
+      this.classList.remove('error'); document.getElementById('pwError').classList.remove('show');
     });
     document.getElementById('pwConfirmInput')?.addEventListener('input', function() {
-      this.classList.remove('error');
-      document.getElementById('pwConfirmError').classList.remove('show');
+      this.classList.remove('error'); document.getElementById('pwConfirmError').classList.remove('show');
     });
   }
 </script>
