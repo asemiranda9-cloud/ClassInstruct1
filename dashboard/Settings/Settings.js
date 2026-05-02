@@ -77,7 +77,7 @@ function deleteAccount() {
   if (confirm('Are you sure? This will permanently delete your account and all data. This cannot be undone.')) {
     sessionStorage.clear();
     localStorage.clear();
-    window.top.location.href = '/ClassInstruct1/homepage/homepage.php';
+    window.top.location.href = '/ClassInstruct1/index.php';
   }
 }
 

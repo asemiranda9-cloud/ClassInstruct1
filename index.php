@@ -1024,7 +1024,7 @@
       <a href="#contact" class="nav-link font-sans">Contact</a>
     </div>
     
-    <a href="login.php" class="btn-primary font-sans">Sign In</a>
+    <a href="homepage/login.php" class="btn-primary font-sans">Sign In</a>
   </nav>
 
       <div class="section-tag" style="position:relative; z-index:10;">
@@ -1041,7 +1041,7 @@
           ClassInstruct transforms your instructional materials into structured lesson plans, interactive assessments, and mastery-level insights — completely free, so you can focus on what matters most.
         </p>
         <div class="hero-cta">
-          <a href="login.php" class="btn-primary font-sans">Get Started — Free</a>
+          <a href="homepage/login.php" class="btn-primary font-sans">Get Started — Free</a>
           <a href="#" class="btn-secondary font-sans">Watch Demo</a>
         </div>
       </div>
@@ -1264,7 +1264,7 @@
       </h2>
       <p class="cta-desc font-sans">ClassInstruct is completely free for all educators. Start organizing your instructional materials, generating assessments, and gaining mastery-level insights today.</p>
       <div class="cta-buttons">
-        <a href="login.php" class="btn-primary font-sans">
+        <a href="homepage/login.php" class="btn-primary font-sans">
           Get Started — Free
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>

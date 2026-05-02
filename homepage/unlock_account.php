@@ -603,7 +603,7 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
         </button>
       </form>
 
-      <p class="back-link">Remember your password? <a href="homepage.php">← Sign in</a></p>
+      <p class="back-link">Remember your password? <a href="../index.php">← Sign in</a></p>
 
     <?php elseif ($step === 'sent'): ?>
       <div class="state-box">
@@ -614,7 +614,7 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
           Didn't receive it? Check your spam folder, or
           <a href="unlock_account.php" style="color:var(--gold);font-weight:600;text-decoration:none;">try again</a>.
         </p>
-        <a href="homepage.php" class="btn-primary" style="text-decoration:none;">
+        <a href="../index.php" class="btn-primary" style="text-decoration:none;">
           <i class="fa-solid fa-arrow-left"></i> Back to Sign In
         </a>
       </div>
@@ -671,7 +671,7 @@ function buildGoogleNoticeEmail(string $firstName, string $email): string
         <div class="state-icon success">🔓</div>
         <h2>Account Unlocked!</h2>
         <p>Your password has been updated and your account is fully unlocked. You can now sign in normally.</p>
-        <a href="homepage.php" class="btn-primary" style="text-decoration:none;">
+        <a href="../index.php" class="btn-primary" style="text-decoration:none;">
           <i class="fa-solid fa-arrow-right-to-bracket"></i> Go to Sign In
         </a>
       </div>

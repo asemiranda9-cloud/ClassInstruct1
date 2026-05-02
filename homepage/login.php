@@ -419,7 +419,7 @@
         <div class="hero-logo-mark"><i class="fa-solid fa-graduation-cap"></i></div>
         <span class="hero-brand-name">ClassInstruct</span>
       </div>
-      <a href="homepage.php" class="back-home" style="margin-top:14px;">← Back to home</a>
+      <a href="../index.php" class="back-home" style="margin-top:14px;">← Back to home</a>
     </div>
 
     <div class="auth-hero-inner hero-copy">
