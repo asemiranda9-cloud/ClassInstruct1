@@ -26,9 +26,9 @@
     <!-- Header -->
     <header class="top-header">
       <div class="header-left">
-        <h1 class="header-title font-serif">Student Info</h1>
+        <span class="header-title">Student Info</span>
         <div class="breadcrumb">
-          <span class="crumb" onclick="location.href='../dashboard.html'">Dashboard</span>
+          <span class="crumb" onclick="location.href='../dashboard.php'">Dashboard</span>
           <span class="sep">/</span>
           <span class="crumb" onclick="location.href='Student.html'">Students</span>
           <span class="sep">/</span>
@@ -39,7 +39,7 @@
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="search" placeholder="Search students…" aria-label="Search students"/>
       </div>
-      <span class="header-brand font-serif">ClassInstruct</span>
+      <span class="header-brand">ClassInstruct</span>
     </header>
 
     <!-- Loading State -->
@@ -100,6 +100,12 @@
               </div>
               <span class="info-text" id="infoAddress">—</span>
             </div>
+          </div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100)">
+            <button class="btn-edit-profile" onclick="goEditStudent()" title="Edit student information" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:10px;border:1.5px solid var(--primary,#4f46e5);background:transparent;color:var(--primary,#4f46e5);font-size:13px;font-weight:600;cursor:pointer;transition:background 150ms,color 150ms" onmouseover="this.style.background='var(--primary,#4f46e5)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--primary,#4f46e5)'">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              Edit Student
+            </button>
           </div>
         </div>
 

@@ -55,12 +55,11 @@ async function bootPage() {
 //  RENDER PAGE SKELETON
 // ════════════════════════════════════════════════════
 function buildFullName(s) {
-  const lastName   = s.lastName   || '';
   const firstName  = s.firstName  || '';
   const middleInit = s.middleName ? s.middleName[0] + '.' : '';
-  const parts = [firstName, middleInit].filter(Boolean);
-  const fullName = parts.join(' ');
-  return lastName ? (fullName ? lastName + ', ' + fullName : lastName) : fullName || '—';
+  const lastName   = s.lastName   || '';
+  const parts = [firstName, middleInit, lastName].filter(Boolean);
+  return parts.join(' ') || '—';
 }
 
 function getInitials(s) {
@@ -1315,4 +1314,7 @@ function siToast(msg, type) {
   t.textContent = msg;
   wrap.appendChild(t);
   setTimeout(() => t.remove(), 3200);
+}-e 
+function goEditStudent() {
+  if (studentId) window.location.href = 'Student.html?edit=' + studentId;
 }
