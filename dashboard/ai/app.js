@@ -53,7 +53,7 @@ async function streamMessageFromGemini(message, onChunk, { imageBase64, imageMim
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch("http://localhost:3000/chat", {
+    const response = await fetch("api.php?route=chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, imageBase64, imageMimeType, docText, fileUri, fileMimeType }),
@@ -113,7 +113,7 @@ async function streamMessageFromGemini(message, onChunk, { imageBase64, imageMim
     return fullText;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === "AbortError") throw new Error("Request timed out. Make sure the server is running on localhost:3000.");
+    if (error.name === "AbortError") throw new Error("Request timed out. Make sure api.php is accessible on your web server.");
     throw error;
   }
 }
@@ -395,7 +395,7 @@ function extractYouTubeId(url) {
 
 // ── Fetch YouTube video info via the backend ─────────────
 async function fetchYouTubeInfo(videoId) {
-  const res = await fetch('http://localhost:3000/fetch-youtube', {
+  const res = await fetch('api.php?route=fetch-youtube', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ videoId })
@@ -407,7 +407,7 @@ async function fetchYouTubeInfo(videoId) {
 
 // ── Fetch a generic URL's text via the backend ───────────
 async function fetchLinkText(url) {
-  const res = await fetch('http://localhost:3000/fetch-link', {
+  const res = await fetch('api.php?route=fetch-link', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
@@ -459,7 +459,7 @@ window.handleSendMessageWithFile = async function() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
-      const upRes = await fetch('http://localhost:3000/upload-video', {
+      const upRes = await fetch('api.php?route=upload-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoBase64: imageB64, mimeType: imageMime, fileName })
@@ -592,7 +592,7 @@ window.handleSendMessageWithFile = async function() {
     typingDiv.remove();
     let errorMessage = error.message;
     if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
-      errorMessage = 'Cannot connect to server. Make sure the server is running on localhost:3000';
+      errorMessage = 'Cannot connect to the PHP backend. Make sure api.php is on your web server.';
     }
     addAiMessage(errorMessage, true);
   } finally {
