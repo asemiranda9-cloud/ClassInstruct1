@@ -19,6 +19,90 @@
   </script>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════
+     PIN GATE OVERLAY
+══════════════════════════════════════════ -->
+<div id="pinGate" style="
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-body,#f4f5fb);
+">
+  <div style="
+    background:#fff;border-radius:20px;
+    box-shadow:0 8px 40px rgba(79,70,229,.13);
+    padding:40px 36px 32px;
+    width:100%;max-width:360px;
+    text-align:center;
+  ">
+    <!-- Lock icon -->
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(79,70,229,.1);
+      display:flex;align-items:center;justify-content:center;margin:0 auto 18px">
+      <svg width="26" height="26" fill="none" stroke="#4f46e5" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+    </div>
+
+    <div id="pinTitle" style="font-size:1.15rem;font-weight:700;color:#1e1b4b;margin-bottom:4px">Enter PIN</div>
+    <div id="pinSub" style="font-size:0.82rem;color:#6b7280;margin-bottom:22px">Enter your 4-digit PIN to access Attendance</div>
+
+    <!-- Dot display -->
+    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:20px" id="pinDots">
+      <span class="pin-dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4f46e5;background:transparent;transition:background .15s"></span>
+      <span class="pin-dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4f46e5;background:transparent;transition:background .15s"></span>
+      <span class="pin-dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4f46e5;background:transparent;transition:background .15s"></span>
+      <span class="pin-dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4f46e5;background:transparent;transition:background .15s"></span>
+    </div>
+
+    <!-- Error message -->
+    <div id="pinError" style="font-size:0.8rem;color:#dc2626;min-height:18px;margin-bottom:10px"></div>
+
+    <!-- Number pad -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key pin-key--del" onclick="pinBackspace()" style="font-size:1.1rem" aria-label="Backspace">⌫</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key pin-key--clear" onclick="pinClear()" aria-label="Clear">C</button>
+    </div>
+
+    <!-- Physical keyboard hint -->
+    <div style="margin-top:18px;font-size:0.75rem;color:#9ca3af">You can also type with your keyboard</div>
+  </div>
+</div>
+
+<style>
+  .pin-key {
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e1b4b;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, transform .08s;
+    font-family: 'Inter', sans-serif;
+  }
+  .pin-key:hover { background: #ede9fe; border-color: #4f46e5; }
+  .pin-key:active { transform: scale(.93); }
+  .pin-key--del, .pin-key--clear { color: #6b7280; font-size: .85rem; }
+  html[data-theme="dark"] #pinGate { background: #12112a; }
+  html[data-theme="dark"] #pinGate > div { background: #1e1b4b; }
+  html[data-theme="dark"] #pinTitle { color: #e0e0ff; }
+  html[data-theme="dark"] #pinSub { color: #9ca3af; }
+  html[data-theme="dark"] .pin-key { background: #2a2760; border-color: #3730a3; color: #e0e0ff; }
+  html[data-theme="dark"] .pin-key:hover { background: #3730a3; }
+</style>
+
 <div class="app">
   <main class="main-content">
 

@@ -1229,5 +1229,121 @@ function showToast(msg, type) {
   }
 }
 
-// Boot
-init();
+// ════════════════════════════════════════════════════
+//  PIN GATE
+// ════════════════════════════════════════════════════
+const PIN_STORAGE_KEY = 'ci_pin';
+let _pinBuffer = '';
+let _pinMode   = 'verify'; // 'verify' | 'set'
+
+function _updateDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach(function(d, i) {
+    d.style.background = i < _pinBuffer.length ? '#4f46e5' : 'transparent';
+  });
+}
+
+function _shakePin() {
+  const dots = document.getElementById('pinDots');
+  if (!dots) return;
+  dots.style.transition = 'none';
+  dots.style.transform  = 'translateX(0)';
+  const seq = [10, -10, 8, -8, 5, -5, 0];
+  let i = 0;
+  const step = function() {
+    dots.style.transform = 'translateX(' + seq[i] + 'px)';
+    i++;
+    if (i < seq.length) setTimeout(step, 45);
+    else dots.style.transform = '';
+  };
+  setTimeout(step, 0);
+}
+
+function pinKey(digit) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += digit;
+  _updateDots();
+  if (_pinBuffer.length === 4) setTimeout(_pinSubmit, 120);
+}
+
+function pinBackspace() {
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  _updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function pinClear() {
+  _pinBuffer = '';
+  _updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function _getStoredPin() {
+  const raw = localStorage.getItem(PIN_STORAGE_KEY);
+  if (!raw) return null;
+  try { return atob(raw); } catch(e) { return raw; }
+}
+
+function _pinSubmit() {
+  const stored = _getStoredPin();
+
+  if (!stored) {
+    // No PIN set in Settings — show helpful message
+    document.getElementById('pinError').textContent = 'No PIN set. Please set one in Settings first.';
+    _pinBuffer = '';
+    _updateDots();
+    return;
+  }
+
+  if (_pinBuffer === stored) {
+    _unlockApp();
+  } else {
+    _pinBuffer = '';
+    _updateDots();
+    _shakePin();
+    document.getElementById('pinError').textContent = 'Incorrect PIN. Please try again.';
+  }
+}
+
+function _unlockApp() {
+  const gate = document.getElementById('pinGate');
+  if (gate) {
+    gate.style.transition = 'opacity .25s';
+    gate.style.opacity    = '0';
+    setTimeout(function() { gate.style.display = 'none'; }, 260);
+  }
+  init(); // boot the attendance app
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(e) {
+  const gate = document.getElementById('pinGate');
+  if (!gate || gate.style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') { pinKey(e.key); }
+  else if (e.key === 'Backspace')   { pinBackspace(); }
+  else if (e.key === 'Escape')      { pinClear(); }
+});
+
+// Boot — check if PIN is configured in Settings
+(function bootWithPin() {
+  const saved = localStorage.getItem(PIN_STORAGE_KEY);
+  if (!saved) {
+    // No PIN set in Settings — show instructions and still require user to go set one
+    document.getElementById('pinTitle').textContent = 'PIN Required';
+    document.getElementById('pinSub').textContent   = 'No PIN is set. Go to Settings → Security to create one, then come back.';
+    // Hide the numpad, just show a redirect button
+    const pad = document.querySelector('#pinGate div > div:last-of-type');
+    const numGrid = document.querySelector('#pinGate div[style*=grid]');
+    if (numGrid) numGrid.style.display = 'none';
+    const dots = document.getElementById('pinDots');
+    if (dots) dots.style.display = 'none';
+    const hint = document.querySelector('#pinGate div[style*="0.75rem"]');
+    if (hint) hint.style.display = 'none';
+    const goBtn = document.createElement('a');
+    goBtn.href = '../Settings/Settings.html';
+    goBtn.textContent = 'Go to Settings';
+    goBtn.style.cssText = 'display:inline-block;margin-top:16px;padding:10px 24px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none;';
+    document.getElementById('pinError').after(goBtn);
+  }
+  // Gate stays visible; user must enter correct PIN before init() runs
+})();
