@@ -237,13 +237,22 @@ body {
 .month-days .day.today.has-event::after { background: rgba(255,255,255,.8); }
 .day-type-dots { display: flex; gap: 2px; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
 .day-type-dot { width: 3px; height: 3px; border-radius: 50%; flex-shrink: 0; }
-.day-type-dot.holiday  { background: #059669; }
-.day-type-dot.event    { background: var(--primary); }
-.day-type-dot.meeting  { background: #2563eb; }
-.day-type-dot.note     { background: #d97706; }
-.day-type-dot.exam     { background: #dc2626; }
-.day-type-dot.activity { background: #db2777; }
-.day-type-dot.quiz     { background: #7c3aed; }
+.day-type-dot.holiday    { background: #059669; }
+.day-type-dot.event      { background: var(--primary); }
+.day-type-dot.meeting    { background: #2563eb; }
+.day-type-dot.note       { background: #d97706; }
+.day-type-dot.exam       { background: #dc2626; }
+.day-type-dot.activity   { background: #db2777; }
+.day-type-dot.quiz       { background: #7c3aed; }
+.day-type-dot.ph-holiday { background: linear-gradient(135deg, #0038a8 40%, #ce1126); width: 5px; height: 5px; }
+
+/* ── PH Holiday day styling in mini calendar ── */
+.month-days .day.ph-regular  { color: #b91c1c; }
+.month-days .day.ph-special  { color: #b45309; }
+.month-days .day.ph-regular:not(.today):not(.empty) { background: rgba(206,17,38,.07); }
+.month-days .day.ph-special:not(.today):not(.empty) { background: rgba(234,179,8,.08); }
+.month-days .day.today.ph-regular,
+.month-days .day.today.ph-special { color: white; }
 
 /* ── Events ── */
 .events-content { display: flex; flex-direction: column; gap: 7px; }
@@ -261,6 +270,11 @@ body {
 .event-item.type-exam     { border-left-color: #dc2626; }
 .event-item.type-activity { border-left-color: #db2777; }
 .event-item.type-quiz     { border-left-color: #7c3aed; }
+.event-item.type-ph-holiday {
+  border-left-color: #ce1126;
+  background: linear-gradient(90deg, rgba(0,56,168,.05), rgba(206,17,38,.05));
+}
+.event-item.type-ph-holiday:hover { background: linear-gradient(90deg, rgba(0,56,168,.10), rgba(206,17,38,.10)); }
 .event-date { font-size: .7rem; font-weight: 700; color: var(--primary); background: var(--card-bg); padding: 3px 7px; border-radius: var(--r-sm); min-width: 50px; text-align: center; white-space: nowrap; transition: background 0.25s; }
 .event-icon { font-size: .95rem; flex-shrink: 0; }
 .event-title { font-size: .85rem; font-weight: 500; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -272,6 +286,8 @@ body {
 .event-item.type-exam     .event-type-tag { background: #fee2e2; color: #dc2626; }
 .event-item.type-activity .event-type-tag { background: #fce7f3; color: #db2777; }
 .event-item.type-quiz     .event-type-tag { background: #ede9fe; color: #7c3aed; }
+.event-item.type-ph-holiday .event-type-tag,
+.ph-tag { background: rgba(206,17,38,.12); color: #b91c1c; font-size: .58rem; }
 .no-events-msg { text-align: center; padding: 24px 0; color: var(--text-muted); font-size: .85rem; }
 .no-events-msg span { font-size: 1.8rem; display: block; margin-bottom: 8px; }
 

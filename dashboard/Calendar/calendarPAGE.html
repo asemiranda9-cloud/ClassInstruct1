@@ -25,6 +25,31 @@
           <div class="header-brand">ClassInstruct</div>
         </header>
 
+        <!-- ══ WEATHER FORECAST STRIP ══ -->
+        <div class="weather-strip" id="weatherStrip">
+          <div class="weather-strip-inner">
+
+            <!-- Location + current temp (left anchor) -->
+            <div class="weather-location-col" id="weatherLocationCol">
+              <div class="weather-loc-skeleton"></div>
+            </div>
+
+            <!-- 7-day forecast scrollable row -->
+            <div class="weather-days-row" id="weatherDaysRow">
+              <!-- Skeleton cards while loading -->
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+              <div class="weather-day-card skeleton"></div>
+            </div>
+
+          </div>
+        </div>
+        <!-- ══ END WEATHER ══ -->
+
         <div class="content-wrap">
           <!-- Calendar -->
           <div class="calendar-card">
@@ -98,5 +123,256 @@
     <script src="../shared.js"></script>
     <script src="../activity_log.js"></script>
     <script src="calendar.js"></script>
-  </body>
+    <script>
+    // ══════════════════════════════════════════════════════════════
+    //  LIVE WEATHER — Open-Meteo with current= (real-time values)
+    //  Uses &current= block for actual NOW temp, not hourly model
+    //  Uses best_match model (selects most accurate for location)
+    //  Auto-refreshes every 15 min, manual refresh button included
+    // ══════════════════════════════════════════════════════════════
+    (function () {
+      'use strict';
+
+      const WMO_DESC = {
+        0:'Clear Sky', 1:'Mainly Clear', 2:'Partly Cloudy', 3:'Overcast',
+        45:'Foggy', 48:'Icy Fog',
+        51:'Light Drizzle', 53:'Drizzle', 55:'Heavy Drizzle',
+        56:'Freezing Drizzle', 57:'Heavy Freezing Drizzle',
+        61:'Slight Rain', 63:'Moderate Rain', 65:'Heavy Rain',
+        66:'Freezing Rain', 67:'Heavy Freezing Rain',
+        71:'Slight Snow', 73:'Moderate Snow', 75:'Heavy Snow', 77:'Snow Grains',
+        80:'Light Showers', 81:'Showers', 82:'Violent Showers',
+        85:'Snow Showers', 86:'Heavy Snow Showers',
+        95:'Thunderstorm', 96:'Thunderstorm + Hail', 99:'Thunderstorm + Heavy Hail',
+      };
+
+      function wmoDesc(code) { return WMO_DESC[parseInt(code)] || 'Unknown'; }
+
+      function wmoIcon(code, isDay) {
+        const c = parseInt(code);
+        if (c === 0)       return isDay ? '☀️' : '🌙';
+        if (c <= 2)        return isDay ? '⛅' : '🌤️';
+        if (c === 3)       return '☁️';
+        if (c <= 48)       return '🌫️';
+        if (c <= 57)       return '🌦️';
+        if (c <= 67)       return '🌧️';
+        if (c <= 77)       return '❄️';
+        if (c <= 82)       return '🌧️';
+        if (c <= 86)       return '🌨️';
+        return '⛈️';
+      }
+
+      function uvClass(u) {
+        u = Math.round(u);
+        if (u <= 2)  return 'uv-low';
+        if (u <= 5)  return 'uv-mod';
+        if (u <= 7)  return 'uv-high';
+        if (u <= 10) return 'uv-vhigh';
+        return 'uv-extreme';
+      }
+      function uvLabel(u) {
+        u = Math.round(u);
+        if (u <= 2)  return 'Low';
+        if (u <= 5)  return 'Moderate';
+        if (u <= 7)  return 'High';
+        if (u <= 10) return 'Very High';
+        return 'Extreme';
+      }
+
+      const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      let _timer = null;
+      let _state = { lat: 14.5995, lon: 120.9842, city: 'Manila' };
+
+      // ── Build strip from API data ──
+      function buildStrip(data, city) {
+        const cur    = data.current;        // ← actual live current block
+        const daily  = data.daily;
+        const locCol = document.getElementById('weatherLocationCol');
+        const daysRow= document.getElementById('weatherDaysRow');
+        if (!locCol || !daysRow) return;
+
+        // is_day comes from the current block directly
+        const isDay   = cur.is_day === 1;
+        const nowTemp = Math.round(cur.temperature_2m);
+        const nowFeel = Math.round(cur.apparent_temperature);
+        const nowHum  = Math.round(cur.relative_humidity_2m);
+        const nowWind = Math.round(cur.wind_speed_10m);
+        const nowCode = cur.weather_code;
+        const nowPrec = cur.precipitation != null ? cur.precipitation.toFixed(1) : null;
+        const nowIcon = wmoIcon(nowCode, isDay);
+        const nowDesc = wmoDesc(nowCode);
+        const updatedAt = new Date().toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+
+        // ── Left column: live current conditions ──
+        locCol.innerHTML = `
+          <div class="wloc-now-icon">${nowIcon}</div>
+          <div class="wloc-info">
+            <div class="wloc-city-row">
+              <span class="wloc-flag">🇵🇭</span>
+              <span class="wloc-city">${city}</span>
+            </div>
+            <div class="wloc-big-temp">${nowTemp}°<span class="wloc-unit">C</span></div>
+            <div class="wloc-desc">${nowDesc}</div>
+            <div class="wloc-meta-row">
+              <span class="wloc-meta-item" title="Feels like">🌡 Feels ${nowFeel}°</span>
+              <span class="wloc-meta-item" title="Humidity">💧 ${nowHum}%</span>
+              <span class="wloc-meta-item" title="Wind speed">💨 ${nowWind} km/h</span>
+              ${nowPrec !== null ? `<span class="wloc-meta-item" title="Precipitation now">🌧 ${nowPrec} mm</span>` : ''}
+            </div>
+            <div class="wloc-updated">
+              Live · ${updatedAt}
+              <button class="wloc-refresh-btn" id="weatherRefreshBtn" title="Refresh now">↻</button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('weatherRefreshBtn')?.addEventListener('click', async (e) => {
+          e.currentTarget.classList.add('spinning');
+          await fetchWeather(_state.lat, _state.lon, _state.city);
+          document.getElementById('weatherRefreshBtn')?.classList.remove('spinning');
+        });
+
+        // ── 7-day forecast cards ──
+        daysRow.innerHTML = daily.time.map((dateStr, i) => {
+          const d       = new Date(dateStr + 'T12:00:00');
+          const isToday = i === 0;
+          const label   = isToday ? 'Today' : DAY_SHORT[d.getDay()];
+          const code    = daily.weather_code[i];
+          const icon    = wmoIcon(code, true);
+          const desc    = wmoDesc(code);
+          const hi      = Math.round(daily.temperature_2m_max[i]);
+          const lo      = Math.round(daily.temperature_2m_min[i]);
+          const rainPct = daily.precipitation_probability_max?.[i] ?? null;
+          const rainMm  = parseFloat(daily.precipitation_sum?.[i] || 0).toFixed(1);
+          const uv      = daily.uv_index_max?.[i] ?? null;
+          const wind    = daily.wind_speed_10m_max?.[i] ? Math.round(daily.wind_speed_10m_max[i]) : null;
+
+          const rainHtml = rainPct !== null
+            ? `<div class="wday-rain">💧 ${rainPct}%</div>`
+            : `<div class="wday-rain">🌧 ${rainMm}mm</div>`;
+
+          const uvHtml = uv !== null
+            ? `<div class="wday-uv ${uvClass(uv)}">${uvLabel(uv)} UV${Math.round(uv)}</div>` : '';
+
+          const windHtml = wind !== null
+            ? `<div class="wday-wind">💨 ${wind}<small>km/h</small></div>` : '';
+
+          return `
+            <div class="weather-day-card${isToday ? ' today' : ''}">
+              <div class="wday-label">${label}</div>
+              <div class="wday-date">${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</div>
+              <div class="wday-icon" title="${desc}">${icon}</div>
+              <div class="wday-desc">${desc}</div>
+              <div class="wday-temps">
+                <span class="wday-hi">${hi}°</span>
+                <span class="wday-lo">${lo}°</span>
+              </div>
+              ${rainHtml}${uvHtml}${windHtml}
+            </div>`;
+        }).join('');
+      }
+
+      // ── Fetch: uses current= for real-time NOW data ──
+      async function fetchWeather(lat, lon, city) {
+        try {
+          // Build URL with &current= block — this is what gives real-time values
+          // best_match model auto-selects the highest-accuracy model per location
+          const params = new URLSearchParams({
+            latitude:  lat,
+            longitude: lon,
+            timezone:  'Asia/Manila',
+            forecast_days: 7,
+            models:    'best_match',
+            // ↓ Real-time current conditions (updated every 15 min at source)
+            current: [
+              'temperature_2m',
+              'apparent_temperature',
+              'relative_humidity_2m',
+              'wind_speed_10m',
+              'weather_code',
+              'precipitation',
+              'is_day',
+            ].join(','),
+            // ↓ 7-day daily forecast
+            daily: [
+              'weather_code',
+              'temperature_2m_max',
+              'temperature_2m_min',
+              'precipitation_sum',
+              'precipitation_probability_max',
+              'uv_index_max',
+              'wind_speed_10m_max',
+            ].join(','),
+          });
+
+          const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+
+          if (!data.current) throw new Error('No current data in response');
+          buildStrip(data, city);
+
+        } catch (err) {
+          console.error('[Weather] fetch failed:', err);
+          const locCol = document.getElementById('weatherLocationCol');
+          const daysRow = document.getElementById('weatherDaysRow');
+          if (locCol) locCol.innerHTML = `
+            <div class="weather-error-col">
+              <div style="font-size:1.8rem">⚠️</div>
+              <div style="font-size:.85rem;color:var(--text-muted)">Weather unavailable</div>
+              <div style="font-size:.65rem;margin-top:3px;color:var(--text-muted)">${err.message}</div>
+              <button class="wloc-refresh-btn wloc-refresh-big" onclick="window.__weatherRetry()">↻ Retry</button>
+            </div>`;
+          if (daysRow) daysRow.innerHTML = '';
+        }
+      }
+
+      window.__weatherRetry = () => fetchWeather(_state.lat, _state.lon, _state.city);
+
+      // Auto-refresh every 15 minutes
+      function scheduleRefresh() {
+        if (_timer) clearInterval(_timer);
+        _timer = setInterval(() => fetchWeather(_state.lat, _state.lon, _state.city), 15 * 60 * 1000);
+      }
+
+      // Refresh on tab focus
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) fetchWeather(_state.lat, _state.lon, _state.city);
+      });
+
+      // ── Init: geolocation → reverse geocode → fetch ──
+      async function init() {
+        if ('geolocation' in navigator) {
+          try {
+            const pos = await new Promise((res, rej) =>
+              navigator.geolocation.getCurrentPosition(res, rej, {
+                timeout: 8000, maximumAge: 60000, enableHighAccuracy: false
+              })
+            );
+            _state.lat = pos.coords.latitude;
+            _state.lon = pos.coords.longitude;
+            try {
+              const r = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${_state.lat}&lon=${_state.lon}&format=json`,
+                { headers: { 'Accept-Language': 'en' } }
+              );
+              const d = await r.json();
+              _state.city = d.address?.city || d.address?.town
+                || d.address?.municipality || d.address?.county
+                || d.address?.state || 'Philippines';
+            } catch { /* use Manila */ }
+          } catch { /* geolocation denied — use Manila */ }
+        }
+        await fetchWeather(_state.lat, _state.lon, _state.city);
+        scheduleRefresh();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
+    </script>
 </html>

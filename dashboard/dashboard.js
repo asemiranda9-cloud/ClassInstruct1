@@ -12,6 +12,65 @@ const MONTHS    = ['January','February','March','April','May','June','July','Aug
 const MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const TYPE_ICONS = { holiday:'🌿', event:'📅', meeting:'🤝', note:'📝', exam:'📋', activity:'🎯', quiz:'❓' };
 
+// ════════════════════════════════════════════════
+//  PHILIPPINE PUBLIC HOLIDAYS
+// ════════════════════════════════════════════════
+function getPhHolidays(year) {
+  const R = 'regular', S = 'special';
+  const fixed = [
+    { m:0,  d:1,  name:"New Year's Day",                     type:R },
+    { m:1,  d:25, name:"EDSA People Power Revolution",       type:S },
+    { m:3,  d:9,  name:"Day of Valor (Araw ng Kagitingan)",  type:R },
+    { m:4,  d:1,  name:"Labor Day",                          type:R },
+    { m:5,  d:12, name:"Independence Day",                   type:R },
+    { m:7,  d:21, name:"Ninoy Aquino Day",                   type:S },
+    { m:7,  d:26, name:"National Heroes Day",                type:R },
+    { m:10, d:1,  name:"All Saints' Day",                    type:S },
+    { m:10, d:2,  name:"All Souls' Day",                     type:S },
+    { m:10, d:30, name:"Bonifacio Day",                      type:R },
+    { m:11, d:8,  name:"Feast of the Immaculate Conception", type:S },
+    { m:11, d:24, name:"Christmas Eve",                      type:S },
+    { m:11, d:25, name:"Christmas Day",                      type:R },
+    { m:11, d:30, name:"Rizal Day",                          type:R },
+    { m:11, d:31, name:"New Year's Eve",                     type:S },
+  ];
+  // Easter-based holidays
+  function easterSunday(y) {
+    const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
+    const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+    const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+    const m2=Math.floor((a+11*h+22*l)/451);
+    const mo=Math.floor((h+l-7*m2+114)/31)-1;
+    const dy=((h+l-7*m2+114)%31)+1;
+    return new Date(y,mo,dy);
+  }
+  const easter=easterSunday(year);
+  const holyThu=new Date(easter); holyThu.setDate(easter.getDate()-3);
+  const goodFri=new Date(easter); goodFri.setDate(easter.getDate()-2);
+  const blackSat=new Date(easter); blackSat.setDate(easter.getDate()-1);
+  const movable=[
+    { m:holyThu.getMonth(),  d:holyThu.getDate(),  name:"Maundy Thursday", type:R },
+    { m:goodFri.getMonth(),  d:goodFri.getDate(),   name:"Good Friday",     type:R },
+    { m:blackSat.getMonth(), d:blackSat.getDate(),  name:"Black Saturday",  type:S },
+  ];
+  // Chinese New Year lookup
+  const cny={2024:{m:1,d:10},2025:{m:0,d:29},2026:{m:1,d:17},2027:{m:1,d:6},2028:{m:0,d:26},2029:{m:1,d:13},2030:{m:1,d:3}};
+  if (cny[year]) movable.push({ m:cny[year].m, d:cny[year].d, name:"Chinese New Year", type:S });
+  // Election days
+  const edays={2025:{m:4,d:12},2028:{m:4,d:13}};
+  if (edays[year]) movable.push({ m:edays[year].m, d:edays[year].d, name:"National/Local Elections", type:S });
+  return [...fixed,...movable].map(h=>({...h,year}));
+}
+
+function buildPhHolidayMap(year) {
+  const map={};
+  getPhHolidays(year).forEach(h=>{
+    const key=`${h.year}-${String(h.m+1).padStart(2,'0')}-${String(h.d).padStart(2,'0')}`;
+    map[key]=h;
+  });
+  return map;
+}
+
 // Shared student cache
 let _allStudents = [];
 let _sections    = [];
@@ -434,9 +493,10 @@ function loadEntries() {
 }
 
 function renderMiniCalendar() {
-  const entries   = loadEntries();
-  const container = document.getElementById('miniCalDays');
-  const isThisM   = _todayObj.getMonth()===calMon && _todayObj.getFullYear()===calYear;
+  const entries    = loadEntries();
+  const holidayMap = buildPhHolidayMap(calYear);
+  const container  = document.getElementById('miniCalDays');
+  const isThisM    = _todayObj.getMonth()===calMon && _todayObj.getFullYear()===calYear;
 
   setEl('currentMonthDisplay', MONTHS[calMon]);
   setEl('calYearBadge',        calYear);
@@ -448,14 +508,25 @@ function renderMiniCalendar() {
   for (let i=0; i<firstDay; i++) { const s=span('day empty'); container.appendChild(s); }
 
   for (let day=1; day<=totalDays; day++) {
-    const key = `${calYear}-${String(calMon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const de  = entries[key] || [];
-    const s   = span('day');
+    const key   = `${calYear}-${String(calMon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const de    = entries[key] || [];
+    const phHol = holidayMap[key];
+    const s     = span('day');
+
     if (isThisM && day===_todayObj.getDate()) s.classList.add('today');
-    if (de.length > 0) {
+
+    // PH holiday styling
+    if (phHol) {
+      s.classList.add(phHol.type === 'regular' ? 'ph-regular' : 'ph-special');
+      s.title = phHol.name + (phHol.type === 'regular' ? ' (Regular Holiday)' : ' (Special Non-Working)');
+    }
+
+    if (de.length > 0 || phHol) {
       s.classList.add('has-event');
       const types = [...new Set(de.map(e=>e.type))];
-      s.innerHTML = `<span>${day}</span><div class="day-type-dots">${types.map(t=>`<span class="day-type-dot ${t}"></span>`).join('')}</div>`;
+      const phDot = phHol ? `<span class="day-type-dot ph-holiday" title="${esc(phHol.name)}"></span>` : '';
+      const userDots = types.map(t=>`<span class="day-type-dot ${t}"></span>`).join('');
+      s.innerHTML = `<span>${day}</span><div class="day-type-dots">${phDot}${userDots}</div>`;
     } else {
       s.textContent = day;
     }
@@ -488,15 +559,29 @@ function renderUpcomingEvents() {
   const now = new Date(); now.setHours(0,0,0,0);
   const todayStr = toYMD(now);
 
-  // Flatten + sort all entries
+  // ── Collect user entries ──
   const all = [];
   Object.entries(entries).forEach(([ds, arr]) => {
-    (arr||[]).forEach(e => all.push({ ds, date: new Date(ds+'T00:00:00'), e }));
+    (arr||[]).forEach(e => all.push({ ds, date: new Date(ds+'T00:00:00'), e, isPH: false }));
   });
+
+  // ── Collect PH holidays for current year + next year (to catch upcoming ones) ──
+  const thisYear = now.getFullYear();
+  [thisYear, thisYear+1].forEach(yr => {
+    const map = buildPhHolidayMap(yr);
+    Object.entries(map).forEach(([ds, hol]) => {
+      all.push({
+        ds, date: new Date(ds+'T00:00:00'),
+        e: { title: hol.name, type: 'ph-holiday', time: '', phType: hol.type },
+        isPH: true
+      });
+    });
+  });
+
   all.sort((a,b) => a.date-b.date || (a.e.time||'').localeCompare(b.e.time||''));
 
   const future = all.filter(x => x.ds >= todayStr);
-  const shown  = future.length > 0 ? future.slice(0,7) : all.slice(-7).reverse();
+  const shown  = future.length > 0 ? future.slice(0,8) : all.slice(-8).reverse();
 
   if (labelEl) labelEl.textContent = shown.length > 0
     ? `${MON_SHORT[shown[0].date.getMonth()]} ${shown[0].date.getFullYear()}`
@@ -507,9 +592,20 @@ function renderUpcomingEvents() {
     return;
   }
 
-  container.innerHTML = shown.map(({ ds, date, e }) => {
+  container.innerHTML = shown.map(({ ds, date, e, isPH }) => {
     const isToday = ds === todayStr;
     const label   = isToday ? 'Today' : `${MON_SHORT[date.getMonth()]} ${date.getDate()}`;
+
+    if (isPH) {
+      const typeLabel = e.phType === 'regular' ? 'Regular Hol.' : 'Special Non-Working';
+      return `<div class="event-item type-ph-holiday" title="${esc(e.title)}">
+        <span class="event-date">${label}</span>
+        <span class="event-icon">🇵🇭</span>
+        <span class="event-title">${esc(e.title)}</span>
+        <span class="event-type-tag ph-tag">${typeLabel}</span>
+      </div>`;
+    }
+
     return `<div class="event-item type-${e.type}">
       <span class="event-date">${label}</span>
       <span class="event-icon">${TYPE_ICONS[e.type]||'📌'}</span>
