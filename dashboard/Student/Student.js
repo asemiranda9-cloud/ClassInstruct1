@@ -842,8 +842,8 @@ async function _runOcrImport() {
   try {
     prog(10, 'Preparing image…', 'Resizing image for Gemini Vision');
 
-    // Resize image to max 1600 px wide and convert to JPEG base64
-    const { base64, mimeType } = await _imageToBase64Jpeg(_currentImgFile, imgEl, 1600);
+    // Resize image to max 2400 px wide and convert to JPEG base64
+    const { base64, mimeType } = await _imageToBase64Jpeg(_currentImgFile, imgEl, 2400);
 
     prog(25, 'Sending to Gemini AI…', 'AI is scanning your master list — please wait');
 
@@ -866,10 +866,15 @@ async function _runOcrImport() {
     const result = await response.json();
 
     if (!response.ok || result.error) {
-      throw new Error(result.error || ('Server error ' + response.status));
+      const preview = result.preview ? '\n\nGemini returned:\n' + result.preview : '';
+      throw new Error((result.error || ('Server error ' + response.status)) + preview);
     }
 
     const parsed = result.students;
+
+    if (result.truncated) {
+      toast(`⚠️ Response was cut off — ${parsed.length} students recovered. Scroll down to verify all rows.`, 'warning');
+    }
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
       throw new Error('No students detected. Make sure the photo shows a student masterlist clearly.');
@@ -888,8 +893,14 @@ async function _runOcrImport() {
         const gRaw       = (s.gender || '').toString().toLowerCase();
         const gender     = gRaw.startsWith('f') ? 'Female'
                          : gRaw.startsWith('m') ? 'Male' : '';
+        // Grade: normalise "7" → "Grade 7", "Grade 7" stays, "" stays ""
+        let grade = (s.grade || '').toString().trim();
+        if (grade && !/^grade\s/i.test(grade)) grade = 'Grade ' + grade;
+        else if (grade) grade = grade.replace(/^grade\s+/i, 'Grade ');
+        // Section: title-case the section name from the header
+        const section = _toTitleCase((s.section || '').toString().trim());
         return { lastName, firstName, middleName, studentId, gender,
-                 grade: '', section: '', dob: '', selected: true };
+                 grade, section, dob: '', selected: true };
       })
       .filter(s => s.lastName.length >= 2)
       .filter(s => {

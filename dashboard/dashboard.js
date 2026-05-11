@@ -1,8 +1,20 @@
-'use strict';
+// ════════════════════════════════════════════════
+//  SIDEBAR NAVIGATION (called from dashboard links)
+//  dashboard.php lives INSIDE the sidebar's iframe.
+//  To navigate without losing the sidebar, we tell
+//  the parent (sidebar.html) to call its own navTo().
+// ════════════════════════════════════════════════
+function sidebarNav(url) {
+  if (window.parent && window.parent !== window) {
+    // Tell the sidebar to navigate its iframe
+    window.parent.postMessage({ type: 'CI_NAV', url: url }, '*');
+  } else {
+    // Fallback: we ARE the top window (no iframe), just navigate
+    window.location.href = url;
+  }
+}
 
-// ════════════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════════════
+
 const ATT_API    = '/dashboard/attendance/attedance_db.php';
 const STUD_API   = '/dashboard/api/db.php';
 const GRADES_API = '/dashboard/Student/grades_db.php';   // serves ?action=grades|subjects|gpa_scales|summary|weights

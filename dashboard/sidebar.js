@@ -68,6 +68,23 @@ window.addEventListener('message', function (e) {
       frame.contentWindow.postMessage({ type: 'CI_ACTIVITY_UPDATE' }, '*');
     }
   }
+  // Dashboard links (View full, View all, Manage Class) ask the sidebar to navigate
+  if (e.data && e.data.type === 'CI_NAV' && e.data.url) {
+    const url = e.data.url;
+    // Find and activate the matching nav item (if any)
+    let matched = false;
+    document.querySelectorAll('.ni[data-url]').forEach(n => {
+      const match = n.dataset.url === url || n.dataset.url.toLowerCase() === url.toLowerCase();
+      n.classList.toggle('active', match);
+      if (match) matched = true;
+    });
+    setStoredNav(url);
+    const frame = document.getElementById('mainFrame');
+    if (frame) {
+      frame.src = url;
+      frame.onload = () => applyThemeToFrame(frame);
+    }
+  }
 });
 
 function applyThemeToFrame(frame) {

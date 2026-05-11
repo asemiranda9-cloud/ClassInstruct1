@@ -37,7 +37,7 @@
           <input type="search" id="search-input" placeholder="Search students, lessons, resources…"/>
         </div>
         <div class="hero-team-row">
-          <button class="hero-manage-btn" onclick="location.href='student/Student.html'">Manage Class</button>
+          <button class="hero-manage-btn" onclick="sidebarNav('Student/Student.html')">Manage Class</button>
         </div>
       </div>
 
@@ -171,7 +171,7 @@
             <div class="att-legend-item"><div class="att-legend-dot" style="background:#f59e0b"></div>Mid 60–79%</div>
             <div class="att-legend-item"><div class="att-legend-dot" style="background:#ef4444"></div>Low &lt;60%</div>
             <div class="att-legend-item"><div class="att-legend-dot" style="background:#e2e8f0;border:1px solid #cbd5e1"></div>No data</div>
-            <a href="attendance/attendance.html" style="margin-left:auto;font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View full →</a>
+            <a href="#" onclick="sidebarNav('attendance/attendance.html');return false;" style="margin-left:auto;font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View full →</a>
           </div>
         </article>
 
@@ -189,7 +189,7 @@
                 <option value="Q3">Third Quarter</option>
                 <option value="Q4">Fourth Quarter</option>
               </select>
-              <a href="Student/Grades.php" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none;white-space:nowrap">View all →</a>
+              <a href="#" onclick="sidebarNav('Grades/Grades.php');return false;" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none;white-space:nowrap">View all →</a>
             </div>
           </div>
           <div class="performance-chart bar-chart-container" id="perfChartWrap">
@@ -205,7 +205,7 @@
         <article class="card">
           <div class="section-header" style="margin-bottom:10px">
             <h2>Recently Added Students</h2>
-            <a href="student/Student.html" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View all →</a>
+            <a href="#" onclick="sidebarNav('Student/Student.html');return false;" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View all →</a>
           </div>
           <div id="recentStudents" style="display:flex;flex-direction:column;gap:6px">
             <div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">Loading student data…</div>
