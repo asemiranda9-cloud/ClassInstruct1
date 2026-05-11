@@ -94,11 +94,27 @@ function getStudents($conn) {
 }
 
 // ═══════════════════════════════════
-//  GET — List distinct sections from student data
+//  GET — List sections from dedicated sections table
+//        (also merges any legacy sections stored only on students)
 // ═══════════════════════════════════
 function getSections($conn) {
-    $sql = "SELECT DISTINCT section FROM students WHERE section IS NOT NULL AND section != '' ORDER BY section ASC";
-    $result = $conn->query($sql);
+    // Auto-create the sections table if it doesn't exist yet
+    $conn->query("
+        CREATE TABLE IF NOT EXISTS sections (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            name       VARCHAR(100) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    // Migrate any sections that already exist only on students
+    $conn->query("
+        INSERT IGNORE INTO sections (name)
+        SELECT DISTINCT section FROM students
+        WHERE section IS NOT NULL AND section != ''
+    ");
+
+    $result = $conn->query("SELECT name FROM sections ORDER BY name ASC");
     if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => $conn->error]);
@@ -106,7 +122,7 @@ function getSections($conn) {
     }
     $sections = [];
     while ($row = $result->fetch_assoc()) {
-        $sections[] = $row['section'];
+        $sections[] = $row['name'];
     }
     echo json_encode($sections);
 }
@@ -252,7 +268,7 @@ function updateStudent($conn, $id) {
 }
 
 // ═══════════════════════════════════
-//  POST — Add new section (free-text)
+//  POST — Add new section (persisted to sections table)
 // ═══════════════════════════════════
 function addSection($conn, $name) {
     $name = isset($name) ? trim((string)$name) : '';
@@ -261,9 +277,34 @@ function addSection($conn, $name) {
         echo json_encode(['error' => 'Section name is required']);
         return;
     }
-    // Sections are stored per-student, so we just return success.
-    // The section becomes available once a student is assigned to it.
-    echo json_encode(['success' => true, 'section' => $name]);
+
+    // Auto-create the sections table if it doesn't exist yet
+    $conn->query("
+        CREATE TABLE IF NOT EXISTS sections (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            name       VARCHAR(100) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    // INSERT IGNORE silently skips duplicate names
+    $stmt = $conn->prepare("INSERT IGNORE INTO sections (name) VALUES (?)");
+    $stmt->bind_param('s', $name);
+
+    if ($stmt->execute()) {
+        if ($conn->affected_rows === 0) {
+            // Already existed — not an error, just inform the caller
+            http_response_code(200);
+            echo json_encode(['success' => true, 'section' => $name, 'note' => 'Section already exists']);
+        } else {
+            http_response_code(201);
+            echo json_encode(['success' => true, 'section' => $name]);
+        }
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => $stmt->error]);
+    }
+    $stmt->close();
 }
 
 // ═══════════════════════════════════
