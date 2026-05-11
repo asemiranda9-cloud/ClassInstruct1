@@ -272,15 +272,6 @@ async function selectWeek(ymd) {
 
 // ════════════════════════════════════════════════════
 //  QUARTER HELPER
-//  DepEd quarters: Q1=Jun-Aug, Q2=Sep-Oct, Q3=Nov-Jan, Q4=Feb-May
-// ════════════════════════════════════════════════════
-function getQuarter(dateStr) {
-  const month = parseInt(dateStr.slice(5, 7), 10); // 1-12
-  if (month >= 6 && month <= 8)  return 'Q1';
-  if (month >= 9 && month <= 10) return 'Q2';
-  if (month === 11 || month === 12 || month === 1) return 'Q3';
-  return 'Q4'; // Feb-May
-}
 
 // ════════════════════════════════════════════════════
 //  SUMMARY CARD — Today's Attendance only
@@ -457,14 +448,6 @@ function renderTable() {
 
   tbody.innerHTML = students.map(function(s) {
     let p = 0, l = 0, a = 0;
-    // Quarter counts — across ALL stored statuses (not just this week)
-    var qCounts = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
-    Object.entries(s.statuses || {}).forEach(function(entry) {
-      var dateKey = entry[0], st = entry[1];
-      if (st === 'present' || st === 'late') {
-        qCounts[getQuarter(dateKey)]++;
-      }
-    });
 
     const cells = dates.map(function(d) {
       const status = s.statuses[d] || 'none';
@@ -492,12 +475,6 @@ function renderTable() {
           '<span class="sum-badge sum-p">P <strong>' + p + '</strong></span>' +
           '<span class="sum-badge sum-l">L <strong>' + l + '</strong></span>' +
           '<span class="sum-badge sum-a">A <strong>' + a + '</strong></span>' +
-        '</div>' +
-        '<div class="summary-quarters">' +
-          '<span class="q-pill q1">Q1 ' + qCounts.Q1 + '</span>' +
-          '<span class="q-pill q2">Q2 ' + qCounts.Q2 + '</span>' +
-          '<span class="q-pill q3">Q3 ' + qCounts.Q3 + '</span>' +
-          '<span class="q-pill q4">Q4 ' + qCounts.Q4 + '</span>' +
         '</div>' +
       '</div></td>' +
     '</tr>';
@@ -763,7 +740,6 @@ function updateRowSummary(studentId) {
   // Week P/L/A (only dates in the current table view)
   const weekSet = new Set(tableData.dates);
   let p = 0, l = 0, a = 0;
-  var qCounts = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
 
   Object.entries(student.statuses || {}).forEach(function(entry) {
     var dateKey = entry[0], st = entry[1];
@@ -771,9 +747,6 @@ function updateRowSummary(studentId) {
       if (st === 'present') p++;
       else if (st === 'late') l++;
       else if (st === 'absent') a++;
-    }
-    if (st === 'present' || st === 'late') {
-      qCounts[getQuarter(dateKey)]++;
     }
   });
 
@@ -786,12 +759,6 @@ function updateRowSummary(studentId) {
           '<span class="sum-badge sum-p">P <strong>' + p + '</strong></span>' +
           '<span class="sum-badge sum-l">L <strong>' + l + '</strong></span>' +
           '<span class="sum-badge sum-a">A <strong>' + a + '</strong></span>' +
-        '</div>' +
-        '<div class="summary-quarters">' +
-          '<span class="q-pill q1">Q1 ' + qCounts.Q1 + '</span>' +
-          '<span class="q-pill q2">Q2 ' + qCounts.Q2 + '</span>' +
-          '<span class="q-pill q3">Q3 ' + qCounts.Q3 + '</span>' +
-          '<span class="q-pill q4">Q4 ' + qCounts.Q4 + '</span>' +
         '</div>' +
       '</div>';
   }

@@ -50,52 +50,11 @@ function applyTheme(theme) {
 }
 
 // ═══════════════════════════════════════════
-//  PIN GATE  (copied from attendance.js)
+//  PIN GATE
 // ═══════════════════════════════════════════
 const PIN_STORAGE_KEY = 'ci_pin';
 let _pinBuffer = '';
-
-function _updateDots() {
-  const dots = document.querySelectorAll('.pin-dot');
-  dots.forEach(function(d, i) {
-    d.style.background = i < _pinBuffer.length ? '#4f46e5' : 'transparent';
-  });
-}
-
-function _shakePin() {
-  const dots = document.getElementById('pinDots');
-  if (!dots) return;
-  dots.style.transition = 'none';
-  dots.style.transform  = 'translateX(0)';
-  const seq = [10, -10, 8, -8, 5, -5, 0];
-  let i = 0;
-  const step = function() {
-    dots.style.transform = 'translateX(' + seq[i] + 'px)';
-    i++;
-    if (i < seq.length) setTimeout(step, 45);
-    else dots.style.transform = '';
-  };
-  setTimeout(step, 0);
-}
-
-function pinKey(digit) {
-  if (_pinBuffer.length >= 4) return;
-  _pinBuffer += digit;
-  _updateDots();
-  if (_pinBuffer.length === 4) setTimeout(_pinSubmit, 120);
-}
-
-function pinBackspace() {
-  _pinBuffer = _pinBuffer.slice(0, -1);
-  _updateDots();
-  document.getElementById('pinError').textContent = '';
-}
-
-function pinClear() {
-  _pinBuffer = '';
-  _updateDots();
-  document.getElementById('pinError').textContent = '';
-}
+let _pendingAction = null; // { fn: function, args: [] }
 
 function _getStoredPin() {
   const raw = localStorage.getItem(PIN_STORAGE_KEY);
@@ -103,62 +62,83 @@ function _getStoredPin() {
   try { return atob(raw); } catch(e) { return raw; }
 }
 
-function _pinSubmit() {
-  const stored = _getStoredPin();
-
-  if (!stored) {
-    document.getElementById('pinError').textContent = 'No PIN set. Please set one in Settings first.';
-    _pinBuffer = '';
-    _updateDots();
+function _showPinGate(actionFn) {
+  const saved = localStorage.getItem(PIN_STORAGE_KEY);
+  if (!saved) {
+    toast('No PIN set. Go to Settings → Security to create one.', 'danger');
     return;
   }
+  _pendingAction = { fn: actionFn, args: [] };
+  _pinBuffer = '';
+  document.getElementById('pinGate').style.display = 'flex';
+  document.getElementById('pinGate').style.opacity = '1';
+  document.getElementById('pinError').textContent = '';
+  _updatePinDots();
+}
 
+function _updatePinDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach(function(d, i) {
+    d.style.background = i < _pinBuffer.length ? '#4f46e5' : 'transparent';
+  });
+}
+
+function pinKey(digit) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += digit;
+  _updatePinDots();
+  if (_pinBuffer.length === 4) setTimeout(_pinSubmit, 120);
+}
+
+function pinBackspace() {
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  _updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function pinClear() {
+  _pinBuffer = '';
+  _updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function _pinSubmit() {
+  const stored = _getStoredPin();
   if (_pinBuffer === stored) {
-    _unlockApp();
+    document.getElementById('pinGate').style.display = 'none';
+    _pinBuffer = '';
+    if (_pendingAction) {
+      _pendingAction.fn.apply(null, _pendingAction.args);
+      _pendingAction = null;
+    }
   } else {
     _pinBuffer = '';
-    _updateDots();
-    _shakePin();
-    document.getElementById('pinError').textContent = 'Incorrect PIN. Please try again.';
+    _updatePinDots();
+    document.getElementById('pinError').textContent = 'Incorrect PIN';
+    const dots = document.getElementById('pinDots');
+    if (dots) {
+      dots.style.transition = 'none';
+      dots.style.transform = 'translateX(10px)';
+      setTimeout(function() { dots.style.transform = 'translateX(-10px)'; }, 50);
+      setTimeout(function() { dots.style.transform = 'translateX(0)'; }, 100);
+    }
   }
 }
 
-function _unlockApp() {
-  const gate = document.getElementById('pinGate');
-  if (gate) {
-    gate.style.transition = 'opacity .25s';
-    gate.style.opacity    = '0';
-    setTimeout(function() { gate.style.display = 'none'; }, 260);
-  }
-  init(); // boot the student app
+function closePinGate() {
+  document.getElementById('pinGate').style.display = 'none';
+  _pinBuffer = '';
+  _pendingAction = null;
 }
 
-// Keyboard support
+// Keyboard support for PIN gate
 document.addEventListener('keydown', function(e) {
   const gate = document.getElementById('pinGate');
   if (!gate || gate.style.display === 'none') return;
   if (e.key >= '0' && e.key <= '9') { pinKey(e.key); }
-  else if (e.key === 'Backspace')   { pinBackspace(); }
-  else if (e.key === 'Escape')      { pinClear(); }
+  else if (e.key === 'Backspace') { pinBackspace(); }
+  else if (e.key === 'Escape') { closePinGate(); }
 });
-
-// Boot — check if PIN is configured in Settings
-(function bootWithPin() {
-  const saved = localStorage.getItem(PIN_STORAGE_KEY);
-  if (!saved) {
-    document.getElementById('pinTitle').textContent = 'PIN Required';
-    document.getElementById('pinSub').textContent   = 'No PIN is set. Go to Settings → Security to create one, then come back.';
-    const numGrid = document.querySelector('#pinGate div[style*=grid]');
-    if (numGrid) numGrid.style.display = 'none';
-    const dots = document.getElementById('pinDots');
-    if (dots) dots.style.display = 'none';
-    const goBtn = document.createElement('a');
-    goBtn.href = '../Settings/Settings.html';
-    goBtn.textContent = 'Go to Settings';
-    goBtn.style.cssText = 'display:inline-block;margin-top:16px;padding:10px 24px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none;';
-    document.getElementById('pinError').after(goBtn);
-  }
-})();
 
 // ═══════════════════════════════════════════
 //  INIT
@@ -495,7 +475,7 @@ function renderTable() {
           <div class="student-avatar">${initials}</div>
           <div>
             <div style="font-weight:600">
-              <a href="StudentInfo.html?id=${s.id}" style="color:inherit;text-decoration:none"
+              <a href="javascript:void(0)" onclick="_showPinGate(()=>window.location.href='StudentInfo.html?id=${s.id}')" style="color:inherit;text-decoration:none"
                 onmouseover="this.style.color='#4f46e5';this.style.textDecoration='underline'"
                 onmouseout="this.style.color='inherit';this.style.textDecoration='none'">${name}</a>
             </div>
@@ -528,7 +508,7 @@ function renderTable() {
       <td style="font-size:0.85rem">${phone}</td>
       <td>
         <div class="action-btns">
-          <button class="btn btn-secondary btn-sm" title="View" onclick="viewStudent(${s.id})">
+          <button class="btn btn-secondary btn-sm" title="View" onclick="_showPinGate(()=>viewStudent(${s.id}))">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
           </button>
         </div>

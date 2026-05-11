@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="attendance.css" />
   <script>
     // Apply saved theme instantly to prevent white flash
-    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); })();
     // Listen for theme sync messages from sidebar/parent
     window.addEventListener('message', function(e) {
       if (e.data && (e.data.type === 'CI_THEME' || e.data.type === 'CI_SET_THEME')) {
@@ -95,12 +95,12 @@
   .pin-key:hover { background: #ede9fe; border-color: #4f46e5; }
   .pin-key:active { transform: scale(.93); }
   .pin-key--del, .pin-key--clear { color: #6b7280; font-size: .85rem; }
-  html[data-theme="dark"] #pinGate { background: #12112a; }
-  html[data-theme="dark"] #pinGate > div { background: #1e1b4b; }
-  html[data-theme="dark"] #pinTitle { color: #e0e0ff; }
-  html[data-theme="dark"] #pinSub { color: #9ca3af; }
-  html[data-theme="dark"] .pin-key { background: #2a2760; border-color: #3730a3; color: #e0e0ff; }
-  html[data-theme="dark"] .pin-key:hover { background: #3730a3; }
+  html[data-theme="dark"] #pinGate { background: #0b0b15 !important; }
+  html[data-theme="dark"] #pinGate > div { background: #17172a !important; }
+  html[data-theme="dark"] #pinTitle { color: #e0e0ff !important; }
+  html[data-theme="dark"] #pinSub { color: #9ca3af !important; }
+  html[data-theme="dark"] .pin-key { background: #2a2760 !important; border-color: #3730a3 !important; color: #e0e0ff !important; }
+  html[data-theme="dark"] .pin-key:hover { background: #3730a3 !important; }
 </style>
 
 <div class="app">

@@ -323,31 +323,6 @@ tr:has(.summary-cell--alert):hover { background: #fff3f3 !important; }
   flex-wrap: wrap;
 }
 
-.q-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border-radius: var(--r-full);
-  white-space: nowrap;
-  font-family: inherit;
-  transition: opacity 150ms ease;
-  border: 1px solid transparent;
-}
-.q-pill--active { padding: 3px 8px 3px 6px; font-size: .69rem; font-weight: 700; }
-.q-pill--past   { padding: 2px 7px 2px 5px; font-size: .62rem; font-weight: 600; opacity: .5; }
-
-.q-pill-label { font-weight: 800; letter-spacing: .02em; }
-.q-pill-count { font-weight: 700; }
-
-.q-pill.q1 { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
-.q-pill.q2 { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.q-pill.q3 { background: #fef3c7; color: #78350f; border-color: #fde68a; }
-.q-pill.q4 { background: #fce7f3; color: #831843; border-color: #fbcfe8; }
-
-.q-pill--active.q1 { border-color: #93c5fd; }
-.q-pill--active.q2 { border-color: #6ee7b7; }
-.q-pill--active.q3 { border-color: #fcd34d; }
-.q-pill--active.q4 { border-color: #f9a8d4; }
 
 /* Legacy hidden aliases — cleared now that badges are live */
 .summary-bar-section, .summary-bar,
@@ -1454,28 +1429,6 @@ tr:has(.summary-cell--alert):hover { background: #fff3f3 !important; }
 .sum-l { background: var(--late-bg);    border-color: var(--late-border);    color: #7c3a02; }
 .sum-a { background: var(--absent-bg);  border-color: var(--absent-border);  color: #8b1a1a; }
 
-/* ── Quarter pills (summary column) ── */
-.summary-quarters {
-  display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.q-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 7px;
-  border-radius: var(--r-full);
-  font-size: .63rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-.q-pill.q1 { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
-.q-pill.q2 { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.q-pill.q3 { background: #fef3c7; color: #78350f; border-color: #fde68a; }
-.q-pill.q4 { background: #fce7f3; color: #831843; border-color: #fbcfe8; }
 
 /* ══════════════════════════════════════════════════
    CONTEXT MENU
