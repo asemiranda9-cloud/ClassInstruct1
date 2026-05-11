@@ -4,6 +4,8 @@
  * Connects to existing students + new grades/gpa_scales tables
  */
 
+require_once __DIR__ . '/../config.php';
+
 // Suppress PHP HTML error output so JSON is never corrupted
 ini_set('display_errors', 0);
 error_reporting(0);
@@ -15,10 +17,10 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'classinstructdb');
+if (!defined('DB_HOST')) define('DB_HOST', env('DB_HOST', 'localhost'));
+if (!defined('DB_USER')) define('DB_USER', env('DB_USER', 'root'));
+if (!defined('DB_PASS')) define('DB_PASS', env('DB_PASS', ''));
+if (!defined('DB_NAME')) define('DB_NAME', env('DB_NAME', 'classinstructdb'));
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
@@ -227,7 +229,7 @@ function getStudents($conn) {
                    `$gradeCol`   AS grade,
                    `$sectionCol` AS section
             FROM students
-            WHERE 1=1 $gradeFilter $sectionFilter
+            WHERE (status IS NULL OR status != 'Dropout') $gradeFilter $sectionFilter
             ORDER BY `$nameCol` ASC";
 
     $result = $conn->query($sql);
@@ -256,7 +258,7 @@ function getGrades($conn) {
     $gradeCol   = in_array('grade',     $cols) ? 'grade'     : 'grade_level';
     $sectionCol = in_array('section',   $cols) ? 'section'   : 'section';
 
-    $where = "WHERE 1=1";
+    $where = "WHERE (s.status IS NULL OR s.status != 'Dropout')";
     if ($grade)   $where .= " AND s.`$gradeCol`='"   . $conn->real_escape_string($grade)   . "'";
     if ($section) $where .= " AND s.`$sectionCol`='" . $conn->real_escape_string($section) . "'";
 
@@ -632,7 +634,8 @@ function getDistinctGrades($conn) {
     $result = $conn->query("
         SELECT DISTINCT `$gradeCol` AS grade_level
         FROM students
-        WHERE `$gradeCol` IS NOT NULL AND `$gradeCol` != ''
+        WHERE (`$gradeCol` IS NOT NULL AND `$gradeCol` != '')
+          AND (status IS NULL OR status != 'Dropout')
         ORDER BY FIELD(`$gradeCol`,
             'Kindergarten',
             'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6',

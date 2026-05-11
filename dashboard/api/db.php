@@ -3,6 +3,8 @@
 //  db.php — ClassInstruct MySQL Backend
 // ═══════════════════════════════════
 
+require_once __DIR__ . '/../config.php';
+
 // Disable all error output before anything else
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -34,10 +36,10 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'classinstructdb');
+if (!defined('DB_HOST')) define('DB_HOST', env('DB_HOST', 'localhost'));
+if (!defined('DB_USER')) define('DB_USER', env('DB_USER', 'root'));
+if (!defined('DB_PASS')) define('DB_PASS', env('DB_PASS', ''));
+if (!defined('DB_NAME')) define('DB_NAME', env('DB_NAME', 'classinstructdb'));
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
@@ -67,7 +69,13 @@ switch ($method) {
         }
         break;
     case 'PUT':    updateStudent($conn, $id); break;
-    case 'DELETE': deleteStudent($conn, $id); break;
+    case 'DELETE':
+        if (isset($_GET['action']) && $_GET['action'] === 'delete_section') {
+            deleteSection($conn);
+        } else {
+            deleteStudent($conn, $id);
+        }
+        break;
     default:
         http_response_code(405);
         echo json_encode(['error' => 'Method not allowed']);
@@ -98,7 +106,6 @@ function getStudents($conn) {
 //        (also merges any legacy sections stored only on students)
 // ═══════════════════════════════════
 function getSections($conn) {
-    // Auto-create the sections table if it doesn't exist yet
     $conn->query("
         CREATE TABLE IF NOT EXISTS sections (
             id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -106,14 +113,12 @@ function getSections($conn) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
-
-    // Migrate any sections that already exist only on students
+    // Migrate sections that only exist on students
     $conn->query("
         INSERT IGNORE INTO sections (name)
         SELECT DISTINCT section FROM students
         WHERE section IS NOT NULL AND section != ''
     ");
-
     $result = $conn->query("SELECT name FROM sections ORDER BY name ASC");
     if (!$result) {
         http_response_code(500);
@@ -165,21 +170,23 @@ function addStudent($conn) {
           (student_id, full_name, dob, gender, grade, section, enroll_date,
            prev_school, email, phone, address,
            father_name, father_phone, mother_name, mother_phone,
-           guardian_name, guardian_relation, guardian_phone)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+           guardian_name, guardian_relation, guardian_phone, status)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     );
 
     $dob        = empty($data['dob'])        ? null : $data['dob'];
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
+    $status     = in_array($data['status'] ?? '', ['Active','Dropout']) ? $data['status'] : 'Active';
 
     // Bind $studentId (may be null) — NOT $data['studentId']
-    $stmt->bind_param('ssssssssssssssssss',
+    $stmt->bind_param('sssssssssssssssssss',
         $studentId,            $fullName,               $dob,
         $data['gender'],       $data['grade'],           $data['section'],
         $enrollDate,           $data['prevSchool'],      $data['email'],
         $data['phone'],        $data['address'],         $data['fatherName'],
         $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
-        $data['guardianName'], $data['guardianRelation'],$data['guardianPhone']
+        $data['guardianName'], $data['guardianRelation'],$data['guardianPhone'],
+        $status
     );
 
     if ($stmt->execute()) {
@@ -236,21 +243,22 @@ function updateStudent($conn, $id) {
           student_id=?, full_name=?, dob=?, gender=?, grade=?, section=?, enroll_date=?,
           prev_school=?, email=?, phone=?, address=?,
           father_name=?, father_phone=?, mother_name=?, mother_phone=?,
-          guardian_name=?, guardian_relation=?, guardian_phone=?
+          guardian_name=?, guardian_relation=?, guardian_phone=?, status=?
         WHERE id=?
     ");
 
     $dob        = empty($data['dob'])        ? null : $data['dob'];
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
+    $status     = in_array($data['status'] ?? '', ['Active','Dropout']) ? $data['status'] : 'Active';
 
-    $stmt->bind_param('ssssssssssssssssssi',
+    $stmt->bind_param('sssssssssssssssssssi',
         $studentId,            $fullName,               $dob,
         $data['gender'],       $data['grade'],           $data['section'],
         $enrollDate,           $data['prevSchool'],      $data['email'],
         $data['phone'],        $data['address'],         $data['fatherName'],
         $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
         $data['guardianName'], $data['guardianRelation'],$data['guardianPhone'],
-        $id
+        $status,               $id
     );
 
     if ($stmt->execute()) {
@@ -277,8 +285,6 @@ function addSection($conn, $name) {
         echo json_encode(['error' => 'Section name is required']);
         return;
     }
-
-    // Auto-create the sections table if it doesn't exist yet
     $conn->query("
         CREATE TABLE IF NOT EXISTS sections (
             id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -286,20 +292,33 @@ function addSection($conn, $name) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
-
-    // INSERT IGNORE silently skips duplicate names
     $stmt = $conn->prepare("INSERT IGNORE INTO sections (name) VALUES (?)");
     $stmt->bind_param('s', $name);
-
     if ($stmt->execute()) {
-        if ($conn->affected_rows === 0) {
-            // Already existed — not an error, just inform the caller
-            http_response_code(200);
-            echo json_encode(['success' => true, 'section' => $name, 'note' => 'Section already exists']);
-        } else {
-            http_response_code(201);
-            echo json_encode(['success' => true, 'section' => $name]);
-        }
+        http_response_code($conn->affected_rows === 0 ? 200 : 201);
+        echo json_encode(['success' => true, 'section' => $name]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => $stmt->error]);
+    }
+    $stmt->close();
+}
+
+// ═══════════════════════════════════
+//  DELETE — Delete section by name
+// ═══════════════════════════════════
+function deleteSection($conn) {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $name = isset($data['name']) ? trim((string)$data['name']) : '';
+    if ($name === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Section name is required']);
+        return;
+    }
+    $stmt = $conn->prepare("DELETE FROM sections WHERE name = ?");
+    $stmt->bind_param('s', $name);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'deleted_section' => $name]);
     } else {
         http_response_code(500);
         echo json_encode(['error' => $stmt->error]);
@@ -367,6 +386,7 @@ function mapRow($row) {
         'guardianName'     => $row['guardian_name'],
         'guardianRelation' => $row['guardian_relation'],
         'guardianPhone'    => $row['guardian_phone'],
+        'status'           => $row['status'] ?? 'Active',
         'createdAt'        => $row['created_at'],
     ];
 }

@@ -50,12 +50,127 @@ function applyTheme(theme) {
 }
 
 // ═══════════════════════════════════════════
+//  PIN GATE  (copied from attendance.js)
+// ═══════════════════════════════════════════
+const PIN_STORAGE_KEY = 'ci_pin';
+let _pinBuffer = '';
+
+function _updateDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach(function(d, i) {
+    d.style.background = i < _pinBuffer.length ? '#4f46e5' : 'transparent';
+  });
+}
+
+function _shakePin() {
+  const dots = document.getElementById('pinDots');
+  if (!dots) return;
+  dots.style.transition = 'none';
+  dots.style.transform  = 'translateX(0)';
+  const seq = [10, -10, 8, -8, 5, -5, 0];
+  let i = 0;
+  const step = function() {
+    dots.style.transform = 'translateX(' + seq[i] + 'px)';
+    i++;
+    if (i < seq.length) setTimeout(step, 45);
+    else dots.style.transform = '';
+  };
+  setTimeout(step, 0);
+}
+
+function pinKey(digit) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += digit;
+  _updateDots();
+  if (_pinBuffer.length === 4) setTimeout(_pinSubmit, 120);
+}
+
+function pinBackspace() {
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  _updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function pinClear() {
+  _pinBuffer = '';
+  _updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function _getStoredPin() {
+  const raw = localStorage.getItem(PIN_STORAGE_KEY);
+  if (!raw) return null;
+  try { return atob(raw); } catch(e) { return raw; }
+}
+
+function _pinSubmit() {
+  const stored = _getStoredPin();
+
+  if (!stored) {
+    document.getElementById('pinError').textContent = 'No PIN set. Please set one in Settings first.';
+    _pinBuffer = '';
+    _updateDots();
+    return;
+  }
+
+  if (_pinBuffer === stored) {
+    _unlockApp();
+  } else {
+    _pinBuffer = '';
+    _updateDots();
+    _shakePin();
+    document.getElementById('pinError').textContent = 'Incorrect PIN. Please try again.';
+  }
+}
+
+function _unlockApp() {
+  const gate = document.getElementById('pinGate');
+  if (gate) {
+    gate.style.transition = 'opacity .25s';
+    gate.style.opacity    = '0';
+    setTimeout(function() { gate.style.display = 'none'; }, 260);
+  }
+  init(); // boot the student app
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(e) {
+  const gate = document.getElementById('pinGate');
+  if (!gate || gate.style.display === 'none') return;
+  if (e.key >= '0' && e.key <= '9') { pinKey(e.key); }
+  else if (e.key === 'Backspace')   { pinBackspace(); }
+  else if (e.key === 'Escape')      { pinClear(); }
+});
+
+// Boot — check if PIN is configured in Settings
+(function bootWithPin() {
+  const saved = localStorage.getItem(PIN_STORAGE_KEY);
+  if (!saved) {
+    document.getElementById('pinTitle').textContent = 'PIN Required';
+    document.getElementById('pinSub').textContent   = 'No PIN is set. Go to Settings → Security to create one, then come back.';
+    const numGrid = document.querySelector('#pinGate div[style*=grid]');
+    if (numGrid) numGrid.style.display = 'none';
+    const dots = document.getElementById('pinDots');
+    if (dots) dots.style.display = 'none';
+    const goBtn = document.createElement('a');
+    goBtn.href = '../Settings/Settings.html';
+    goBtn.textContent = 'Go to Settings';
+    goBtn.style.cssText = 'display:inline-block;margin-top:16px;padding:10px 24px;background:#4f46e5;color:#fff;border-radius:10px;font-weight:600;font-size:14px;text-decoration:none;';
+    document.getElementById('pinError').after(goBtn);
+  }
+})();
+
+// ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
 async function init() {
   try {
-    const data = await apiGet();
-    students = data.map(s => ({ ...s }));
+    const [studentData, sectionData] = await Promise.all([
+      apiGet(),
+      fetch(API + '?action=sections').then(r => r.json()).catch(() => [])
+    ]);
+    students = studentData.map(s => ({ ...s }));
+    localSections = Array.isArray(sectionData) ? sectionData : [];
     applyFilters();
   } catch (e) {
     toast('Could not connect to database. Is XAMPP running and db.php in the right folder?', 'danger');
@@ -126,8 +241,9 @@ async function saveAddSection() {
     body: JSON.stringify({ _action: 'add_section', name })
   });
   if (!localSections.includes(name)) localSections.push(name);
-  closeAddSectionModal();
+  document.getElementById('newSectionName').value = '';
   populateSections();
+  buildSectionRemoveList();
   toast('Section "' + name + '" added', 'success');
 }
 function populateSections() {
@@ -174,11 +290,78 @@ function refreshSectionDropdowns(sections) {
     if (sections.includes(selected)) sel.value = selected;
   });
 }
-function removeSection(name) {
+async function removeSection(name) {
+  await fetch(API + '?action=delete_section', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
   localSections = localSections.filter(s => s !== name);
   populateSections();
   buildSectionRemoveList();
+  toast('Section "' + name + '" removed', 'info');
 }
+
+function editSection(name) {
+  const row = document.getElementById('secrow-' + CSS.escape(name));
+  if (!row) return;
+  row.innerHTML = '';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = name;
+  input.className = 'form-input';
+  input.style = 'flex:1;font-size:13px;padding:4px 8px;height:30px';
+  input.onkeydown = e => { if (e.key === 'Enter') saveEditSection(name, input.value); if (e.key === 'Escape') buildSectionRemoveList(); };
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.textContent = 'Save';
+  saveBtn.style = 'background:var(--primary-color);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer';
+  saveBtn.onclick = () => saveEditSection(name, input.value);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style = 'background:none;border:1px solid var(--bg-input);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text-secondary)';
+  cancelBtn.onclick = () => buildSectionRemoveList();
+
+  const btnWrap = document.createElement('div');
+  btnWrap.style = 'display:flex;gap:5px';
+  btnWrap.appendChild(saveBtn);
+  btnWrap.appendChild(cancelBtn);
+
+  row.style = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg-input)';
+  row.appendChild(input);
+  row.appendChild(btnWrap);
+  input.focus();
+  input.select();
+}
+
+async function saveEditSection(oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) { buildSectionRemoveList(); return; }
+  if (getAllSections().includes(newName)) {
+    toast('Section "' + newName + '" already exists', 'error'); return;
+  }
+  // Add the new name then delete the old one
+  await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _action: 'add_section', name: newName })
+  });
+  await fetch(API + '?action=delete_section', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: oldName })
+  });
+  localSections = localSections.filter(s => s !== oldName);
+  if (!localSections.includes(newName)) localSections.push(newName);
+  populateSections();
+  buildSectionRemoveList();
+  toast('Section renamed to "' + newName + '"', 'success');
+}
+
 function buildSectionRemoveList() {
   const wrap = document.getElementById('sectionRemoveList');
   if (!wrap) return;
@@ -190,20 +373,37 @@ function buildSectionRemoveList() {
   }
   all.forEach(s => {
     const row = document.createElement('div');
+    row.id = 'secrow-' + s;
     row.style = 'display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bg-input)';
+
     const nameSpan = document.createElement('span');
-    nameSpan.style = 'font-size:13px;color:var(--text-primary)';
+    nameSpan.style = 'font-size:13px;color:var(--text-primary);flex:1';
     nameSpan.textContent = s;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.style = 'background:none;border:none;cursor:pointer;color:var(--accent-danger);font-size:12px;font-weight:500';
-    btn.textContent = 'Remove';
-    btn.onclick = () => removeSection(s);
+
+    const btnWrap = document.createElement('div');
+    btnWrap.style = 'display:flex;gap:8px;align-items:center';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.title = 'Rename';
+    editBtn.style = 'background:none;border:none;cursor:pointer;color:var(--primary-color);display:flex;align-items:center;gap:3px;font-size:12px;font-weight:500';
+    editBtn.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Edit';
+    editBtn.onclick = () => editSection(s);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.style = 'background:none;border:none;cursor:pointer;color:var(--accent-danger);font-size:12px;font-weight:500';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = () => removeSection(s);
+
+    btnWrap.appendChild(editBtn);
+    btnWrap.appendChild(removeBtn);
     row.appendChild(nameSpan);
-    row.appendChild(btn);
+    row.appendChild(btnWrap);
     wrap.appendChild(row);
   });
 }
+
 function getAllSections() {
   const studentSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
   return [...new Set([...localSections, ...studentSections])].sort();
@@ -236,6 +436,7 @@ function applyFilters() {
   const grade   = document.getElementById('filterGrade')?.value   || '';
   const section = document.getElementById('filterSection')?.value || '';
   const gender  = document.getElementById('filterGender')?.value  || '';
+  const status  = document.getElementById('filterStatus')?.value  || '';
   const sort    = document.getElementById('sortBy')?.value        || 'name';
 
   filtered = students.filter(s => {
@@ -244,7 +445,8 @@ function applyFilters() {
     const matchGrade   = !grade   || s.grade   === grade;
     const matchSection = !section || s.section === section;
     const matchGender  = !gender  || s.gender  === gender;
-    return matchQ && matchGrade && matchSection && matchGender;
+    const matchStatus  = !status  || (s.status || 'Active') === status;
+    return matchQ && matchGrade && matchSection && matchGender && matchStatus;
   });
 
   filtered.sort((a,b) => {
@@ -294,7 +496,6 @@ function renderTable() {
           <div>
             <div style="font-weight:600">
               <a href="StudentInfo.html?id=${s.id}" style="color:inherit;text-decoration:none"
-                onclick="event.preventDefault();verifyPin(function(c){if(c)window.location='StudentInfo.html?id=${s.id}';else toast('PIN required.','warning');})"
                 onmouseover="this.style.color='#4f46e5';this.style.textDecoration='underline'"
                 onmouseout="this.style.color='inherit';this.style.textDecoration='none'">${name}</a>
             </div>
@@ -305,15 +506,30 @@ function renderTable() {
       <td><code style="background:var(--bg-input);padding:2px 8px;border-radius:6px;font-size:0.82rem">${lrn}</code></td>
       <td>${esc(s.grade||'—')} · ${esc(s.section||'—')}</td>
       <td>${gender}</td>
+      <td>
+        <div class="status-toggle-wrap" style="display:flex;gap:4px">
+          <button
+            onclick="setStudentStatus(${s.id},'Active')"
+            style="
+              border:none;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;outline:none;transition:all 150ms;
+              background:${(s.status||'Active')==='Active'?'rgba(16,185,129,0.18)':'var(--bg-input)'};
+              color:${(s.status||'Active')==='Active'?'#059669':'var(--text-secondary)'};
+              ${(s.status||'Active')==='Active'?'box-shadow:0 0 0 1.5px #10b981;':''}">Active</button>
+          <button
+            onclick="setStudentStatus(${s.id},'Dropout')"
+            style="
+              border:none;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;outline:none;transition:all 150ms;
+              background:${(s.status||'Active')==='Dropout'?'rgba(239,68,68,0.18)':'var(--bg-input)'};
+              color:${(s.status||'Active')==='Dropout'?'#dc2626':'var(--text-secondary)'};
+              ${(s.status||'Active')==='Dropout'?'box-shadow:0 0 0 1.5px #ef4444;':''}">Dropout</button>
+        </div>
+      </td>
       <td style="font-size:0.85rem">${email}</td>
       <td style="font-size:0.85rem">${phone}</td>
       <td>
         <div class="action-btns">
           <button class="btn btn-secondary btn-sm" title="View" onclick="viewStudent(${s.id})">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-          </button>
-          <button class="btn btn-danger btn-sm" title="Delete" onclick="confirmDelete(${s.id})">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
       </td>
@@ -395,6 +611,8 @@ function clearForm() {
     if (el) el.value = '';
   });
   document.querySelectorAll('input[name="f-gender"]').forEach(r => r.checked = false);
+  // Default status to Active on clear
+  document.querySelectorAll('input[name="f-status"]').forEach(r => { r.checked = (r.value === 'Active'); });
   clearErrors();
 }
 
@@ -422,12 +640,16 @@ function fillForm(s) {
   document.querySelectorAll('input[name="f-gender"]').forEach(r => {
     r.checked = (r.value === s.gender);
   });
+  document.querySelectorAll('input[name="f-status"]').forEach(r => {
+    r.checked = (r.value === (s.status || 'Active'));
+  });
   clearErrors();
 }
 
 function getFormData() {
   const get = id => (document.getElementById(id)?.value || '').trim();
   const gender = document.querySelector('input[name="f-gender"]:checked')?.value || '';
+  const status = document.querySelector('input[name="f-status"]:checked')?.value || 'Active';
   return {
     studentId:        get('f-studentId'),
     firstName:        get('f-firstName'),
@@ -435,6 +657,7 @@ function getFormData() {
     lastName:         get('f-lastName'),
     dob:              get('f-dob'),
     gender,
+    status,
     grade:            get('f-grade'),
     section:          get('f-section'),
     enrollDate:       get('f-enrollDate'),
@@ -477,41 +700,35 @@ function clearErrors() {
 async function saveStudent() {
   const data = getFormData();
   if (!validate(data)) return;
-  verifyPin(async function(confirmed) {
-    if (!confirmed) { toast('PIN required to save student.', 'warning'); return; }
-    try {
-      if (editingId) {
-        const updated = await apiPut(editingId, data);
-        const idx = students.findIndex(s => s.id === editingId);
-        if (idx !== -1) students[idx] = { ...updated };
-        toast('Student updated successfully!', 'success');
-        if (window.CILog) CILog.push('student_updated', 'Student updated', buildFullName(updated) + (data.section ? ' · ' + data.section : ''));
-      } else {
-        const created = await apiPost(data);
-        students.push({ ...created });
-        toast('Student added successfully!', 'success');
-        if (window.CILog) CILog.push('student_added', 'Student enrolled', buildFullName(created) + (data.section ? ' · ' + data.section : ''));
-      }
-      closeFormModal();
-      applyFilters();
-    } catch (e) {
-      if (e.message.includes('already exists')) {
-        setErr('studentId', e.message);
-      } else {
-        toast(e.message, 'danger');
-      }
+  try {
+    if (editingId) {
+      const updated = await apiPut(editingId, data);
+      const idx = students.findIndex(s => s.id === editingId);
+      if (idx !== -1) students[idx] = { ...updated };
+      toast('Student updated successfully!', 'success');
+      if (window.CILog) CILog.push('student_updated', 'Student updated', buildFullName(updated) + (data.section ? ' · ' + data.section : ''));
+    } else {
+      const created = await apiPost(data);
+      students.push({ ...created });
+      toast('Student added successfully!', 'success');
+      if (window.CILog) CILog.push('student_added', 'Student enrolled', buildFullName(created) + (data.section ? ' · ' + data.section : ''));
     }
-  });
+    closeFormModal();
+    applyFilters();
+  } catch (e) {
+    if (e.message.includes('already exists')) {
+      setErr('studentId', e.message);
+    } else {
+      toast(e.message, 'danger');
+    }
+  }
 }
 
 // ═══════════════════════════════════════════
 //  VIEW MODAL
 // ═══════════════════════════════════════════
 function viewStudent(id) {
-  verifyPin(function(confirmed) {
-    if (!confirmed) { toast('PIN required to view student.', 'warning'); return; }
-    _viewStudent(id);
-  });
+  _viewStudent(id);
 }
 
 function _viewStudent(id) {
@@ -540,6 +757,7 @@ function _viewStudent(id) {
         <div class="view-item"><div class="view-label">Student ID / LRN</div>${v(s.studentId)}</div>
         <div class="view-item"><div class="view-label">Date of Birth</div>${v(s.dob)}</div>
         <div class="view-item"><div class="view-label">Gender</div>${v(s.gender)}</div>
+        <div class="view-item"><div class="view-label">Status</div><span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:${(s.status||'Active')==='Active'?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.12)'};color:${(s.status||'Active')==='Active'?'#059669':'#dc2626'}">${esc(s.status||'Active')}</span></div>
       </div>
     </div>
     <div class="view-section">
@@ -593,6 +811,23 @@ function confirmDelete(id) {
   document.getElementById('confirmOverlay').classList.add('open');
 }
 
+async function setStudentStatus(id, newStatus) {
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  const updated = { ...s, status: newStatus };
+  try {
+    const result = await apiPut(id, updated);
+    const idx = students.findIndex(x => x.id === id);
+    if (idx !== -1) students[idx] = { ...students[idx], status: newStatus };
+    applyFilters();
+    toast(`${buildFullName(s)} marked as ${newStatus}.`, newStatus === 'Active' ? 'success' : 'info');
+  } catch (e) {
+    toast('Failed to update status.', 'error');
+    applyFilters(); // re-render to revert the select visually
+  }
+}
+
+
 function closeConfirm() {
   document.getElementById('confirmOverlay').classList.remove('open');
   deleteTargetId = null;
@@ -600,20 +835,17 @@ function closeConfirm() {
 
 document.getElementById('confirmDeleteBtn').onclick = async function() {
   if (!deleteTargetId) return;
-  verifyPin(async function(confirmed) {
-    if (!confirmed) { toast('PIN required to delete student.', 'warning'); return; }
-    try {
-      const target = students.find(s => s.id === deleteTargetId);
-      await apiDelete(deleteTargetId);
-      students = students.filter(s => s.id !== deleteTargetId);
-      toast('Student deleted.', 'danger');
-      if (window.CILog && target) CILog.push('student_deleted', 'Student removed', buildFullName(target) + (target.section ? ' · ' + target.section : ''));
-      closeConfirm();
-      applyFilters();
-    } catch (e) {
-      toast(e.message, 'danger');
-    }
-  });
+  try {
+    const target = students.find(s => s.id === deleteTargetId);
+    await apiDelete(deleteTargetId);
+    students = students.filter(s => s.id !== deleteTargetId);
+    toast('Student deleted.', 'danger');
+    if (window.CILog && target) CILog.push('student_deleted', 'Student removed', buildFullName(target) + (target.section ? ' · ' + target.section : ''));
+    closeConfirm();
+    applyFilters();
+  } catch (e) {
+    toast(e.message, 'danger');
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════════════

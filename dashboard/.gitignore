@@ -1,0 +1,18 @@
+# Environment & secrets
+.env
+*.env
+
+# PHP dependencies
+vendor/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+error_log

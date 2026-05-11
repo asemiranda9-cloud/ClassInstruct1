@@ -4,6 +4,8 @@
 //  Works with existing students table (grade + section cols)
 // ═══════════════════════════════════════════════════════
 
+require_once __DIR__ . '/../config.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -11,10 +13,10 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'classinstructdb');
+if (!defined('DB_HOST')) define('DB_HOST', env('DB_HOST', 'localhost'));
+if (!defined('DB_USER')) define('DB_USER', env('DB_USER', 'root'));
+if (!defined('DB_PASS')) define('DB_PASS', env('DB_PASS', ''));
+if (!defined('DB_NAME')) define('DB_NAME', env('DB_NAME', 'classinstructdb'));
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
@@ -61,6 +63,7 @@ function getSections($conn) {
         "SELECT DISTINCT grade, section,
                 CONCAT(grade, ' - ', section) AS name
          FROM students
+         WHERE (status IS NULL OR status != 'Dropout')
          ORDER BY grade ASC, section ASC"
     );
     if (!$result) {
@@ -90,7 +93,7 @@ function getStudents($conn) {
     $grade   = $_GET['grade']   ?? '';
     $section = $_GET['section'] ?? '';
 
-    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE 1=1";
+    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE (status IS NULL OR status != 'Dropout')";
     $args = [];
 
     if ($grade !== '') {
@@ -158,7 +161,7 @@ function getAttendance($conn) {
     // Fetch school-day counts per quarter
     $schoolDays = getSchoolDaysPerQuarter($conn);
 
-    $where = "WHERE 1=1";
+    $where = "WHERE (s.status IS NULL OR s.status != 'Dropout')";
     if ($grade)   $where .= " AND s.grade = '$grade'";
     if ($section) $where .= " AND s.section = '$section'";
 
@@ -401,7 +404,7 @@ function getSummary($conn) {
          FROM students s
          LEFT JOIN attendance a ON a.student_id = s.id
                                AND a.date BETWEEN '$fromDate' AND '$toDate'
-         WHERE 1=1 $gradeFilter $sectionFilter
+         WHERE (s.status IS NULL OR s.status != 'Dropout') $gradeFilter $sectionFilter
          GROUP BY s.grade, s.section
          ORDER BY s.grade ASC, s.section ASC"
     );
@@ -479,8 +482,8 @@ function getMonthlyReport($conn) {
         $cur->modify('+1 day');
     }
 
-    // Filter students by grade/section
-    $where = 'WHERE 1=1';
+    // Filter students by grade/section (excluding dropouts)
+    $where = "WHERE (status IS NULL OR status != 'Dropout')";
     if ($grade)   $where .= " AND grade = '$grade'";
     if ($section) $where .= " AND section = '$section'";
 
