@@ -44,7 +44,7 @@ if (!defined('DB_NAME')) define('DB_NAME', env('DB_NAME', 'classinstructdb'));
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]);
+    echo json_encode(['error' => 'Database connection failed: ' . $conn->connect_error, 'host' => DB_HOST, 'db' => DB_NAME]);
     exit;
 }
 $conn->set_charset('utf8mb4');
