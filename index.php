@@ -1153,6 +1153,7 @@
     </section>
 
     <!-- ===== TESTIMONIALS ===== -->
+    <!--
     <section class="testimonials">
       <div class="section-tag">
         <div class="line"></div>
@@ -1207,6 +1208,7 @@
         </div>
       </div>
     </section>
+    -->
 
     <!-- ===== ABOUT ===== -->
     <section id="about" class="about">
