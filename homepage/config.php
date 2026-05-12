@@ -26,6 +26,7 @@ function loadEnv(string $path): void {
             // Map Laravel-style names to simpler names used by the code
             if ($key === 'DB_DATABASE') $key = 'DB_NAME';
             if ($key === 'DB_USERNAME') $key = 'DB_USER';
+            if ($key === 'DB_PASSWORD') $key = 'DB_PASS';
 
             $_ENV[$key] = $value;
             putenv("$key=$value");

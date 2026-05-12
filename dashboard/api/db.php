@@ -49,6 +49,15 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
+// ── Check user session ───────────────────────────────────────────────────────
+session_start();
+$userId = $_SESSION['ci_user']['user_id'] ?? null;
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized. Please login.']);
+    exit;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
@@ -84,11 +93,14 @@ switch ($method) {
 $conn->close();
 
 // ═══════════════════════════════════
-//  GET — List all students
+//  GET — List all students (filtered by user_id)
 // ═══════════════════════════════════
 function getStudents($conn) {
-    $sql = "SELECT * FROM students ORDER BY full_name ASC";
-    $result = $conn->query($sql);
+    global $userId;
+    $stmt = $conn->prepare("SELECT * FROM students WHERE user_id = ? ORDER BY full_name ASC");
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => $conn->error]);
@@ -99,27 +111,35 @@ function getStudents($conn) {
         $students[] = mapRow($row);
     }
     echo json_encode($students);
+    $stmt->close();
 }
 
 // ═══════════════════════════════════
-//  GET — List sections from dedicated sections table
-//        (also merges any legacy sections stored only on students)
+//  GET — List sections (filtered by user_id)
 // ═══════════════════════════════════
 function getSections($conn) {
+    global $userId;
+    // Auto-create sections table with user_id
     $conn->query("
         CREATE TABLE IF NOT EXISTS sections (
             id         INT AUTO_INCREMENT PRIMARY KEY,
-            name       VARCHAR(100) NOT NULL UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            user_id    INT NOT NULL,
+            name       VARCHAR(100) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_id (user_id),
+            UNIQUE KEY unique_user_section (user_id, name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
-    // Migrate sections that only exist on students
+    // Migrate sections from students (only for this user)
     $conn->query("
-        INSERT IGNORE INTO sections (name)
-        SELECT DISTINCT section FROM students
-        WHERE section IS NOT NULL AND section != ''
+        INSERT IGNORE INTO sections (user_id, name)
+        SELECT DISTINCT user_id, section FROM students
+        WHERE user_id = $userId AND section IS NOT NULL AND section != ''
     ");
-    $result = $conn->query("SELECT name FROM sections ORDER BY name ASC");
+    $stmt = $conn->prepare("SELECT name FROM sections WHERE user_id = ? ORDER BY name ASC");
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => $conn->error]);
@@ -130,12 +150,14 @@ function getSections($conn) {
         $sections[] = $row['name'];
     }
     echo json_encode($sections);
+    $stmt->close();
 }
 
 // ═══════════════════════════════════
 //  POST — Add new student
 // ═══════════════════════════════════
 function addStudent($conn) {
+    global $userId;
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
@@ -151,10 +173,10 @@ function addStudent($conn) {
     $lastName   = isset($data['lastName'])   ? trim((string)$data['lastName'])   : '';
     $fullName   = trim("$firstName $middleName $lastName");
 
-    // Only enforce uniqueness when an actual ID was supplied
+    // Only enforce uniqueness when an actual ID was supplied (and for this user)
     if ($studentId !== null) {
-        $checkStmt = $conn->prepare("SELECT id FROM students WHERE student_id = ?");
-        $checkStmt->bind_param('s', $studentId);
+        $checkStmt = $conn->prepare("SELECT id FROM students WHERE user_id = ? AND student_id = ?");
+        $checkStmt->bind_param('is', $userId, $studentId);
         $checkStmt->execute();
         $checkResult = $checkStmt->get_result();
         if ($checkResult->num_rows > 0) {
@@ -167,11 +189,11 @@ function addStudent($conn) {
 
     $stmt = $conn->prepare(
         "INSERT INTO students
-          (student_id, full_name, dob, gender, grade, section, enroll_date,
+          (user_id, student_id, full_name, dob, gender, grade, section, enroll_date,
            prev_school, email, phone, address,
            father_name, father_phone, mother_name, mother_phone,
            guardian_name, guardian_relation, guardian_phone, status)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     );
 
     $dob        = empty($data['dob'])        ? null : $data['dob'];
@@ -179,13 +201,13 @@ function addStudent($conn) {
     $status     = in_array($data['status'] ?? '', ['Active','Dropout']) ? $data['status'] : 'Active';
 
     // Bind $studentId (may be null) — NOT $data['studentId']
-    $stmt->bind_param('sssssssssssssssssss',
-        $studentId,            $fullName,               $dob,
-        $data['gender'],       $data['grade'],           $data['section'],
-        $enrollDate,           $data['prevSchool'],      $data['email'],
-        $data['phone'],        $data['address'],         $data['fatherName'],
-        $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
-        $data['guardianName'], $data['guardianRelation'],$data['guardianPhone'],
+    $stmt->bind_param('isssssssssssssssssss',
+        $userId,             $studentId,            $fullName,               $dob,
+        $data['gender'],     $data['grade'],        $data['section'],
+        $enrollDate,         $data['prevSchool'],   $data['email'],
+        $data['phone'],      $data['address'],      $data['fatherName'],
+        $data['fatherPhone'],$data['motherName'],   $data['motherPhone'],
+        $data['guardianName'],$data['guardianRelation'],$data['guardianPhone'],
         $status
     );
 
@@ -209,6 +231,7 @@ function addStudent($conn) {
 //  PUT — Update student by ID
 // ═══════════════════════════════════
 function updateStudent($conn, $id) {
+    global $userId;
     if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); return; }
 
     $data = json_decode(file_get_contents('php://input'), true);
@@ -226,8 +249,8 @@ function updateStudent($conn, $id) {
 
     // Only check uniqueness (excluding self) when a real ID is provided
     if ($studentId !== null) {
-        $uidCheck = $conn->prepare("SELECT id FROM students WHERE student_id = ? AND id != ?");
-        $uidCheck->bind_param('si', $studentId, $id);
+        $uidCheck = $conn->prepare("SELECT id FROM students WHERE user_id = ? AND student_id = ? AND id != ?");
+        $uidCheck->bind_param('isi', $userId, $studentId, $id);
         $uidCheck->execute();
         $uidResult = $uidCheck->get_result();
         if ($uidResult->num_rows > 0) {
@@ -244,21 +267,21 @@ function updateStudent($conn, $id) {
           prev_school=?, email=?, phone=?, address=?,
           father_name=?, father_phone=?, mother_name=?, mother_phone=?,
           guardian_name=?, guardian_relation=?, guardian_phone=?, status=?
-        WHERE id=?
+        WHERE user_id = ? AND id = ?
     ");
 
     $dob        = empty($data['dob'])        ? null : $data['dob'];
     $enrollDate = empty($data['enrollDate']) ? null : $data['enrollDate'];
     $status     = in_array($data['status'] ?? '', ['Active','Dropout']) ? $data['status'] : 'Active';
 
-    $stmt->bind_param('sssssssssssssssssssi',
+    $stmt->bind_param('sssssssssssssssssssii',
         $studentId,            $fullName,               $dob,
         $data['gender'],       $data['grade'],           $data['section'],
         $enrollDate,           $data['prevSchool'],      $data['email'],
         $data['phone'],        $data['address'],         $data['fatherName'],
         $data['fatherPhone'],  $data['motherName'],      $data['motherPhone'],
         $data['guardianName'], $data['guardianRelation'],$data['guardianPhone'],
-        $status,               $id
+        $status,               $userId,                 $id
     );
 
     if ($stmt->execute()) {
@@ -279,6 +302,7 @@ function updateStudent($conn, $id) {
 //  POST — Add new section (persisted to sections table)
 // ═══════════════════════════════════
 function addSection($conn, $name) {
+    global $userId;
     $name = isset($name) ? trim((string)$name) : '';
     if ($name === '') {
         http_response_code(400);
@@ -288,12 +312,15 @@ function addSection($conn, $name) {
     $conn->query("
         CREATE TABLE IF NOT EXISTS sections (
             id         INT AUTO_INCREMENT PRIMARY KEY,
-            name       VARCHAR(100) NOT NULL UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            user_id    INT NOT NULL,
+            name       VARCHAR(100) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_id (user_id),
+            UNIQUE KEY unique_user_section (user_id, name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
-    $stmt = $conn->prepare("INSERT IGNORE INTO sections (name) VALUES (?)");
-    $stmt->bind_param('s', $name);
+    $stmt = $conn->prepare("INSERT IGNORE INTO sections (user_id, name) VALUES (?, ?)");
+    $stmt->bind_param('is', $userId, $name);
     if ($stmt->execute()) {
         http_response_code($conn->affected_rows === 0 ? 200 : 201);
         echo json_encode(['success' => true, 'section' => $name]);
@@ -308,6 +335,7 @@ function addSection($conn, $name) {
 //  DELETE — Delete section by name
 // ═══════════════════════════════════
 function deleteSection($conn) {
+    global $userId;
     $data = json_decode(file_get_contents('php://input'), true);
     $name = isset($data['name']) ? trim((string)$data['name']) : '';
     if ($name === '') {
@@ -315,8 +343,8 @@ function deleteSection($conn) {
         echo json_encode(['error' => 'Section name is required']);
         return;
     }
-    $stmt = $conn->prepare("DELETE FROM sections WHERE name = ?");
-    $stmt->bind_param('s', $name);
+    $stmt = $conn->prepare("DELETE FROM sections WHERE user_id = ? AND name = ?");
+    $stmt->bind_param('is', $userId, $name);
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'deleted_section' => $name]);
     } else {
@@ -330,10 +358,11 @@ function deleteSection($conn) {
 //  DELETE — Delete student by ID
 // ═══════════════════════════════════
 function deleteStudent($conn, $id) {
+    global $userId;
     if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); return; }
 
-    $stmt = $conn->prepare("DELETE FROM students WHERE id = ?");
-    $stmt->bind_param('i', $id);
+    $stmt = $conn->prepare("DELETE FROM students WHERE user_id = ? AND id = ?");
+    $stmt->bind_param('ii', $userId, $id);
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'deleted_id' => $id]);

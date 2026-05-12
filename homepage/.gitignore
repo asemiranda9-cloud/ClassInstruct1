@@ -1,9 +1,18 @@
-# Secret credentials — NEVER commit this
+Environment & secrets
 .env
+*.env
 
-# Composer dependencies
-/vendor/
+PHP dependencies
+vendor/
 
-# OS junk
+OS junk
 .DS_Store
 Thumbs.db
+
+IDE files
+.vscode/
+.idea/
+
+Logs
+*.log
+error_log

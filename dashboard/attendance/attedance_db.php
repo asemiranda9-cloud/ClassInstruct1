@@ -26,6 +26,15 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
+// ── Check user session ───────────────────────────────────────────────────────
+session_start();
+$userId = $_SESSION['ci_user']['user_id'] ?? null;
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized. Please login.']);
+    exit;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
@@ -59,11 +68,12 @@ $conn->close();
 //  Each combo gets a stable virtual ID using DENSE_RANK
 // ═══════════════════════════════════════════════
 function getSections($conn) {
+    global $userId;
     $result = $conn->query(
         "SELECT DISTINCT grade, section,
                 CONCAT(grade, ' - ', section) AS name
          FROM students
-         WHERE (status IS NULL OR status != 'Dropout')
+         WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout')
          ORDER BY grade ASC, section ASC"
     );
     if (!$result) {
@@ -90,10 +100,11 @@ function getSections($conn) {
 //  ?action=students[&grade=Grade+5&section=Section+A]
 // ═══════════════════════════════════════════════
 function getStudents($conn) {
+    global $userId;
     $grade   = $_GET['grade']   ?? '';
     $section = $_GET['section'] ?? '';
 
-    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE (status IS NULL OR status != 'Dropout')";
+    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout')";
     $args = [];
 
     if ($grade !== '') {
@@ -128,6 +139,7 @@ function getStudents($conn) {
 //  Returns `schoolDays` = total school days per quarter (from school_calendar).
 // ═══════════════════════════════════════════════
 function getAttendance($conn) {
+    global $userId;
     $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
     $section = $conn->real_escape_string($_GET['section'] ?? '');
 
@@ -161,7 +173,7 @@ function getAttendance($conn) {
     // Fetch school-day counts per quarter
     $schoolDays = getSchoolDaysPerQuarter($conn);
 
-    $where = "WHERE (s.status IS NULL OR s.status != 'Dropout')";
+    $where = "WHERE s.user_id = $userId AND (s.status IS NULL OR s.status != 'Dropout')";
     if ($grade)   $where .= " AND s.grade = '$grade'";
     if ($section) $where .= " AND s.section = '$section'";
 
@@ -636,6 +648,7 @@ function getMonthlyReport($conn) {
 //  Body: { student_id, date, status }
 // ═══════════════════════════════════════════════
 function saveAttendance($conn) {
+    global $userId;
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
@@ -650,11 +663,11 @@ function saveAttendance($conn) {
     }
 
     $stmt = $conn->prepare(
-        "INSERT INTO attendance (student_id, date, status)
-         VALUES (?, ?, ?)
+        "INSERT INTO attendance (user_id, student_id, date, status)
+         VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE status = VALUES(status)"
     );
-    $stmt->bind_param('iss', $studentId, $date, $status);
+    $stmt->bind_param('iiss', $userId, $studentId, $date, $status);
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'student_id' => $studentId, 'date' => $date, 'status' => $status]);
@@ -705,6 +718,7 @@ function updateAttendance($conn) {
 //  ?student_id=1&date=2026-03-02
 // ═══════════════════════════════════════════════
 function deleteAttendance($conn) {
+    global $userId;
     $studentId = isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0;
     $date      = $_GET['date'] ?? '';
 
@@ -713,8 +727,8 @@ function deleteAttendance($conn) {
         echo json_encode(['error' => 'student_id and date query params required']);
         return;
     }
-    $stmt = $conn->prepare("DELETE FROM attendance WHERE student_id = ? AND date = ?");
-    $stmt->bind_param('is', $studentId, $date);
+    $stmt = $conn->prepare("DELETE FROM attendance WHERE user_id = ? AND student_id = ? AND date = ?");
+    $stmt->bind_param('iis', $userId, $studentId, $date);
 
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'deleted' => $stmt->affected_rows]);

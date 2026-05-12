@@ -68,17 +68,20 @@ $firstName     = '';
 $lastName      = '';
 $gender        = '';
 $googlePicture = '';
+$userId        = 0;
 
-$uStmt = $conn->prepare('SELECT first_name, last_name, gender FROM users WHERE email = ? AND is_active = 1 LIMIT 1');
+$uStmt = $conn->prepare('SELECT id, full_name FROM users WHERE email = ? LIMIT 1');
 $uStmt->bind_param('s', $email);
 $uStmt->execute();
 $uRow = $uStmt->get_result()->fetch_assoc();
 $uStmt->close();
 
 if ($uRow) {
-    $firstName = $uRow['first_name'] ?? '';
-    $lastName  = $uRow['last_name']  ?? '';
-    $gender    = $uRow['gender']     ?? '';
+    $userId = $uRow['id'] ?? 0;
+    $fullName = $uRow['full_name'] ?? '';
+    $nameParts = explode(' ', trim($fullName), 2);
+    $firstName = $nameParts[0] ?? '';
+    $lastName = $nameParts[1] ?? '';
 }
 
 // Build Gravatar URL from the email — works for Gmail accounts.
@@ -89,7 +92,9 @@ $googlePicture   = "https://www.gravatar.com/avatar/{$gravatarHash}?s=200&d=iden
 
 // Start authenticated session
 $_SESSION['ci_user'] = [
+    'user_id'        => $userId,
     'email'          => $email,
+    'full_name'      => $fullName ?? '',
     'first_name'     => $firstName,
     'last_name'      => $lastName,
     'gender'         => $gender,

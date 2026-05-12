@@ -30,10 +30,20 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
-// Auto-create tables if not exist
+// ── Check user session ───────────────────────────────────────────────────────
+session_start();
+$userId = $_SESSION['ci_user']['user_id'] ?? null;
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized. Please login.']);
+    exit;
+}
+
+// Auto-create tables if not exist (with user_id)
 $conn->query("
     CREATE TABLE IF NOT EXISTS grades (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL DEFAULT $userId,
         student_id INT NOT NULL,
         subject VARCHAR(100) NOT NULL,
         quarter VARCHAR(10) NOT NULL DEFAULT 'Q1',
@@ -44,7 +54,8 @@ $conn->query("
         final_grade DECIMAL(5,2) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_grade (student_id, subject, quarter),
+        INDEX idx_user_id (user_id),
+        UNIQUE KEY unique_user_grade (user_id, student_id, subject, quarter),
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     )
 ");
@@ -200,6 +211,7 @@ $conn->close();
 
 // ── GET students with optional grade/section filter ──
 function getStudents($conn) {
+    global $userId;
     $grade   = $_GET['grade']   ?? '';
     $section = $_GET['section'] ?? '';
 
@@ -229,7 +241,7 @@ function getStudents($conn) {
                    `$gradeCol`   AS grade,
                    `$sectionCol` AS section
             FROM students
-            WHERE (status IS NULL OR status != 'Dropout') $gradeFilter $sectionFilter
+            WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout') $gradeFilter $sectionFilter
             ORDER BY `$nameCol` ASC";
 
     $result = $conn->query($sql);
@@ -244,6 +256,7 @@ function getStudents($conn) {
 
 // ── GET grades for a subject+quarter (returns per-student rows) ──
 function getGrades($conn) {
+    global $userId;
     $subject = $_GET['subject'] ?? '';
     $quarter = $_GET['quarter'] ?? 'Q1';
     $grade   = $_GET['grade']   ?? '';
@@ -258,7 +271,7 @@ function getGrades($conn) {
     $gradeCol   = in_array('grade',     $cols) ? 'grade'     : 'grade_level';
     $sectionCol = in_array('section',   $cols) ? 'section'   : 'section';
 
-    $where = "WHERE (s.status IS NULL OR s.status != 'Dropout')";
+    $where = "WHERE s.user_id = $userId AND (s.status IS NULL OR s.status != 'Dropout')";
     if ($grade)   $where .= " AND s.`$gradeCol`='"   . $conn->real_escape_string($grade)   . "'";
     if ($section) $where .= " AND s.`$sectionCol`='" . $conn->real_escape_string($section) . "'";
 
@@ -274,7 +287,7 @@ function getGrades($conn) {
                g.written_works, g.performance_tasks, g.quarterly_assessment,
                g.attendance, g.final_grade
         FROM students s
-        LEFT JOIN grades g ON g.student_id = s.id
+        LEFT JOIN grades g ON g.student_id = s.id AND g.user_id = $userId
                           AND g.subject = '$subjectEsc'
                           AND g.quarter = '$quarterEsc'
         $where
@@ -439,6 +452,7 @@ function getItemScores($conn) {
 
 // ── POST save_grades (bulk upsert) ──
 function saveGrades($conn) {
+    global $userId;
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
@@ -447,8 +461,8 @@ function saveGrades($conn) {
     $records = $data['records'] ?? [];
 
     $stmt = $conn->prepare("
-        INSERT INTO grades (student_id, subject, quarter, written_works, performance_tasks, quarterly_assessment, attendance, final_grade)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO grades (user_id, student_id, subject, quarter, written_works, performance_tasks, quarterly_assessment, attendance, final_grade)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             written_works=VALUES(written_works),
             performance_tasks=VALUES(performance_tasks),
@@ -466,7 +480,7 @@ function saveGrades($conn) {
         $qa   = ($rec['quarterly_assessment']    !== null && $rec['quarterly_assessment']    !== '') ? (float)$rec['quarterly_assessment']    : null;
         $att  = ($rec['attendance']              !== null && $rec['attendance']              !== '') ? (float)$rec['attendance']              : null;
         $fg   = ($rec['final_grade']             !== null && $rec['final_grade']             !== '') ? (float)$rec['final_grade']             : null;
-        $stmt->bind_param('issddddd', $sid, $subject, $quarter, $ww, $pt, $qa, $att, $fg);
+        $stmt->bind_param('iissddddd', $userId, $sid, $subject, $quarter, $ww, $pt, $qa, $att, $fg);
         if ($stmt->execute()) $saved++;
     }
     $stmt->close();
@@ -474,8 +488,8 @@ function saveGrades($conn) {
     // Save item scores — JS sends: item_scores[compKey][itemId] = score (plain number)
     // or item_scores[compKey][itemId] = { score, maxScore } (object form)
     $itemStmt = $conn->prepare("
-        INSERT INTO grade_item_scores (student_id, subject, quarter, component_key, item_name, item_max_score, score)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO grade_item_scores (user_id, student_id, subject, quarter, component_key, item_name, item_max_score, score)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE score=VALUES(score), item_max_score=VALUES(item_max_score)
     ");
     foreach ($records as $rec) {
@@ -498,7 +512,7 @@ function saveGrades($conn) {
                 }
                 if ($score === null) continue;
                 $itemIdEsc = $conn->real_escape_string((string)$itemId);
-                $itemStmt->bind_param('issssdd', $sid, $subject, $quarter, $compKeyEsc, $itemIdEsc, $maxScore, $score);
+                $itemStmt->bind_param('iissssdd', $userId, $sid, $subject, $quarter, $compKeyEsc, $itemIdEsc, $maxScore, $score);
                 $itemStmt->execute();
             }
         }
