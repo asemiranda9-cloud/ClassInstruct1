@@ -51,6 +51,12 @@
           <option value="Q3">Q3 — Third Quarter</option>
           <option value="Q4">Q4 — Fourth Quarter</option>
         </select>
+        <select id="subPeriodSel" onchange="onSubPeriodChange()" style="display:none;">
+          <option value="Prelim">Prelim</option>
+          <option value="Midterm">Midterm</option>
+          <option value="Prefinals">Pre-Finals</option>
+          <option value="Finals">Finals</option>
+        </select>
         <select id="gradeSel" onchange="refresh()">
           <option value="">All Grades</option>
           <!-- populated dynamically by Grades.js → populateGradeSectionFilters() -->

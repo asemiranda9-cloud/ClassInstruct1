@@ -74,7 +74,7 @@ const state = {
 //  API
 // ════════════════════════════════════════════════════
 async function apiFetch(params) {
-  const res = await fetch(API + '?' + new URLSearchParams(params));
+  const res = await fetch(API + '?' + new URLSearchParams(params), { credentials: 'same-origin' });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -82,6 +82,7 @@ async function apiFetch(params) {
 async function apiPost(body) {
   const res = await fetch(API, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -860,7 +861,7 @@ const Actions = {
     for (const item of items) {
       try {
         if (item.status === 'none') {
-          await fetch(API + '?student_id=' + item.studentId + '&date=' + item.date, { method: 'DELETE' });
+          await fetch(API + '?student_id=' + item.studentId + '&date=' + item.date, { method: 'DELETE', credentials: 'same-origin' });
         } else {
           await apiPost({ student_id: item.studentId, date: item.date, status: item.status });
         }

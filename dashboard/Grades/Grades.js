@@ -27,7 +27,39 @@ let allSubjects      = [];
 let subjectIdCounter = 1;
 let editingSubjectId = null;
 let subjectFilter    = '';
-let gradingMode      = 'quarterly'; // 'quarterly' | 'sem2' | 'sem3'
+let gradingMode      = 'quarterly'; // 'quarterly' | 'college' | 'sem2' | 'sem3'
+
+// Helper to get the effective quarter value (combines semester + sub-period for sem2/sem3)
+function getEffectiveQuarter() {
+  const quarterSel = document.getElementById('quarterSel');
+  const subPeriodSel = document.getElementById('subPeriodSel');
+  if (!quarterSel) return 'Q1';
+
+  const quarter = quarterSel.value;
+  // For sem2/sem3 modes, combine semester with sub-period
+  if ((gradingMode === 'sem2' || gradingMode === 'sem3') && subPeriodSel && subPeriodSel.style.display !== 'none') {
+    const subPeriod = subPeriodSel.value;
+    return quarter + '_' + subPeriod;
+  }
+  return quarter;
+}
+
+// Show/hide sub-period dropdown based on grading mode
+function updateSubPeriodVisibility() {
+  const subPeriodSel = document.getElementById('subPeriodSel');
+  if (!subPeriodSel) return;
+
+  if (gradingMode === 'sem2' || gradingMode === 'sem3') {
+    subPeriodSel.style.display = 'inline-flex';
+  } else {
+    subPeriodSel.style.display = 'none';
+  }
+}
+
+// Handle sub-period dropdown change
+function onSubPeriodChange() {
+  refresh();
+}
 // Per-student per-item scores: studentItemScores[studentId][componentKey][itemId] = score
 let studentItemScores = {};
 
@@ -80,7 +112,7 @@ async function loadAllStudents() {
     const params = new URLSearchParams({ action: 'students' });
     if (grade)   params.append('grade',   grade);
     if (section) params.append('section', section);
-    const res  = await fetch(API + '?' + params);
+    const res  = await fetch(API + '?' + params, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -108,7 +140,10 @@ async function loadAllStudents() {
     // If a subject is already selected (e.g. after filter change), merge grades
     const subject = document.getElementById('subjectSel').value;
     const quarter = document.getElementById('quarterSel').value;
-    if (subject) mergeGradesForSubject(subject, quarter);
+    if (subject) {
+      if (quarter === 'Total') { await loadTotalPeriodGrades(subject); renderTable(); }
+      else mergeGradesForSubject(subject, quarter);
+    }
   } catch (err) {
     if (loadEl) { loadEl.style.display = 'block'; loadEl.textContent = 'Could not load students — is XAMPP running? (' + err.message + ')'; }
   }
@@ -196,7 +231,7 @@ async function mergeGradesForSubject(subject, quarter) {
     const params  = new URLSearchParams({ action: 'grades', subject, quarter });
     if (grade)   params.append('grade',   grade);
     if (section) params.append('section', section);
-    const res  = await fetch(API + '?' + params);
+    const res  = await fetch(API + '?' + params, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -237,7 +272,7 @@ async function loadItemScoresForSubject(subject, quarter, grade, section) {
     const params = new URLSearchParams({ action: 'item_scores', subject, quarter });
     if (grade)   params.append('grade',   grade);
     if (section) params.append('section', section);
-    const res = await fetch(API + '?' + params);
+    const res = await fetch(API + '?' + params, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -260,7 +295,7 @@ async function loadItemScoresForSubject(subject, quarter, grade, section) {
 // ════════════════════════════════════════
 async function loadGpaScales() {
   try {
-    const res  = await fetch(API + '?action=gpa_scales');
+    const res  = await fetch(API + '?action=gpa_scales', { credentials: 'same-origin' });
     const data = await res.json();
     if (Array.isArray(data) && data.length) {
       // Deduplicate by min_grade+max_grade (in case DB has duplicate rows)
@@ -372,7 +407,7 @@ async function saveGpaScales() {
     });
     if (!scales.length) { toast('Add at least one GPA row.', 'error'); return; }
     try {
-      const res  = await fetch(API + '?action=save_gpa', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scales }) });
+      const res  = await fetch(API + '?action=save_gpa', { method:'POST', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scales }) });
       const data = await res.json();
       if (data.success) { toast('GPA scale saved (' + data.saved + ' rows)', 'success'); loadGpaScales(); renderTable(); }
       else toast('Error: ' + (data.error || 'unknown'), 'error');
@@ -403,7 +438,7 @@ let subjectGradeMap = {}; // subjectId → Set of grade levels
 
 async function loadSubjects() {
   try {
-    const res  = await fetch(API + '?action=subjects');
+    const res  = await fetch(API + '?action=subjects', { credentials: 'same-origin' });
     const data = await res.json();
     subjects    = data.map(s => ({ id: parseInt(s.id), name: s.name, code: s.code || '', active: !!parseInt(s.is_active) }));
     allSubjects = [...subjects];
@@ -415,7 +450,7 @@ async function loadSubjects() {
   }
   // Load subject→grade assignments
   try {
-    const res2 = await fetch(API + '?action=subject_grades');
+    const res2 = await fetch(API + '?action=subject_grades', { credentials: 'same-origin' });
     const data2 = await res2.json();
     subjectGradeMap = {};
     data2.forEach(row => {
@@ -514,7 +549,7 @@ async function addSubject() {
     }
     errEl.style.display = 'none';
     try {
-      const res  = await fetch(API + '?action=add_subject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) });
+      const res  = await fetch(API + '?action=add_subject', { method:'POST', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) });
       const data = await res.json();
       if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
       subjects.push({ id: parseInt(data.id) || subjectIdCounter++, name, code, active: true });
@@ -534,7 +569,7 @@ async function toggleSubjectStatus(id) {
   renderSubjectTable(); renderSubjectDropdown();
   toast(s.name + ' is now ' + (s.active ? 'active' : 'inactive') + '.', 'success');
   try {
-    await fetch(API + '?action=toggle_subject&id=' + id, {
+    await fetch(API + '?action=toggle_subject&id=' + id, { credentials: 'same-origin',
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: s.active ? 1 : 0 })
@@ -547,7 +582,7 @@ async function deleteSubject(id) {
     if (!confirmed) { toast('PIN required to delete subject.', 'warning'); return; }
     const s = subjects.find(s => s.id === id); if (!s) return;
     if (!confirm('Delete "' + s.name + '"? This cannot be undone.')) return;
-    try { await fetch(API + '?action=delete_subject&id=' + id, { method:'DELETE' }); } catch {}
+    try { await fetch(API + '?action=delete_subject&id=' + id, { method:'DELETE', credentials: 'same-origin' }); } catch {}
     subjects = subjects.filter(s => s.id !== id); allSubjects = [...subjects];
     renderSubjectTable(); renderSubjectDropdown();
     toast('Subject deleted.', 'success');
@@ -563,7 +598,7 @@ async function deleteAllSubjects() {
     if (!confirm('Delete ALL subjects? This cannot be undone.')) return;
     const ids = subjects.map(s => s.id);
     for (const id of ids) {
-      try { await fetch(API + '?action=delete_subject&id=' + id, { method: 'DELETE' }); } catch {}
+      try { await fetch(API + '?action=delete_subject&id=' + id, { method: 'DELETE', credentials: 'same-origin' }); } catch {}
     }
     subjects = []; allSubjects = [];
     renderSubjectTable(); renderSubjectDropdown();
@@ -591,7 +626,7 @@ async function saveEdit() {
     const code = document.getElementById('editSubjectCode').value.trim().toUpperCase();
     if (!name) { alert('Subject name is required.'); return; }
     if (subjects.find(s => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingSubjectId)) { alert('A subject with this name already exists.'); return; }
-    try { await fetch(API + '?action=edit_subject&id=' + editingSubjectId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) }); } catch {}
+    try { await fetch(API + '?action=edit_subject&id=' + editingSubjectId, { method:'PUT', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, code }) }); } catch {}
     const s = subjects.find(s => s.id === editingSubjectId);
     if (s) { s.name = name; s.code = code; } allSubjects = [...subjects];
     closeEditModal(); renderSubjectTable(); renderSubjectDropdown();
@@ -612,7 +647,7 @@ async function openAssignGradesModal(subjectId) {
   // Fetch only grade levels that have enrolled students
   let gradeLevels = [];
   try {
-    const res = await fetch(API + '?action=distinct_grades');
+    const res = await fetch(API + '?action=distinct_grades', { credentials: 'same-origin' });
     gradeLevels = await res.json();
     if (!Array.isArray(gradeLevels)) gradeLevels = [];
   } catch { gradeLevels = []; }
@@ -677,6 +712,7 @@ async function saveSubjectGradeAssignment(subjectId) {
   try {
     const res  = await fetch(API + '?action=save_subject_grades', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignments: allAssignments })
     });
@@ -703,7 +739,12 @@ async function refresh() {
 
   // If a subject is selected, overlay saved grade data
   if (subject) {
-    await mergeGradesForSubject(subject, quarter);
+    if (quarter === 'Total') {
+      await loadTotalPeriodGrades(subject);
+      renderTable();
+    } else {
+      await mergeGradesForSubject(subject, quarter);
+    }
   }
 }
 
@@ -711,6 +752,7 @@ async function refresh() {
 function onGradingPeriodChange() {
   const modeSel = document.getElementById('gradingPeriodSel');
   const quarterSel = document.getElementById('quarterSel');
+  const subPeriodSel = document.getElementById('subPeriodSel');
   gradingMode = modeSel.value;
 
   const options = {
@@ -721,13 +763,13 @@ function onGradingPeriodChange() {
       { value: 'Q4', label: 'Q4 — Fourth Quarter' },
     ],
     sem2: [
-      { value: 'Sem1', label: 'Sem 1 — First Semester' },
-      { value: 'Sem2', label: 'Sem 2 — Second Semester' },
+      { value: 'Sem1', label: '1st Semester' },
+      { value: 'Sem2', label: '2nd Semester' },
     ],
     sem3: [
-      { value: 'Sem1', label: 'Sem 1 — First Semester' },
-      { value: 'Sem2', label: 'Sem 2 — Second Semester' },
-      { value: 'Sem3', label: 'Sem 3 — Third Semester' },
+      { value: 'Sem1', label: '1st Semester' },
+      { value: 'Sem2', label: '2nd Semester' },
+      { value: 'Sem3', label: '3rd Semester' },
     ],
   };
 
@@ -740,6 +782,9 @@ function onGradingPeriodChange() {
     if (opt.value === selected) optEl.selected = true;
     quarterSel.appendChild(optEl);
   });
+
+  // Show Prelim/Midterm/Finals sub-period only for semester modes
+  updateSubPeriodVisibility();
 
   refresh();
 }
@@ -801,16 +846,64 @@ function computeComponentAvgFromItems(studentId, componentKey) {
 }
 
 // ── Render Grade Sheet ────────────────────────────────────────────────────────
+// Store multi-period grades for Total view: periodGrades[studentId][period] = {ww,pt,qa,att,final}
+let periodGrades = {};
+
+async function loadTotalPeriodGrades(subject) {
+  const periods = ['Prelim','Midterm','Prefinals','Finals'];
+  const grade   = document.getElementById('gradeSel')   ? document.getElementById('gradeSel').value   : '';
+  const section = document.getElementById('sectionSel') ? document.getElementById('sectionSel').value : '';
+  periodGrades  = {};
+  await Promise.all(periods.map(async p => {
+    try {
+      const params = new URLSearchParams({ action:'grades', subject, quarter: p });
+      if (grade)   params.append('grade',   grade);
+      if (section) params.append('section', section);
+      const res  = await fetch(API + '?' + params, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.error) {
+        data.forEach(r => {
+          if (!periodGrades[r.id]) periodGrades[r.id] = {};
+          const ww  = r.written_works        !== null ? parseFloat(r.written_works)        : null;
+          const pt  = r.performance_tasks    !== null ? parseFloat(r.performance_tasks)    : null;
+          const qa  = r.quarterly_assessment !== null ? parseFloat(r.quarterly_assessment) : null;
+          const att = r.attendance           !== null ? parseFloat(r.attendance)           : null;
+          let final = null;
+          if (ww !== null || pt !== null || qa !== null) {
+            const w = components.reduce((a,c)=>a+c.pct,0) || 100;
+            final = components.reduce((sum,c) => {
+              let v = 0;
+              if (c.key === 'ww') v = ww || 0;
+              else if (c.key === 'pt') v = pt || 0;
+              else if (c.key === 'qa') v = qa || 0;
+              return sum + v*(c.pct/100);
+            },0);
+            final = Math.round((final/(w/100))*100)/100;
+          }
+          periodGrades[r.id][p] = { ww, pt, qa, att, final };
+        });
+      }
+    } catch {}
+  }));
+}
+
 function renderTable() {
   const quarter = document.getElementById('quarterSel').value;
   const subject = document.getElementById('subjectSel').value;
+  const isTotalView = (quarter === 'Total');
   const titleEl = document.getElementById('tableTitle');
   if (titleEl) {
     if (subject) {
-      titleEl.textContent = quarter + ' Grade Sheet — ' + subject + ' (' + filtered.length + ' students)';
+      titleEl.textContent = (isTotalView ? 'All Periods' : quarter) + ' Grade Sheet — ' + subject + ' (' + filtered.length + ' students)';
     } else {
       titleEl.textContent = 'All Students (' + filtered.length + ') — Select a subject above to enter grades';
     }
+  }
+
+  // ── TOTAL VIEW: multi-period read-only table ──────────────────────────────────
+  if (isTotalView) {
+    renderTotalView();
+    return;
   }
 
   // Build column configuration: for each component, either single column or multiple item columns
@@ -928,6 +1021,94 @@ function renderTable() {
   renderStats();
 }
 
+// ── Total View (Prelim + Midterm + Pre-finals + Finals + Computed Total) ─────
+function renderTotalView() {
+  const periods = ['Prelim','Midterm','Prefinals','Finals'];
+  const periodLabels = { Prelim:'Prelim', Midterm:'Midterm', Prefinals:'Pre-Finals', Finals:'Finals' };
+  const thead = document.querySelector('#gradeBody')?.closest('table')?.querySelector('thead tr');
+  if (thead) {
+    thead.innerHTML = `
+      <th style="width:36px;">#</th>
+      <th style="min-width:160px;">Student</th>
+      ${periods.map(p => `<th style="min-width:70px;text-align:center;">${periodLabels[p]}</th>`).join('')}
+      <th style="min-width:80px;text-align:center;color:var(--primary);font-weight:700;">Total Avg</th>
+      <th style="min-width:110px;">Descriptor</th>
+      <th style="min-width:45px;">GPA</th>
+      <th style="min-width:45px;">Letter</th>`;
+  }
+
+  const descSel = document.getElementById('descFilter');
+  if (descSel) {
+    descSel.innerHTML = '<option value="">All descriptors</option>';
+    const sortedScales = [...gpaScales].sort((a, b) => parseFloat(b.max_grade) - parseFloat(a.max_grade));
+    const seenDesc = new Set();
+    sortedScales.forEach(sc => {
+      if (sc.descriptor && !seenDesc.has(sc.descriptor)) {
+        seenDesc.add(sc.descriptor);
+        const opt = document.createElement('option');
+        opt.value = sc.descriptor; opt.textContent = sc.descriptor;
+        descSel.appendChild(opt);
+      }
+    });
+  }
+
+  const body = document.getElementById('gradeBody');
+  body.innerHTML = '';
+
+  if (!filtered.length) {
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray-400);">No students found.</td></tr>`;
+    document.getElementById('statGrid').innerHTML = `<div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value">${filtered.length}</div><div class="stat-sub">no grades yet</div></div>`;
+    return;
+  }
+
+  const allFinals = [];
+  filtered.forEach((s, i) => {
+    const periodFinals = periods.map(p => {
+      const pg = periodGrades[s._id] && periodGrades[s._id][p];
+      return pg && pg.final !== null ? pg.final : null;
+    });
+    const validFinals = periodFinals.filter(f => f !== null);
+    const totalAvg = validFinals.length ? Math.round((validFinals.reduce((a,b)=>a+b,0)/validFinals.length)*100)/100 : null;
+    if (totalAvg !== null) allFinals.push(totalAvg);
+
+    const info = totalAvg !== null ? getGpaInfo(totalAvg) : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--gray-400);font-size:12px;">${i + 1}</td>
+      <td>
+        <div class="student-name">${esc(s.name)}</div>
+        <div class="student-id">${esc(s.id || '')}${s._grade ? ' · ' + esc(s._grade) + ' ' + esc(s._section) : ''}</div>
+      </td>
+      ${periodFinals.map(f => `<td style="text-align:center;font-family:'DM Mono',monospace;font-size:13px;color:${f !== null ? progColor(f) : 'var(--gray-400)'};">
+        ${f !== null ? f.toFixed(1) : '—'}
+      </td>`).join('')}
+      <td style="text-align:center;">
+        <span class="final-grade" style="color:${totalAvg !== null ? progColor(totalAvg) : 'var(--gray-400)'};">
+          ${totalAvg !== null ? totalAvg.toFixed(1) : '—'}
+        </span>
+      </td>
+      <td>${info ? '<span class="badge ' + badgeClass(info.descriptor) + '">' + esc(info.descriptor) + '</span>' : '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px;">${info ? info.gpa : '—'}</td>
+      <td style="font-weight:700;color:${totalAvg !== null ? progColor(totalAvg) : 'var(--gray-400)'};font-size:14px;">${info ? info.letter : '—'}</td>`;
+    body.appendChild(tr);
+  });
+
+  // Stat grid for total view
+  if (allFinals.length) {
+    const avg     = (allFinals.reduce((a,b)=>a+b,0)/allFinals.length).toFixed(2);
+    const passing = allFinals.filter(f=>f>=75).length;
+    const highest = Math.max(...allFinals).toFixed(1);
+    const lowest  = Math.min(...allFinals).toFixed(1);
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Class average</div><div class="stat-value">${avg}</div><div class="stat-sub">all periods</div></div>
+      <div class="stat-card"><div class="stat-label">Passing rate</div><div class="stat-value">${Math.round((passing/allFinals.length)*100)}%</div><div class="stat-sub">${passing} of ${allFinals.length} students</div></div>
+      <div class="stat-card"><div class="stat-label">Highest grade</div><div class="stat-value" style="color:var(--success);">${highest}</div><div class="stat-sub">top score</div></div>
+      <div class="stat-card"><div class="stat-label">Lowest grade</div><div class="stat-value" style="color:var(--danger);">${lowest}</div><div class="stat-sub">needs attention</div></div>`;
+  } else {
+    document.getElementById('statGrid').innerHTML = `<div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value">${filtered.length}</div><div class="stat-sub">no grades yet</div></div>`;
+  }
+}
+
 function updateItemScore(idx, componentKey, itemId, val, maxScore) {
   const s = students[idx];
   const score = val === '' ? null : Math.min(parseFloat(maxScore) || 100, Math.max(0, parseFloat(val) || 0));
@@ -1035,7 +1216,7 @@ async function saveGrades() {
       item_scores: studentItemScores[s._id] || {},
     }));
     try {
-      const res  = await fetch(API + '?action=save_grades', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
+      const res  = await fetch(API + '?action=save_grades', { method:'POST', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subject, quarter, records }) });
       const data = await res.json();
       if (data.error) { toast('Error: ' + data.error, 'error'); return; }
       hasUnsavedGrades = false;
@@ -1043,6 +1224,12 @@ async function saveGrades() {
       saveStudentItemScores();
       toast('Grades saved! (' + data.saved + ' records)', 'success');
       if (window.CILog) CILog.push('grades_saved', 'Grades saved', subject + ' · ' + quarter + ' · ' + data.saved + ' record' + (data.saved !== 1 ? 's' : ''));
+      // Notify dashboard to refresh performance chart
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'CI_GRADES_UPDATED', subject, quarter }, '*');
+        }
+      } catch(e) {}
     } catch { toast('Network error — is XAMPP running?', 'error'); }
   });
 }
@@ -1052,7 +1239,7 @@ async function saveGrades() {
 // ════════════════════════════════════════
 async function loadWeights() {
   try {
-    const res  = await fetch(API + '?action=weights');
+    const res  = await fetch(API + '?action=weights', { credentials: 'same-origin' });
     const data = await res.json();
     const def  = data.find(w => w.subject === '__default__');
     if (def) {
@@ -1170,7 +1357,7 @@ async function saveWeights() {
     const total = components.reduce((a,c)=>a+c.pct,0);
     if (total !== 100) { toast('Weights must total 100%. Currently ' + total + '%.', 'error'); return; }
     try { localStorage.setItem('classinstruct_components', JSON.stringify(components.map(c=>({key:c.key,label:c.label,pct:c.pct,color:c.color})))); } catch {}
-    try { await fetch(API + '?action=save_weights', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww||0, performance_tasks_pct: weights.pt||0, quarterly_assessment_pct: weights.qa||0 }) }); } catch {}
+    try { await fetch(API + '?action=save_weights', { method:'POST', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ written_works_pct: weights.ww||0, performance_tasks_pct: weights.pt||0, quarterly_assessment_pct: weights.qa||0 }) }); } catch {}
     toast('Weights saved!', 'success'); renderTable();
   });
 }
@@ -1200,7 +1387,7 @@ async function renderSummary() {
       const params = new URLSearchParams({ action:'summary', subject, quarter });
       if (grade)   params.append('grade',   grade);
       if (section) params.append('section', section);
-      const res = await fetch(API + '?' + params);
+      const res = await fetch(API + '?' + params, { credentials: 'same-origin' });
       serverData = await res.json();
     } catch {}
   }

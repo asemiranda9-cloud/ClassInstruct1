@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════
 const API_STUDENTS   = '/dashboard/api/db.php';
 const API_ATTENDANCE = '/dashboard/attendance/attedance_db.php';
-const API_GRADES     = '/dashboard/Student/grades_db.php';
+const API_GRADES     = '/dashboard/Grades/grades_db.php';
 
 const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -28,7 +28,7 @@ async function bootPage() {
   if (!id) { showError('No student ID provided.'); return; }
 
   try {
-    const res = await fetch(API_STUDENTS);
+    const res = await fetch(API_STUDENTS, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('API responded with ' + res.status);
     const students = await res.json();
     const s = students.find(x => String(x.id) === String(id));
@@ -148,7 +148,7 @@ async function fetchAndRenderHeatmap(sid, grade, section) {
       (grade   ? '&grade='   + encodeURIComponent(grade)   : '') +
       (section ? '&section=' + encodeURIComponent(section) : '');
 
-    const res  = await fetch(url);
+    const res  = await fetch(url, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('Attendance API error ' + res.status);
     const data = await res.json();
     const match = (data.students || []).find(x => String(x.id) === String(sid));
@@ -280,7 +280,7 @@ let _acadGradeTable = false;
 
 async function loadSubjectFilter(s) {
   try {
-    const res = await fetch(API_GRADES + '?action=subjects');
+    const res = await fetch(API_GRADES + '?action=subjects', { credentials: 'same-origin' });
     if (!res.ok) throw new Error('Subjects API ' + res.status);
     _allSubjects = await res.json();
 
@@ -318,7 +318,7 @@ async function loadAcademicPerformance() {
         '&subject=' + encodeURIComponent(subject) +
         (s && s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
         (s && s.section ? '&section=' + encodeURIComponent(s.section) : '');
-      const res  = await fetch(url);
+      const res  = await fetch(url, { credentials: 'same-origin' });
       if (!res.ok) throw new Error('Grades API ' + res.status);
       const rows = await res.json();
       myRows = rows.filter(r => String(r.id) === String(studentId));
@@ -333,7 +333,7 @@ async function loadAcademicPerformance() {
           '&subject=' + encodeURIComponent(sub.name) +
           (s && s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
           (s && s.section ? '&section=' + encodeURIComponent(s.section) : '');
-        const res  = await fetch(url);
+        const res  = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) return null;
         const rows = await res.json();
         const mine = rows.find(r => String(r.id) === String(studentId));
@@ -395,7 +395,7 @@ async function computeOverallAverage() {
         (s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
         (s.section ? '&section=' + encodeURIComponent(s.section) : '');
       try {
-        const res  = await fetch(url);
+        const res  = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) return;
         const rows = await res.json();
         const mine = rows.filter(r => String(r.id) === String(studentId));
@@ -422,7 +422,7 @@ async function computeSubjectOverallAverage(subject) {
       (s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
       (s.section ? '&section=' + encodeURIComponent(s.section) : '');
     try {
-      const res  = await fetch(url);
+      const res  = await fetch(url, { credentials: 'same-origin' });
       if (!res.ok) return;
       const rows = await res.json();
       const mine = rows.filter(r => String(r.id) === String(studentId));
@@ -484,8 +484,24 @@ function updateGauge(avg) {
 }
 
 async function renderQuarterBars(subject) {
-  const quarters = ['Q1','Q2','Q3','Q4'];
-  const labels   = ['1st Quarter','2nd Quarter','3rd Quarter','4th Quarter'];
+  const quarterEl = document.getElementById('acadQuarterFilter');
+  const currentQuarter = quarterEl ? quarterEl.value : 'Q1';
+
+  // Determine if we're in semester mode (has underscore: Sem1_Prelim)
+  const isSemester = currentQuarter.includes('_');
+  let quarters, labels;
+
+  if (isSemester) {
+    // Semester mode: show Prelim/Midterm/Prefinals/Finals for the selected semester
+    const semNum = currentQuarter.split('_')[0]; // Sem1, Sem2, or Sem3
+    quarters = [semNum + '_Prelim', semNum + '_Midterm', semNum + '_Prefinals', semNum + '_Finals'];
+    labels = ['Prelim', 'Midterm', 'Prefinals', 'Finals'];
+  } else {
+    // Quarterly mode: show Q1-Q4
+    quarters = ['Q1','Q2','Q3','Q4'];
+    labels = ['1st Quarter','2nd Quarter','3rd Quarter','4th Quarter'];
+  }
+
   const container = document.getElementById('quarterBars');
   if (!container) return;
 
@@ -510,7 +526,7 @@ async function renderQuarterBars(subject) {
         (s && s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
         (s && s.section ? '&section=' + encodeURIComponent(s.section) : '');
       try {
-        const res   = await fetch(url);
+        const res   = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) return null;
         const rows  = await res.json();
         const graded = rows.filter(r => String(r.id) === String(studentId) && r.final_grade !== null && r.final_grade !== undefined);
@@ -527,7 +543,7 @@ async function renderQuarterBars(subject) {
           (s && s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
           (s && s.section ? '&section=' + encodeURIComponent(s.section) : '');
         try {
-          const res   = await fetch(url);
+          const res   = await fetch(url, { credentials: 'same-origin' });
           if (!res.ok) return;
           const rows  = await res.json();
           const graded = rows.filter(r => String(r.id) === String(studentId) && r.final_grade !== null && r.final_grade !== undefined);
@@ -601,7 +617,7 @@ function renderGradeTableAllSubjects(subject, quarter) {
       '&subject=' + encodeURIComponent(sub) +
       (s.grade   ? '&grade='   + encodeURIComponent(s.grade)   : '') +
       (s.section ? '&section=' + encodeURIComponent(s.section) : '');
-    const res  = await fetch(url);
+    const res  = await fetch(url, { credentials: 'same-origin' });
     const rows = await res.json();
     const mine = rows.find(r => String(r.id) === String(studentId));
     return mine ? { ...mine, subjectName: sub } : { subjectName: sub };

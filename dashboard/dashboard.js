@@ -17,7 +17,7 @@ function sidebarNav(url) {
 
 const ATT_API    = '/dashboard/attendance/attedance_db.php';
 const STUD_API   = '/dashboard/api/db.php';
-const GRADES_API = '/dashboard/Student/grades_db.php';   // serves ?action=grades|subjects|gpa_scales|summary|weights
+const GRADES_API = '/dashboard/Grades/grades_db.php';   // serves ?action=grades|subjects|gpa_scales|summary|weights
 const CAL_KEY    = 'ci_dayEntries';
 
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadStudents();
   loadAttendanceCal();
   loadSubjectsForPerf();
+  loadGradesSectionsForPerf();
   loadPerformanceChart();
 });
 
@@ -159,6 +160,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') {
     renderRecentActivity();
+  }
+  // Grades page fired after saving — refresh performance chart so dashboard stays in sync
+  if (e.data && e.data.type === 'CI_GRADES_UPDATED') {
+    loadPerformanceChart();
   }
 });
 
@@ -208,7 +213,7 @@ function renderRecentActivity() {
 // ════════════════════════════════════════════════
 async function loadStudents() {
   try {
-    const res = await fetch(STUD_API);
+    const res = await fetch(STUD_API, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     _allStudents = await res.json();
   } catch (e) {
@@ -243,7 +248,7 @@ async function loadStudents() {
 
   // Hero banner — Avg Attendance from attendance summary API
   try {
-    const attRes = await fetch(ATT_API + '?action=summary');
+    const attRes = await fetch(ATT_API + '?action=summary', { credentials: 'same-origin' });
     if (attRes.ok) {
       const attData = await attRes.json();
       const pct = attData.overall ? attData.overall.present_pct : null;
@@ -255,7 +260,7 @@ async function loadStudents() {
   // NOTE: heroPassRate is also updated by loadPerformanceChart() once the full
   //       grade distribution is known; this is just an early rough estimate.
   try {
-    const gradeRes = await fetch(GRADES_API + '?action=grades&quarter=Q1');
+    const gradeRes = await fetch(GRADES_API + '?action=grades&quarter=Q1', { credentials: 'same-origin' });
     if (gradeRes.ok) {
       const gradeData = await gradeRes.json();
       const grades = (Array.isArray(gradeData) ? gradeData : [])
@@ -368,7 +373,7 @@ async function loadAttendanceCal() {
 
   try {
     const url = `${ATT_API}?action=attendance&grade=${encodeURIComponent(grade)}&section=${encodeURIComponent(section)}&year=${year}&month=${month}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     buildAttCalGrid(data, year, month, grid);
@@ -662,11 +667,10 @@ function _getDescriptor(grade, scales) {
 
 async function loadSubjectsForPerf() {
   try {
-    const res  = await fetch(GRADES_API + '?action=subjects');
+    const res  = await fetch(GRADES_API + '?action=subjects', { credentials: 'same-origin' });
     const data = await res.json();
     const sel  = document.getElementById('perfSubjectFilter');
     if (!sel) return;
-    // remove old options except first "All Subjects"
     while (sel.options.length > 1) sel.remove(1);
     data.filter(s => parseInt(s.is_active)).forEach(s => {
       const o = document.createElement('option');
@@ -679,6 +683,71 @@ async function loadSubjectsForPerf() {
   }
 }
 
+async function loadGradesSectionsForPerf() {
+  try {
+    const res  = await fetch(STUD_API + '?action=students', { credentials: 'same-origin' });
+    const data = await res.json();
+    const grades   = [...new Set((data||[]).map(s => s.grade  || s.grade_level || '').filter(Boolean))];
+    const sections = [...new Set((data||[]).map(s => s.section || '').filter(Boolean))];
+    const gSel = document.getElementById('perfGradeFilter');
+    const sSel = document.getElementById('perfSectionFilter');
+    if (gSel) {
+      while (gSel.options.length > 1) gSel.remove(1);
+      const order = ['Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'];
+      grades.sort((a,b)=>(order.indexOf(a)===-1?99:order.indexOf(a))-(order.indexOf(b)===-1?99:order.indexOf(b))).forEach(g => {
+        const o = document.createElement('option'); o.value = g; o.textContent = g; gSel.appendChild(o);
+      });
+    }
+    if (sSel) {
+      while (sSel.options.length > 1) sSel.remove(1);
+      sections.sort().forEach(s => {
+        const o = document.createElement('option'); o.value = s; o.textContent = s; sSel.appendChild(o);
+      });
+    }
+  } catch(e) { console.warn('Could not load grades/sections:', e.message); }
+}
+
+function onPerfGradingTypeChange() {
+  const type = (document.getElementById('perfGradingTypeFilter') || {}).value || 'quarterly';
+  const qSel = document.getElementById('perfQuarterFilter');
+  const pSel = document.getElementById('perfPeriodFilter');
+  if (!qSel) return;
+
+  const maps = {
+    quarterly: [
+      {value:'Q1',label:'Q1 — First Quarter'},{value:'Q2',label:'Q2 — Second Quarter'},
+      {value:'Q3',label:'Q3 — Third Quarter'},{value:'Q4',label:'Q4 — Fourth Quarter'},
+    ],
+    sem2: [
+      {value:'Sem1',label:'1st Semester'},{value:'Sem2',label:'2nd Semester'},
+    ],
+    sem3: [
+      {value:'Sem1',label:'1st Semester'},{value:'Sem2',label:'2nd Semester'},{value:'Sem3',label:'3rd Semester'},
+    ],
+  };
+
+  qSel.innerHTML = '';
+  (maps[type] || maps.quarterly).forEach(o => {
+    const opt = document.createElement('option'); opt.value = o.value; opt.textContent = o.label; qSel.appendChild(opt);
+  });
+
+  // Show/hide period sub-filter depending on type
+  if (pSel) {
+    if (type === 'sem2' || type === 'sem3') {
+      pSel.style.display = '';   // show Prelim/Midterm/Finals
+    } else {
+      pSel.style.display = 'none'; // hide for quarterly
+    }
+  }
+
+  loadPerformanceChart();
+}
+
+// Called when the semester dropdown changes — just re-runs the chart (period filter stays as-is)
+function onPerfSemesterChange() {
+  loadPerformanceChart();
+}
+
 async function loadPerformanceChart() {
   const barEl  = document.getElementById('perfBarChart');
   const distEl = document.getElementById('perfDistBars');
@@ -686,7 +755,15 @@ async function loadPerformanceChart() {
   if (!barEl) return;
 
   const subject = (document.getElementById('perfSubjectFilter') || {}).value || '';
-  const quarter = (document.getElementById('perfQuarterFilter') || {}).value || 'Q1';
+  const gradingType = (document.getElementById('perfGradingTypeFilter') || {}).value || 'quarterly';
+  const semVal  = (document.getElementById('perfQuarterFilter') || {}).value || 'Q1';
+  const period  = (document.getElementById('perfPeriodFilter')  || {}).value || '';
+  // Build the quarter param: for semester modes combine sem + period (e.g. "Sem1_Prelim")
+  const quarter = (gradingType === 'sem2' || gradingType === 'sem3') && period
+    ? `${semVal}_${period}`
+    : semVal;
+  const gradeF  = (document.getElementById('perfGradeFilter')   || {}).value || '';
+  const sectionF= (document.getElementById('perfSectionFilter') || {}).value || '';
 
   barEl.innerHTML  = '<div style="width:100%;display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-3);font-size:.82rem">Loading…</div>';
   if (distEl) distEl.innerHTML = '';
@@ -696,28 +773,26 @@ async function loadPerformanceChart() {
   let gpaScales = [];
 
   try {
-    // 1. Fetch GPA scales
-    const gsRes  = await fetch(GRADES_API + '?action=gpa_scales');
+    const gsRes  = await fetch(GRADES_API + '?action=gpa_scales', { credentials: 'same-origin' });
     const gsData = await gsRes.json();
     if (Array.isArray(gsData) && gsData.length) gpaScales = gsData;
   } catch(e) { /* use defaults */ }
 
   try {
-    // 2. Fetch grade summary from API
     const params = new URLSearchParams({ action: 'grades', quarter });
-    if (subject) params.append('subject', subject);
-    const res  = await fetch(GRADES_API + '?' + params);
+    if (subject)  params.append('subject',  subject);
+    if (gradeF)   params.append('grade',    gradeF);
+    if (sectionF) params.append('section',  sectionF);
+    const res  = await fetch(GRADES_API + '?' + params, { credentials: 'same-origin' });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    // Compute final grades for students that have at least one component
     grades = data
       .filter(r => r.written_works !== null || r.performance_tasks !== null || r.quarterly_assessment !== null)
       .map(r => {
         const ww  = r.written_works        !== null ? parseFloat(r.written_works)        : 0;
         const pt  = r.performance_tasks    !== null ? parseFloat(r.performance_tasks)    : 0;
         const qa  = r.quarterly_assessment !== null ? parseFloat(r.quarterly_assessment) : 0;
-        // Use DepEd default weights if not available
         return Math.round((ww * 0.30 + pt * 0.50 + qa * 0.20) * 100) / 100;
       });
   } catch(e) {
@@ -735,9 +810,9 @@ async function loadPerformanceChart() {
   const tierCounts = PERF_TIERS.map(tier => {
     const count = grades.filter(g => _getDescriptor(g, gpaScales) === tier.key).length;
     return { ...tier, count };
-  }).filter(t => t.count > 0 || PERF_TIERS.indexOf(t) < 3); // always show top 3 tiers
+  }).filter(t => t.count > 0 || PERF_TIERS.indexOf(t) < 3);
 
-  // 4. Build letter-grade distribution for bar chart (A/B+/B/C/F)
+  // 4. Build letter-grade distribution for bar chart
   const letterMap = {};
   const scaleList = (gpaScales.length ? gpaScales : _defaultGpaScales)
     .sort((a,b) => parseFloat(b.max||b.max_grade) - parseFloat(a.max||a.max_grade));

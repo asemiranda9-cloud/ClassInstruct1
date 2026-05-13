@@ -6,12 +6,12 @@
 const API = '/dashboard/api/db.php';
 
 async function apiGet() {
-  const res = await fetch(API);
+  const res = await fetch(API, { credentials: 'same-origin' });
   if (!res.ok) throw new Error('Failed to load students');
   return res.json();
 }
 async function apiPost(data) {
-  const res  = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  const res  = await fetch(API, { method:'POST', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
   const text = await res.text();
   let json;
   try { json = JSON.parse(text); }
@@ -20,13 +20,13 @@ async function apiPost(data) {
   return json;
 }
 async function apiPut(id, data) {
-  const res  = await fetch(`${API}?id=${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  const res  = await fetch(`${API}?id=${id}`, { method:'PUT', credentials: 'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Failed to update student');
   return json;
 }
 async function apiDelete(id) {
-  const res  = await fetch(`${API}?id=${id}`, { method:'DELETE' });
+  const res  = await fetch(`${API}?id=${id}`, { method:'DELETE', credentials: 'same-origin' });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Failed to delete student');
   return json;
@@ -147,7 +147,7 @@ async function init() {
   try {
     const [studentData, sectionData] = await Promise.all([
       apiGet(),
-      fetch(API + '?action=sections').then(r => r.json()).catch(() => [])
+      fetch(API + '?action=sections', { credentials: 'same-origin' }).then(r => r.json()).catch(() => [])
     ]);
     students = studentData.map(s => ({ ...s }));
     localSections = Array.isArray(sectionData) ? sectionData : [];
@@ -217,6 +217,7 @@ async function saveAddSection() {
   if (!name) return;
   await fetch(API, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ _action: 'add_section', name })
   });
@@ -273,6 +274,7 @@ function refreshSectionDropdowns(sections) {
 async function removeSection(name) {
   await fetch(API + '?action=delete_section', {
     method: 'DELETE',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
@@ -327,11 +329,13 @@ async function saveEditSection(oldName, newName) {
   // Add the new name then delete the old one
   await fetch(API, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ _action: 'add_section', name: newName })
   });
   await fetch(API + '?action=delete_section', {
     method: 'DELETE',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: oldName })
   });

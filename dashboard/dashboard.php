@@ -179,18 +179,36 @@
         <article class="card performance">
           <div class="section-header">
             <h2>Student Performance</h2>
-            <div style="display:flex;align-items:center;gap:8px">
-              <select class="filter" id="perfSubjectFilter" onchange="loadPerformanceChart()">
-                <option value="">All Subjects</option>
-              </select>
-              <select class="filter" id="perfQuarterFilter" onchange="loadPerformanceChart()">
-                <option value="Q1">First Quarter</option>
-                <option value="Q2">Second Quarter</option>
-                <option value="Q3">Third Quarter</option>
-                <option value="Q4">Fourth Quarter</option>
-              </select>
-              <a href="#" onclick="sidebarNav('Grades/Grades.php');return false;" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none;white-space:nowrap">View all →</a>
-            </div>
+            <a href="#" onclick="sidebarNav('Grades/Grades.php');return false;" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none;white-space:nowrap">View all →</a>
+          </div>
+          <!-- Filter row matching image 2 style -->
+          <div class="perf-filter-row" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center;">
+            <select class="filter perf-filter" id="perfGradingTypeFilter" onchange="onPerfGradingTypeChange()" style="font-size:.73rem;padding:5px 10px;">
+              <option value="quarterly">Quarterly (Q1-Q4)</option>
+              <option value="sem2">2 Semesters</option>
+              <option value="sem3">3 Semesters</option>
+            </select>
+            <select class="filter perf-filter" id="perfQuarterFilter" onchange="onPerfSemesterChange()" style="font-size:.73rem;padding:5px 10px;">
+              <option value="Q1">Q1 — First Quarter</option>
+              <option value="Q2">Q2 — Second Quarter</option>
+              <option value="Q3">Q3 — Third Quarter</option>
+              <option value="Q4">Q4 — Fourth Quarter</option>
+            </select>
+            <select class="filter perf-filter" id="perfPeriodFilter" onchange="loadPerformanceChart()" style="font-size:.73rem;padding:5px 10px;display:none;">
+              <option value="Prelim">Prelim</option>
+              <option value="Midterm">Midterm</option>
+              <option value="Prefinals">Pre-Finals</option>
+              <option value="Finals">Finals</option>
+            </select>
+            <select class="filter perf-filter" id="perfGradeFilter" onchange="loadPerformanceChart()" style="font-size:.73rem;padding:5px 10px;">
+              <option value="">All Grades</option>
+            </select>
+            <select class="filter perf-filter" id="perfSectionFilter" onchange="loadPerformanceChart()" style="font-size:.73rem;padding:5px 10px;">
+              <option value="">All Sections</option>
+            </select>
+            <select class="filter perf-filter" id="perfSubjectFilter" onchange="loadPerformanceChart()" style="font-size:.73rem;padding:5px 10px;">
+              <option value="">All Subjects</option>
+            </select>
           </div>
           <div class="performance-chart bar-chart-container" id="perfChartWrap">
             <div class="bar-chart" id="perfBarChart">
