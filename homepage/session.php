@@ -4,7 +4,12 @@
  * Place in: homepage/session.php
  */
 
-session_start();
+// Use shared session with dashboard
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 
 function requireLogin() {
     if (!isset($_SESSION['user_id'])) {

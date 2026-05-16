@@ -36,12 +36,13 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-if (!defined('DB_HOST')) define('DB_HOST', env('DB_HOST', 'localhost'));
+if (!defined('DB_HOST')) define('DB_HOST', env('DB_HOST', '127.0.0.1'));
+if (!defined('DB_PORT')) define('DB_PORT', env('DB_PORT', '3306'));
 if (!defined('DB_USER')) define('DB_USER', env('DB_USER', 'root'));
 if (!defined('DB_PASS')) define('DB_PASS', env('DB_PASS', ''));
 if (!defined('DB_NAME')) define('DB_NAME', env('DB_NAME', 'classinstructdb'));
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, (int)DB_PORT);
 if ($conn->connect_error) {
     http_response_code(500);
     echo json_encode(['error' => 'Database connection failed: ' . $conn->connect_error, 'host' => DB_HOST, 'db' => DB_NAME]);
@@ -50,7 +51,11 @@ if ($conn->connect_error) {
 $conn->set_charset('utf8mb4');
 
 // ── Check user session ───────────────────────────────────────────────────────
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 $userId = $_SESSION['ci_user']['user_id'] ?? null;
 if (!$userId) {
     http_response_code(401);

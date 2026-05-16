@@ -48,7 +48,12 @@ define('SOFT_LIMIT',        3);     // wrong passwords before 10s cooldown
 define('PERM_LIMIT',        6);     // total wrong passwords before permanent lock
 define('SOFT_LOCKOUT_SECS', 10);    // 10 second cooldown
 
-session_start();
+// Use shared session with dashboard
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 
 // ─── Parse input ─────────────────────────────────────────────────────────────
 $body     = json_decode(file_get_contents('php://input'), true) ?? [];

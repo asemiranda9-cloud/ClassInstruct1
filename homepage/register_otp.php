@@ -52,7 +52,12 @@ const SMTP_FROM_NAME  = 'ClassInstruct';
 const OTP_EXPIRY_SEC  = 120;
 const REG_SESSION_KEY = 'ci_reg_pending';
 
-session_start();
+// Use shared session with dashboard
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 
 // ─── Parse input ─────────────────────────────────────────────────────────────
 $body   = json_decode(file_get_contents('php://input'), true) ?? [];

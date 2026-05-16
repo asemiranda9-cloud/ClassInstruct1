@@ -7,12 +7,36 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ── Load user data ────────────────────────────────────────────────────────────
-function loadSettingsData() {
-  setVal('settFirstName', sessionStorage.getItem('ci_first_name') || '');
-  setVal('settLastName',  sessionStorage.getItem('ci_last_name')  || '');
-  setVal('settEmail',     sessionStorage.getItem('ci_email')      || '');
+async function loadSettingsData() {
+  const email = sessionStorage.getItem('ci_email') || '';
+  let firstName = '';
+  let lastName  = '';
+  let gender    = '';
 
-  const gender = sessionStorage.getItem('ci_gender') || '';
+  // Try to fetch from database first
+  try {
+    const res = await fetch('../Profile/profile_api.php?email=' + encodeURIComponent(email));
+    const data = await res.json();
+    if (data.success) {
+      firstName = data.first_name || '';
+      lastName  = data.last_name  || '';
+      gender    = data.gender     || '';
+    }
+  } catch (e) {
+    console.error('Failed to fetch user from DB:', e);
+  }
+
+  // Fallback to sessionStorage
+  if (!firstName && !lastName) {
+    firstName = sessionStorage.getItem('ci_first_name') || '';
+    lastName  = sessionStorage.getItem('ci_last_name')  || '';
+    gender    = sessionStorage.getItem('ci_gender')     || '';
+  }
+
+  setVal('settFirstName', firstName);
+  setVal('settLastName',  lastName);
+  setVal('settEmail',     email);
+
   const genderSel = document.getElementById('settGender');
   if (genderSel && gender) {
     [...genderSel.options].forEach(o => { o.selected = o.value === gender; });
@@ -39,7 +63,7 @@ function syncDarkToggle() {
 })();
 
 // ── Account ───────────────────────────────────────────────────────────────────
-function saveAccount() {
+async function saveAccount() {
   const firstName = document.getElementById('settFirstName').value.trim();
   const lastName  = document.getElementById('settLastName').value.trim();
   const email     = document.getElementById('settEmail').value.trim();
@@ -48,6 +72,23 @@ function saveAccount() {
   if (!firstName || !lastName) { showToast('Please enter your first and last name.', 'error'); return; }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address.', 'error'); return; }
 
+  // Save to database
+  try {
+    const res = await fetch('../Profile/profile_api.php', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name: firstName, last_name: lastName, gender: gender })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast('Failed to save to database: ' + (data.error || 'Unknown error'), 'error');
+      return;
+    }
+  } catch (e) {
+    console.error('Failed to save to DB:', e);
+  }
+
+  // Also save to sessionStorage for immediate UI update
   sessionStorage.setItem('ci_first_name', firstName);
   sessionStorage.setItem('ci_last_name',  lastName);
   sessionStorage.setItem('ci_email',      email);

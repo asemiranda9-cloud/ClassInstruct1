@@ -7,6 +7,14 @@
  * load this via: require_once __DIR__ . '/../config.php';
  */
 
+// Shared session configuration with homepage
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    ini_set('session.cookie_domain', '');
+    session_name('CI_SESSION');
+    session_start();
+}
+
 function loadEnv(string $path): void {
     if (!file_exists($path)) return;
 
@@ -28,6 +36,8 @@ function loadEnv(string $path): void {
             if ($key === 'DB_DATABASE') $key = 'DB_NAME';
             if ($key === 'DB_USERNAME') $key = 'DB_USER';
             if ($key === 'DB_PASSWORD') $key = 'DB_PASS';
+            if ($key === 'DB_CONNECTION') $key = 'DB_DRIVER';
+            if ($key === 'DB_PORT') $key = 'DB_PORT';
 
             $_ENV[$key] = $value;
             putenv("$key=$value");

@@ -1,4 +1,11 @@
-<?php session_start(); ?>
+<?php
+// Use shared session with homepage
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -12,9 +19,10 @@
     // Apply saved theme INSTANTLY before CSS renders — prevents white flash
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
     // PHP session → JS globals (used by renderGreeting as fallback)
-    window.CI_FIRST_NAME = "<?php echo isset($_SESSION['first_name']) ? addslashes($_SESSION['first_name']) : ''; ?>";
-    window.CI_LAST_NAME  = "<?php echo isset($_SESSION['last_name'])  ? addslashes($_SESSION['last_name'])  : ''; ?>";
-    window.CI_GENDER     = "<?php echo isset($_SESSION['gender'])     ? addslashes($_SESSION['gender'])     : ''; ?>";
+    // Read from ci_user array (set by verify_otp.php login flow)
+    window.CI_FIRST_NAME = "<?php echo isset($_SESSION['ci_user']['first_name']) ? addslashes($_SESSION['ci_user']['first_name']) : ''; ?>";
+    window.CI_LAST_NAME  = "<?php echo isset($_SESSION['ci_user']['last_name'])  ? addslashes($_SESSION['ci_user']['last_name'])  : ''; ?>";
+    window.CI_GENDER     = "<?php echo isset($_SESSION['ci_user']['gender'])     ? addslashes($_SESSION['ci_user']['gender'])     : ''; ?>";
   </script>
   <script src="shared.js"></script>
 </head>

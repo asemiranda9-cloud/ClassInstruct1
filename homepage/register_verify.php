@@ -25,7 +25,12 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST')    { json_fail('Method not allowed.', 405); }
 
-session_start();
+// Use shared session with dashboard
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 
 const REG_SESSION_KEY = 'ci_reg_pending';
 const MAX_ATTEMPTS    = 5;
@@ -108,12 +113,14 @@ $_SESSION['ci_user'] = [
 $token = generateSimpleToken($email);
 
 echo json_encode([
-    'success'  => true,
-    'email'    => $email,
-    'name'     => $firstName . ' ' . $lastName,
-    'gender'   => $gender,
-    'token'    => $token,
-    'redirect' => '/dashboard',
+    'success'    => true,
+    'email'      => $email,
+    'name'       => $firstName . ' ' . $lastName,
+    'first_name' => $firstName,
+    'last_name'  => $lastName,
+    'gender'     => $gender,
+    'token'      => $token,
+    'redirect'   => '/dashboard',
 ]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

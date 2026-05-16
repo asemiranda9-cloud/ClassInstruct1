@@ -90,7 +90,22 @@ let _sections    = [];
 // ════════════════════════════════════════════════
 //  GREETING
 // ════════════════════════════════════════════════
-function renderGreeting() {
+async function fetchUserFromDB() {
+  const email = sessionStorage.getItem('ci_email');
+  try {
+    // Try with email from sessionStorage
+    const res = await fetch('api/user.php?email=' + encodeURIComponent(email));
+    const data = await res.json();
+    if (data.success) {
+      return data;
+    }
+  } catch (e) {
+    console.error('Failed to fetch user from DB:', e);
+  }
+  return null;
+}
+
+async function renderGreeting() {
   const greetEl = document.getElementById('dashGreeting');
   const subEl   = document.getElementById('dashGreetingSub');
   if (!greetEl) return;
@@ -102,34 +117,43 @@ function renderGreeting() {
   else if (hour >= 12 && hour < 18) salutation = 'Good afternoon';
   else                               salutation = 'Good evening';
 
-  // ── User data from sessionStorage (set by signin/register flow) ──
-  const firstName = sessionStorage.getItem('ci_first_name') || '';
-  const lastName  = sessionStorage.getItem('ci_last_name')  || '';
-  const gender    = sessionStorage.getItem('ci_gender')     || '';
+  // Try to get user data from database first
+  let firstName = '';
+  let lastName  = '';
+  let gender    = '';
+
+  const dbUser = await fetchUserFromDB();
+  if (dbUser) {
+    firstName = dbUser.first_name || '';
+    lastName  = dbUser.last_name  || '';
+    gender    = dbUser.gender     || '';
+  }
+
+  // Fallback to sessionStorage if DB failed
+  if (!firstName && !lastName) {
+    firstName = sessionStorage.getItem('ci_first_name') || '';
+    lastName  = sessionStorage.getItem('ci_last_name')  || '';
+    gender    = sessionStorage.getItem('ci_gender')     || '';
+  }
+
+  // Last fallback: PHP globals
+  if (!firstName && !lastName) {
+    firstName = window.CI_FIRST_NAME || '';
+    lastName  = window.CI_LAST_NAME  || '';
+    gender    = window.CI_GENDER     || '';
+  }
 
   // ── Honorific ──
   const title = gender === 'Male' ? 'Sir' : gender === 'Female' ? "Ma'am" : '';
 
-  // ── Compose greeting — always include name if available ──
+  // ── Compose greeting ──
   if (lastName || firstName) {
     const namePart = title
       ? `${title} ${lastName}${firstName ? ', ' + firstName : ''}`
       : `${lastName}${firstName ? ', ' + firstName : ''}`;
     greetEl.textContent = `${salutation}, ${namePart}!`;
   } else {
-    // Fallback: check if PHP echoed any user data via a global var
-    const phpFirst = window.CI_FIRST_NAME || '';
-    const phpLast  = window.CI_LAST_NAME  || '';
-    const phpGender= window.CI_GENDER     || '';
-    if (phpFirst || phpLast) {
-      const t2 = phpGender === 'Male' ? 'Sir' : phpGender === 'Female' ? "Ma'am" : '';
-      const np = t2
-        ? `${t2} ${phpLast}${phpFirst ? ', ' + phpFirst : ''}`
-        : `${phpLast}${phpFirst ? ', ' + phpFirst : ''}`;
-      greetEl.textContent = `${salutation}, ${np}!`;
-    } else {
-      greetEl.textContent = `${salutation}!`;
-    }
+    greetEl.textContent = `${salutation}!`;
   }
 
   // ── Date subtitle ──

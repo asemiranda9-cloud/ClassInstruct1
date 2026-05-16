@@ -1,14 +1,36 @@
-// ── Profile Page — loads real user data from sessionStorage ──
+// ── Profile Page — loads user data from database ──
 
 document.addEventListener('DOMContentLoaded', function () {
   loadUserData();
 });
 
-function loadUserData() {
-  const firstName = sessionStorage.getItem('ci_first_name') || '';
-  const lastName  = sessionStorage.getItem('ci_last_name')  || '';
-  const email     = sessionStorage.getItem('ci_email')      || '';
-  const gender    = sessionStorage.getItem('ci_gender')     || '';
+async function loadUserData() {
+  let firstName = '';
+  let lastName  = '';
+  let email     = sessionStorage.getItem('ci_email') || '';
+  let gender    = '';
+
+  // Try to fetch from database first using email
+  try {
+    const res = await fetch('profile_api.php?email=' + encodeURIComponent(email));
+    const data = await res.json();
+    if (data.success) {
+      firstName = data.first_name || '';
+      lastName  = data.last_name  || '';
+      email     = data.email      || email;
+      gender    = data.gender     || '';
+    }
+  } catch (e) {
+    console.error('Failed to fetch user from DB:', e);
+  }
+
+  // Fallback to sessionStorage
+  if (!email) {
+    firstName = sessionStorage.getItem('ci_first_name') || '';
+    lastName  = sessionStorage.getItem('ci_last_name')  || '';
+    email     = sessionStorage.getItem('ci_email')      || '';
+    gender    = sessionStorage.getItem('ci_gender')     || '';
+  }
 
   // If Google picture just arrived in sessionStorage, persist it to localStorage
   const freshGooglePhoto = sessionStorage.getItem('ci_picture') || '';

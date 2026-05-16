@@ -17,7 +17,12 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST')    { json_fail('Method not allowed.', 405); }
 
-session_start();
+// Use shared session with dashboard
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_path', '/');
+    session_name('CI_SESSION');
+    session_start();
+}
 
 const OTP_SESSION_KEY  = 'ci_otp_data';
 const MAX_ATTEMPTS     = 5;
