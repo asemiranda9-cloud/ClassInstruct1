@@ -1,6 +1,6 @@
 'use strict';
 
-const API = 'attedance_db.php';
+const API = 'attendance_db.php';
 
 // Warn before leaving if there are unsaved attendance changes
 window.addEventListener('beforeunload', function(e) {
@@ -45,11 +45,12 @@ function toYMD(date) {
 }
 
 function weekDates(startMonday) {
-  return Array.from({ length: 7 }, function(_, i) { return addDays(startMonday, i); });
+  // Mon-Fri only (5 school days)
+  return Array.from({ length: 5 }, function(_, i) { return addDays(startMonday, i); });
 }
 
 function fmtWeekLabel(startMonday) {
-  const end = addDays(startMonday, 6);
+  const end = addDays(startMonday, 4); // Mon → Fri
   const sm  = SHORT_MONTHS[startMonday.getMonth()];
   const em  = SHORT_MONTHS[end.getMonth()];
   if (startMonday.getMonth() === end.getMonth()) {
@@ -182,7 +183,7 @@ function renderWeekCalendar() {
   const today = new Date();
   const todayYMD  = toYMD(today);
   const wsYMD     = toYMD(state.weekStartDate);
-  const weYMD     = toYMD(addDays(state.weekStartDate, 6));
+  const weYMD     = toYMD(addDays(state.weekStartDate, 4)); // Fri
 
   const firstDay    = new Date(calViewYear, calViewMonth, 1);
   const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
@@ -854,45 +855,64 @@ const Actions = {
     if (btn) btn.disabled = true;
     showToast('Saving…', 'saving');
 
-    // Snapshot items so iteration is stable even if pendingChanges is modified mid-loop
+    // Snapshot the full change list once
     const items = Array.from(pendingChanges.values());
-    let saved = 0, failed = 0;
 
-    for (const item of items) {
-      try {
-        if (item.status === 'none') {
-          await fetch(API + '?student_id=' + item.studentId + '&date=' + item.date, { method: 'DELETE', credentials: 'same-origin' });
-        } else {
-          await apiPost({ student_id: item.studentId, date: item.date, status: item.status });
-        }
-        pendingChanges.delete(item.studentId + '|' + item.date);
-        saved++;
-      } catch (e) {
-        failed++;
-        console.error('Save failed for', item, e);
-      }
-    }
-    if (btn) btn.disabled = false;
-    updateSaveButton();
-    if (failed === 0) {
-      showToast('All changes saved!', 'success');
-    } else {
-      showToast(saved + ' saved, ' + failed + ' failed', 'error');
-    }
-
-    // Log each saved change individually with student name + status
-    if (window.CILog && saved > 0) {
-      items.forEach(function(item) {
-        if (item.status === 'none') return; // deletions — skip
-        const student = tableData.students.find(function(s) { return s.id == item.studentId; });
-        const name = student ? student.full_name : ('Student #' + item.studentId);
-        const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
-        const logType = 'attendance_' + item.status;
-        const sectionDetail = (state.grade && state.section)
-          ? state.grade + ' - ' + state.section
-          : (state.sectionName && state.sectionName !== 'All Sections' ? state.sectionName : 'All Sections');
-        CILog.push(logType, statusLabel + ': ' + name, sectionDetail + ' \u00b7 ' + item.date);
+    try {
+      // ── Single batch request — all-or-nothing transaction on the server ──
+      const res = await fetch(API, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'batch_save', changes: items }),
       });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      const saved  = data.saved  || 0;
+      const failed = data.failed || 0;
+
+      // Only clear changes that the server confirmed
+      pendingChanges.clear();
+      updateSaveButton();
+
+      if (failed === 0) {
+        showToast('All changes saved!', 'success');
+      } else {
+        showToast(saved + ' saved, ' + failed + ' failed — please retry', 'error');
+      }
+
+      // Log each confirmed save with student name + status
+      if (window.CILog && saved > 0) {
+        items.filter(function(item) { return item.status !== 'none'; }).forEach(function(item) {
+          const student = tableData.students.find(function(s) { return s.id == item.studentId; });
+          const name = student ? student.full_name : ('Student #' + item.studentId);
+          const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+          const logType = 'attendance_' + item.status;
+          const sectionDetail = (state.grade && state.section)
+            ? state.grade + ' - ' + state.section
+            : (state.sectionName && state.sectionName !== 'All Sections' ? state.sectionName : 'All Sections');
+          CILog.push(logType, statusLabel + ': ' + name, sectionDetail + ' \u00b7 ' + item.date);
+        });
+      }
+
+      // ── Broadcast to Grades page (open tabs only) ─────────────────────────
+      // Grades.js also fetches attendance % directly from DB on each subject
+      // load, so this broadcast is a best-effort real-time supplement only.
+      if (saved > 0) {
+        try {
+          localStorage.setItem('ci_att_updated', JSON.stringify({
+            ts: Date.now(), saved: saved,
+            grade: state.grade || '', section: state.section || '',
+          }));
+        } catch (_) {}
+      }
+    } catch (e) {
+      showToast('Save failed — ' + e.message, 'error');
+      console.error('Batch save failed:', e);
+    } finally {
+      if (btn) btn.disabled = false;
+      updateSaveButton();
     }
   },
 

@@ -7,6 +7,10 @@ const API = './grades_db.php';
 let students         = [];
 let filtered         = [];
 let activeDesc       = '';
+// Student list cache: avoids reloading the same grade+section on every filter change.
+// Key: "<grade>|<section>", value: shallow copy of the students array.
+const _studentCache  = {};
+let   _lastGradeKey  = null;  // tracks the grade+section that is currently loaded
 // Dynamic components — each has: { key, label, pct, color, items:[{id,name,score,maxScore}] }
 let components = [
   { key:'ww', label:'Written Works',        pct:30, color:'#6c63ff', items:[] },
@@ -14,9 +18,7 @@ let components = [
   { key:'qa', label:'Quarterly Assessment', pct:20, color:'#f59e0b', items:[] },
 ];
 let compItemCounter = 1;
-// Legacy aliases kept so the rest of the codebase still works unchanged
-function weights_get()  { return Object.fromEntries(components.map(c=>[c.key,c.pct])); }
-// keep a live proxy-like object for code that reads weights.ww / weights.pt / weights.qa
+// Proxy so saveWeights() can read weights.ww / weights.pt / weights.qa from components
 const weights = new Proxy({}, {
   get(_,k){ const c=components.find(c=>c.key===k); return c?c.pct:0; },
   set(_,k,v){ const c=components.find(c=>c.key===k); if(c)c.pct=parseInt(v)||0; return true; }
@@ -74,9 +76,17 @@ document.addEventListener('DOMContentLoaded', () => {
   loadComponentItems();
   loadStudentItemScores();
   renderWeights();
-  loadAllStudents(); // Load students immediately — don't wait for subject selection
+  loadAllStudents();
   const ov = document.getElementById('editOverlay');
   if (ov) ov.addEventListener('click', function(e){ if (e.target === this) closeEditModal(); });
+
+  // ── Re-pull attendance when the Attendance page saves ────────────────────
+  // attendance.js writes 'ci_att_updated' to localStorage after each save.
+  // Only update values that actually changed — don't clobber manual entries.
+  window.addEventListener('storage', function(e) {
+    if (e.key !== 'ci_att_updated') return;
+    _onAttendanceBroadcast();
+  });
 
   // ── Unsaved-changes guard ──────────────────────────────────────────────────
   // Native browser dialog (shown when tab is closed / navigated away)
@@ -107,6 +117,7 @@ async function loadAllStudents() {
 
   const grade   = document.getElementById('gradeSel')   ? document.getElementById('gradeSel').value   : '';
   const section = document.getElementById('sectionSel') ? document.getElementById('sectionSel').value : '';
+  const cacheKey = grade + '|' + section;
 
   try {
     const params = new URLSearchParams({ action: 'students' });
@@ -130,6 +141,10 @@ async function loadAllStudents() {
       att:  null,
     }));
     filtered = [...students];
+
+    // Cache the freshly-fetched roster for this grade+section
+    _studentCache[cacheKey] = students.map(s => ({ ...s }));
+    _lastGradeKey           = cacheKey;
 
     // ── Dynamically populate Grade & Section dropdowns ──────────────────────────
     populateGradeSectionFilters(data);
@@ -259,6 +274,9 @@ async function mergeGradesForSubject(subject, quarter) {
 
     // Also load item scores from server
     await loadItemScoresForSubject(subject, quarter, grade, section);
+
+    // Fill att % from attendance DB only for students with no saved att value
+    await _fillMissingAttendance(grade, section);
 
     renderTable();
   } catch (err) {
@@ -731,11 +749,22 @@ async function saveSubjectGradeAssignment(subjectId) {
 //  GRADE SHEET — called when filters change
 // ════════════════════════════════════════
 async function refresh() {
-  const subject = document.getElementById('subjectSel').value;
-  const quarter = document.getElementById('quarterSel').value;
+  const subject  = document.getElementById('subjectSel').value;
+  const quarter  = document.getElementById('quarterSel').value;
+  const grade    = document.getElementById('gradeSel')   ? document.getElementById('gradeSel').value   : '';
+  const section  = document.getElementById('sectionSel') ? document.getElementById('sectionSel').value : '';
+  const gradeKey = grade + '|' + section;
 
-  // Always reload students (in case grade/section filter changed)
-  await loadAllStudents();
+  const gradeOrSectionChanged = gradeKey !== _lastGradeKey;
+
+  if (gradeOrSectionChanged) {
+    // Grade or section changed — must reload the student roster
+    await loadAllStudents();
+  } else {
+    // Only subject or quarter changed — reuse cached roster, reset grades only
+    students.forEach(s => { s.ww = null; s.pt = null; s.qa = null; s.att = null; });
+    filtered = [...students];
+  }
 
   // If a subject is selected, overlay saved grade data
   if (subject) {
@@ -745,6 +774,8 @@ async function refresh() {
     } else {
       await mergeGradesForSubject(subject, quarter);
     }
+  } else {
+    renderTable();
   }
 }
 
@@ -1009,7 +1040,7 @@ function renderTable() {
           <div class="prog-bar"><div class="prog-fill" id="attbar-${i}" style="width:${attVal}%;background:${progColor(attVal)};"></div></div>
           <input class="grade-input" type="number" min="0" max="100" step="0.01"
             value="${s.att !== null ? s.att : ''}" placeholder="—" style="width:52px;margin-left:4px;"
-            oninput="updateGrade(${students.indexOf(s)},'att',this.value)">
+            oninput="updateGrade(${students.indexOf(s)},'att',this.value);">
         </div>
       </td>
       <td><span class="final-grade" id="fg-${i}" style="color:${f !== null ? progColor(f) : 'var(--gray-400)'};">${f !== null ? f.toFixed(1) : '—'}</span></td>
@@ -1243,11 +1274,12 @@ async function loadWeights() {
     const data = await res.json();
     const def  = data.find(w => w.subject === '__default__');
     if (def) {
-      weights = {
-        ww: parseInt(def.written_works_pct)          || 30,
-        pt: parseInt(def.performance_tasks_pct)      || 50,
-        qa: parseInt(def.quarterly_assessment_pct)   || 20,
-      };
+      const wc = components.find(c => c.key === 'ww');
+      const pc = components.find(c => c.key === 'pt');
+      const qc = components.find(c => c.key === 'qa');
+      if (wc) wc.pct = parseInt(def.written_works_pct)        || 30;
+      if (pc) pc.pct = parseInt(def.performance_tasks_pct)    || 50;
+      if (qc) qc.pct = parseInt(def.quarterly_assessment_pct) || 20;
     }
     renderWeights();
     // Re-render grade sheet if already loaded so weights apply correctly
@@ -1298,10 +1330,6 @@ function renderWeights() {
 }
 
 function syncCompLabels() {
-  // Update grade sheet column headers to match renamed components
-  components.forEach(c => {
-    const el = document.getElementById('ww-pct-label'); // handled in renderTable
-  });
   renderTable();
   renderComponentItems();
 }
@@ -1775,6 +1803,67 @@ function setStudentItemScore(studentId, componentKey, itemId, score) {
   if (!studentItemScores[studentId]) studentItemScores[studentId] = {};
   if (!studentItemScores[studentId][componentKey]) studentItemScores[studentId][componentKey] = {};
   studentItemScores[studentId][componentKey][itemId] = score;
+}
+
+// ════════════════════════════════════════
+//  ATTENDANCE SYNC
+// ════════════════════════════════════════
+
+// Fetches att % map { student_id → att_pct } from the attendance DB.
+// Returns null on any error so callers can bail cleanly.
+async function _fetchAttPercent(grade, section) {
+  try {
+    const params = new URLSearchParams({ action: 'att_by_quarter' });
+    if (grade)   params.append('grade',   grade);
+    if (section) params.append('section', section);
+    const res  = await fetch(API + '?' + params, { credentials: 'same-origin' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.error) return null;
+    const map = {};
+    data.forEach(function(r) { map[r.student_id] = r.att_pct; });
+    return map;
+  } catch (_) { return null; }
+}
+
+// Called by mergeGradesForSubject — always refreshes att% from the attendance
+// table so the grades page stays in sync even after the first save.
+async function _fillMissingAttendance(grade, section) {
+  const attMap = await _fetchAttPercent(grade, section);
+  if (!attMap) return;
+  students.forEach(function(s) {
+    // Always apply the live value — not just when att is null.
+    // The old null-guard meant att stopped updating after the first save.
+    if (attMap[s._id] !== undefined) {
+      s.att = attMap[s._id];
+    }
+  });
+  filtered = students.slice();
+}
+
+// Called when the Attendance page broadcasts a save via localStorage.
+// Updates only students whose att % actually changed — manual overrides are
+// kept if the DB value is the same as what the teacher typed.
+// Marks grades dirty so the teacher knows to re-save.
+async function _onAttendanceBroadcast() {
+  const grade   = document.getElementById('gradeSel')   ? document.getElementById('gradeSel').value   : '';
+  const section = document.getElementById('sectionSel') ? document.getElementById('sectionSel').value : '';
+  const attMap  = await _fetchAttPercent(grade, section);
+  if (!attMap) return;
+  let changed = 0;
+  students.forEach(function(s) {
+    const fresh = attMap[s._id];
+    if (fresh !== undefined && s.att !== fresh) {
+      s.att = fresh;
+      changed++;
+    }
+  });
+  if (changed > 0) {
+    filtered = students.slice();
+    hasUnsavedGrades = true;
+    markUnsavedIndicator(true);
+    renderTable();
+  }
 }
 
 // ════════════════════════════════════════

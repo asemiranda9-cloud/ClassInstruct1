@@ -180,6 +180,8 @@ switch ($method) {
             case 'item_scores':      getItemScores($conn);      break;
             case 'subject_grades':   getSubjectGrades($conn);   break;
             case 'distinct_grades':  getDistinctGrades($conn);  break;
+            case 'att_by_quarter':   getAttByQuarter($conn);    break;
+            case 'att_totals':       getAttTotals($conn);       break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
@@ -190,6 +192,7 @@ switch ($method) {
             case 'save_weights':     saveWeights($conn);        break;
             case 'save_gpa':         saveGpaScales($conn);      break;
             case 'save_subject_grades': saveSubjectGrades($conn); break;
+            case 'save_att_record':  saveAttRecord($conn);      break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
@@ -204,6 +207,7 @@ switch ($method) {
         switch ($action) {
             case 'delete_subject':   deleteSubject($conn);      break;
             case 'delete_gpa':       deleteGpaScale($conn);     break;
+            case 'delete_att_record': deleteAttRecord($conn);   break;
             default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
         }
         break;
@@ -276,13 +280,23 @@ function getGrades($conn) {
     $gradeCol   = in_array('grade',     $cols) ? 'grade'     : 'grade_level';
     $sectionCol = in_array('section',   $cols) ? 'section'   : 'section';
 
-    $where = "WHERE s.user_id = $userId AND (s.status IS NULL OR s.status != 'Dropout')";
-    if ($grade)   $where .= " AND s.`$gradeCol`='"   . $conn->real_escape_string($grade)   . "'";
-    if ($section) $where .= " AND s.`$sectionCol`='" . $conn->real_escape_string($section) . "'";
+    // Build parameterised WHERE (column names are safe server-side identifiers)
+    $where  = "WHERE s.user_id = ? AND (s.status IS NULL OR s.status != 'Dropout')";
+    $types  = 'i';
+    $params = [$userId];
 
-    $subjectEsc = $conn->real_escape_string($subject);
-    $quarterEsc = $conn->real_escape_string($quarter);
+    if ($grade) {
+        $where   .= " AND s.`$gradeCol` = ?";
+        $types   .= 's';
+        $params[] = $grade;
+    }
+    if ($section) {
+        $where   .= " AND s.`$sectionCol` = ?";
+        $types   .= 's';
+        $params[] = $section;
+    }
 
+    // subject and quarter go into the LEFT JOIN condition — bind separately
     $sql = "
         SELECT s.id,
                s.`$sidCol`     AS student_id,
@@ -292,14 +306,23 @@ function getGrades($conn) {
                g.written_works, g.performance_tasks, g.quarterly_assessment,
                g.attendance, g.final_grade
         FROM students s
-        LEFT JOIN grades g ON g.student_id = s.id AND g.user_id = $userId
-                          AND g.subject = '$subjectEsc'
-                          AND g.quarter = '$quarterEsc'
+        LEFT JOIN grades g ON g.student_id = s.id AND g.user_id = ?
+                          AND g.subject = ?
+                          AND g.quarter = ?
         $where
         ORDER BY s.`$nameCol` ASC
     ";
-    $result = $conn->query($sql);
-    if (!$result) { http_response_code(500); echo json_encode(['error' => $conn->error]); return; }
+    // userId in JOIN + optional grade/section in WHERE
+    $allTypes  = 'i' . 'ss' . $types;
+    $allParams = array_merge([$userId], [$subject, $quarter], $params);
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) { http_response_code(500); echo json_encode(['error' => $conn->error]); return; }
+    $stmt->bind_param($allTypes, ...$allParams);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+
     $rows = [];
     while ($r = $result->fetch_assoc()) $rows[] = $r;
     echo json_encode($rows);
@@ -346,25 +369,36 @@ function getSummary($conn) {
     $quarter = $_GET['quarter'] ?? 'Q1';
     $grade   = $_GET['grade']   ?? '';
     $section = $_GET['section'] ?? '';
-    $subjectEsc = $conn->real_escape_string($subject);
-    $quarterEsc = $conn->real_escape_string($quarter);
 
-    // Count total students (with optional filters)
-    $studentWhere = "WHERE 1=1";
-    if ($grade)   $studentWhere .= " AND grade='"   . $conn->real_escape_string($grade)   . "'";
-    if ($section) $studentWhere .= " AND section='" . $conn->real_escape_string($section) . "'";
-    $totalRes = $conn->query("SELECT COUNT(*) as cnt FROM students $studentWhere");
-    $totalRow = $totalRes->fetch_assoc();
-    $totalStudents = (int)$totalRow['cnt'];
+    // Total students (optional grade/section filter) — parameterised
+    $stuSql    = "SELECT COUNT(*) as cnt FROM students WHERE 1=1";
+    $stuTypes  = '';
+    $stuParams = [];
+    if ($grade)   { $stuSql .= " AND grade = ?";   $stuTypes .= 's'; $stuParams[] = $grade; }
+    if ($section) { $stuSql .= " AND section = ?"; $stuTypes .= 's'; $stuParams[] = $section; }
 
-    $result = $conn->query("
-        SELECT g.final_grade, g.written_works, g.performance_tasks, g.quarterly_assessment
-        FROM grades g
-        JOIN students s ON s.id = g.student_id
-        WHERE g.subject='$subjectEsc' AND g.quarter='$quarterEsc' AND g.final_grade IS NOT NULL
-        " . ($grade   ? " AND s.grade='"   . $conn->real_escape_string($grade)   . "'" : '')
-          . ($section ? " AND s.section='" . $conn->real_escape_string($section) . "'" : '')
-    );
+    $stuStmt = $conn->prepare($stuSql);
+    if ($stuTypes) $stuStmt->bind_param($stuTypes, ...$stuParams);
+    $stuStmt->execute();
+    $totalStudents = (int)$stuStmt->get_result()->fetch_assoc()['cnt'];
+    $stuStmt->close();
+
+    // Grade rows — subject, quarter, and optional grade/section all parameterised
+    $grSql    = "SELECT g.final_grade, g.written_works, g.performance_tasks, g.quarterly_assessment
+                 FROM grades g
+                 JOIN students s ON s.id = g.student_id
+                 WHERE g.subject = ? AND g.quarter = ? AND g.final_grade IS NOT NULL";
+    $grTypes  = 'ss';
+    $grParams = [$subject, $quarter];
+    if ($grade)   { $grSql .= " AND s.grade = ?";   $grTypes .= 's'; $grParams[] = $grade; }
+    if ($section) { $grSql .= " AND s.section = ?"; $grTypes .= 's'; $grParams[] = $section; }
+
+    $grStmt = $conn->prepare($grSql);
+    $grStmt->bind_param($grTypes, ...$grParams);
+    $grStmt->execute();
+    $result = $grStmt->get_result();
+    $grStmt->close();
+
     $rows   = [];
     $grades = [];
     while ($r = $result->fetch_assoc()) {
@@ -432,23 +466,40 @@ function getItemScores($conn) {
         echo json_encode(['error' => 'Subject required']); return;
     }
 
-    $subjectEsc = $conn->real_escape_string($subject);
-    $quarterEsc = $conn->real_escape_string($quarter);
+    // Build WHERE with optional grade/section — values are parameterised
+    $where  = "WHERE 1=1";
+    $types  = '';
+    $params = [];
+    if ($grade) {
+        $where   .= " AND grade = ?";
+        $types   .= 's';
+        $params[] = $grade;
+    }
+    if ($section) {
+        $where   .= " AND section = ?";
+        $types   .= 's';
+        $params[] = $section;
+    }
 
-    $studentWhere = "WHERE 1=1";
-    if ($grade)   $studentWhere .= " AND grade='"   . $conn->real_escape_string($grade)   . "'";
-    if ($section) $studentWhere .= " AND section='" . $conn->real_escape_string($section) . "'";
-
+    // subject and quarter go into the LEFT JOIN — bind at the front
     $sql = "
         SELECT s.id as student_id, gis.component_key, gis.item_name, gis.item_max_score, gis.score
         FROM students s
-        LEFT JOIN grade_item_scores gis ON gis.student_id = s.id AND gis.subject='$subjectEsc' AND gis.quarter='$quarterEsc'
-        $studentWhere
+        LEFT JOIN grade_item_scores gis ON gis.student_id = s.id
+                                       AND gis.subject = ?
+                                       AND gis.quarter = ?
+        $where
         ORDER BY s.full_name ASC, gis.component_key ASC, gis.item_name ASC
     ";
+    $allTypes  = 'ss' . $types;
+    $allParams = array_merge([$subject, $quarter], $params);
 
-    $result = $conn->query($sql);
-    if (!$result) { http_response_code(500); echo json_encode(['error' => $conn->error]); return; }
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) { http_response_code(500); echo json_encode(['error' => $conn->error]); return; }
+    $stmt->bind_param($allTypes, ...$allParams);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
 
     $rows = [];
     while ($r = $result->fetch_assoc()) $rows[] = $r;
@@ -684,4 +735,262 @@ function saveSubjectGrades($conn) {
     }
     $stmt->close();
     echo json_encode(['success' => true, 'saved' => $saved]);
+}
+
+// ── GET att_by_quarter — compute per-student attendance % from actual recorded days ──
+// ?action=att_by_quarter[&grade=...&section=...]
+// Denominator = total distinct days that have ANY attendance record for this section.
+// No school_calendar dependency — works for today, any day, any range.
+// Returns [{student_id, att_pct, attended, total_days}]
+function getAttByQuarter($conn) {
+    global $userId;
+    $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
+    $section = $conn->real_escape_string($_GET['section'] ?? '');
+
+    // Fetch students for this grade/section
+    $where = "WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout')";
+    if ($grade)   $where .= " AND grade = '$grade'";
+    if ($section) $where .= " AND section = '$section'";
+
+    $stuResult = $conn->query("SELECT id FROM students $where");
+    if (!$stuResult) { echo json_encode(['error' => $conn->error]); return; }
+
+    $studentIds = [];
+    while ($r = $stuResult->fetch_assoc()) $studentIds[] = (int)$r['id'];
+
+    if (empty($studentIds)) { echo json_encode([]); return; }
+
+    $idList = implode(',', $studentIds);
+
+    // Find all distinct dates that have attendance records for ANY of these students
+    // This naturally covers only the days the teacher has actually taken attendance
+    $datesResult = $conn->query(
+        "SELECT DISTINCT date FROM attendance
+         WHERE student_id IN ($idList)
+         ORDER BY date ASC"
+    );
+    if (!$datesResult) { echo json_encode(['error' => $conn->error]); return; }
+
+    $recordedDates = [];
+    while ($r = $datesResult->fetch_assoc()) $recordedDates[] = $r['date'];
+    $totalDays = count($recordedDates);
+
+    if ($totalDays === 0) {
+        // No attendance records yet — return 0% for everyone
+        $rows = [];
+        foreach ($studentIds as $sid) {
+            $rows[] = ['student_id' => $sid, 'att_pct' => 0.0, 'attended' => 0, 'total_days' => 0];
+        }
+        echo json_encode($rows);
+        return;
+    }
+
+    $escapedDates = array_map(function($d) use ($conn) { return "'" . $conn->real_escape_string($d) . "'"; }, $recordedDates);
+    $dateList = implode(',', $escapedDates);
+
+    // Count how many of those recorded days each student was present or late
+    $atResult = $conn->query(
+        "SELECT student_id,
+                SUM(status IN ('present','late')) AS attended
+         FROM attendance
+         WHERE student_id IN ($idList)
+           AND date IN ($dateList)
+         GROUP BY student_id"
+    );
+    if (!$atResult) { echo json_encode(['error' => $conn->error]); return; }
+
+    $attMap = [];
+    while ($r = $atResult->fetch_assoc()) {
+        $attMap[(int)$r['student_id']] = (int)$r['attended'];
+    }
+
+    $rows = [];
+    foreach ($studentIds as $sid) {
+        $attended = $attMap[$sid] ?? 0;
+        $rows[] = [
+            'student_id' => $sid,
+            'att_pct'    => min(100.0, round($attended / $totalDays * 100, 2)),
+            'attended'   => $attended,
+            'total_days' => $totalDays,
+        ];
+    }
+
+    echo json_encode($rows);
+}
+
+// ── GET att_totals ─────────────────────────────────────────────────────────────
+// Returns per-student P/L/A totals from all recorded attendance, plus the
+// student's status for a specific date (for the Grades → Attendance tab).
+// ?action=att_totals[&grade=...&section=...&date=YYYY-MM-DD]
+function getAttTotals($conn) {
+    global $userId;
+    $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
+    $section = $conn->real_escape_string($_GET['section'] ?? '');
+    $date    = $conn->real_escape_string($_GET['date']    ?? date('Y-m-d'));
+
+    // 1. Fetch students scoped to this teacher
+    $where = "WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout')";
+    if ($grade)   $where .= " AND grade = '$grade'";
+    if ($section) $where .= " AND section = '$section'";
+
+    $stuResult = $conn->query(
+        "SELECT id, full_name, grade, section FROM students $where ORDER BY full_name ASC"
+    );
+    if (!$stuResult) { echo json_encode(['error' => $conn->error]); return; }
+
+    $students   = [];
+    $studentIds = [];
+    while ($r = $stuResult->fetch_assoc()) {
+        $sid = (int)$r['id'];
+        $students[$sid] = [
+            'id'           => $sid,
+            'full_name'    => $r['full_name'],
+            'grade'        => $r['grade']   ?? '',
+            'section'      => $r['section'] ?? '',
+            'present'      => 0,
+            'late'         => 0,
+            'absent'       => 0,
+            'total_days'   => 0,
+            'att_pct'      => 0.0,
+            'today_status' => null,
+        ];
+        $studentIds[] = $sid;
+    }
+
+    if (empty($studentIds)) { echo json_encode([]); return; }
+    $idList = implode(',', $studentIds);
+
+    // 2. All-time P/L/A totals per student
+    $totResult = $conn->query(
+        "SELECT student_id,
+                SUM(status = 'present') AS p_cnt,
+                SUM(status = 'late')    AS l_cnt,
+                SUM(status = 'absent')  AS a_cnt,
+                COUNT(*)                AS total
+         FROM attendance
+         WHERE student_id IN ($idList)
+         GROUP BY student_id"
+    );
+    if ($totResult) {
+        while ($r = $totResult->fetch_assoc()) {
+            $sid = (int)$r['student_id'];
+            if (isset($students[$sid])) {
+                $students[$sid]['present'] = (int)$r['p_cnt'];
+                $students[$sid]['late']    = (int)$r['l_cnt'];
+                $students[$sid]['absent']  = (int)$r['a_cnt'];
+            }
+        }
+    }
+
+    // 3. Total distinct recorded days for this group
+    $daysResult = $conn->query(
+        "SELECT COUNT(DISTINCT date) AS total_days FROM attendance WHERE student_id IN ($idList)"
+    );
+    $totalDays = 0;
+    if ($daysResult && ($dr = $daysResult->fetch_assoc())) {
+        $totalDays = (int)$dr['total_days'];
+    }
+
+    // 4. Today's (selected date) status per student
+    $todayResult = $conn->query(
+        "SELECT student_id, status FROM attendance
+         WHERE student_id IN ($idList) AND date = '$date'"
+    );
+    if ($todayResult) {
+        while ($r = $todayResult->fetch_assoc()) {
+            $sid = (int)$r['student_id'];
+            if (isset($students[$sid])) {
+                $students[$sid]['today_status'] = $r['status'];
+            }
+        }
+    }
+
+    // 5. Compute att%
+    foreach ($students as &$s) {
+        $s['total_days'] = $totalDays;
+        $attended        = $s['present'] + $s['late'];
+        $s['att_pct']    = $totalDays > 0 ? round($attended / $totalDays * 100, 1) : 0.0;
+    }
+    unset($s);
+
+    echo json_encode(array_values($students));
+}
+
+
+// ── POST save_att_record ───────────────────────────────────────────────────────
+// Body: { student_id, date, status }
+// Upserts a single attendance record in the attendance table.
+function saveAttRecord($conn) {
+    global $userId;
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
+
+    $studentId = (int)($data['student_id'] ?? 0);
+    $date      = $conn->real_escape_string($data['date']   ?? '');
+    $status    = $conn->real_escape_string($data['status'] ?? '');
+
+    if (!$studentId || !$date || !in_array($status, ['present', 'late', 'absent'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'student_id, date (YYYY-MM-DD), and status (present|late|absent) are required']);
+        return;
+    }
+
+    // Verify this student belongs to the current teacher
+    $check = $conn->query("SELECT id FROM students WHERE id = $studentId AND user_id = $userId LIMIT 1");
+    if (!$check || $check->num_rows === 0) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden']);
+        return;
+    }
+
+    $stmt = $conn->prepare(
+        "INSERT INTO attendance (user_id, student_id, date, status)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE status = VALUES(status), user_id = VALUES(user_id)"
+    );
+    $stmt->bind_param('iiss', $userId, $studentId, $date, $status);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'student_id' => $studentId, 'date' => $date, 'status' => $status]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => $stmt->error]);
+    }
+    $stmt->close();
+}
+
+
+// ── DELETE delete_att_record ──────────────────────────────────────────────────
+// Query params: ?action=delete_att_record&student_id=N&date=YYYY-MM-DD
+function deleteAttRecord($conn) {
+    global $userId;
+    $studentId = (int)($_GET['student_id'] ?? 0);
+    $date      = $conn->real_escape_string($_GET['date'] ?? '');
+
+    if (!$studentId || !$date) {
+        http_response_code(400);
+        echo json_encode(['error' => 'student_id and date query params required']);
+        return;
+    }
+
+    // Verify student belongs to current teacher
+    $check = $conn->query("SELECT id FROM students WHERE id = $studentId AND user_id = $userId LIMIT 1");
+    if (!$check || $check->num_rows === 0) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden']);
+        return;
+    }
+
+    $stmt = $conn->prepare(
+        "DELETE FROM attendance WHERE user_id = ? AND student_id = ? AND date = ?"
+    );
+    $stmt->bind_param('iis', $userId, $studentId, $date);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'deleted' => $stmt->affected_rows]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => $stmt->error]);
+    }
+    $stmt->close();
 }

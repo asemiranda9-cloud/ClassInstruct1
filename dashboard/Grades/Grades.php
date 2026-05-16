@@ -135,7 +135,9 @@
                   <th style="width:90px;">Written Works<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;" id="ww-pct-label">30%</small></th>
                   <th style="width:90px;">Perf. Tasks<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;" id="pt-pct-label">50%</small></th>
                   <th style="width:90px;">Assessment<br><small style="font-weight:400;color:var(--gray-400);text-transform:none;letter-spacing:0;" id="qa-pct-label">20%</small></th>
-                  <th style="width:100px;">Attendance</th>
+                  <th style="width:110px;">Attendance<br>
+                    <span style="font-size:10px;font-weight:400;color:var(--gray-400);">auto-synced</span>
+                  </th>
                   <th style="width:70px;">Final</th>
                   <th style="width:140px;">Descriptor</th>
                   <th style="width:65px;">GPA</th>

@@ -43,6 +43,10 @@ if (!$userId) {
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
+// Read POST body once — file_get_contents('php://input') is a one-shot stream.
+$_postBody = ($method === 'POST' || $method === 'PUT') ? file_get_contents('php://input') : null;
+$_postData = $_postBody ? json_decode($_postBody, true) : null;
+
 switch ($method) {
     case 'GET':
         switch ($action) {
@@ -57,8 +61,12 @@ switch ($method) {
                 echo json_encode(['error' => 'Unknown action. Use: sections | students | attendance | summary | schoolCalendar']);
         }
         break;
-    case 'POST':   saveAttendance($conn);   break;
-    case 'PUT':    updateAttendance($conn); break;
+    case 'POST':
+        $postAction = $_postData['action'] ?? '';
+        if ($postAction === 'batch_save') batchSave($conn, $_postData);
+        else saveAttendance($conn, $_postData);
+        break;
+    case 'PUT':    updateAttendance($conn, $_postData); break;
     case 'DELETE': deleteAttendance($conn); break;
     default:
         http_response_code(405);
@@ -109,25 +117,36 @@ function getStudents($conn) {
     $grade   = $_GET['grade']   ?? '';
     $section = $_GET['section'] ?? '';
 
-    $sql  = "SELECT id, student_id, full_name, gender, grade, section FROM students WHERE user_id = $userId AND (status IS NULL OR status != 'Dropout')";
-    $args = [];
+    // Build parameterised WHERE clause
+    $sql    = "SELECT id, student_id, full_name, gender, grade, section
+               FROM students
+               WHERE user_id = ? AND (status IS NULL OR status != 'Dropout')";
+    $types  = 'i';
+    $params = [$userId];
 
     if ($grade !== '') {
-        $g = $conn->real_escape_string($grade);
-        $sql .= " AND grade = '$g'";
+        $sql    .= " AND grade = ?";
+        $types  .= 's';
+        $params[]= $grade;
     }
     if ($section !== '') {
-        $s = $conn->real_escape_string($section);
-        $sql .= " AND section = '$s'";
+        $sql    .= " AND section = ?";
+        $types  .= 's';
+        $params[]= $section;
     }
     $sql .= " ORDER BY full_name ASC";
 
-    $result = $conn->query($sql);
-    if (!$result) {
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
         http_response_code(500);
         echo json_encode(['error' => $conn->error]);
         return;
     }
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+
     $rows = [];
     while ($r = $result->fetch_assoc()) $rows[] = $r;
     echo json_encode($rows);
@@ -145,8 +164,8 @@ function getStudents($conn) {
 // ═══════════════════════════════════════════════
 function getAttendance($conn) {
     global $userId;
-    $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
-    $section = $conn->real_escape_string($_GET['section'] ?? '');
+    $grade   = trim($_GET['grade']   ?? '');
+    $section = trim($_GET['section'] ?? '');
 
     // Accept start/end (week view) OR fall back to year/month (legacy)
     if (!empty($_GET['start']) && !empty($_GET['end'])) {
@@ -178,20 +197,34 @@ function getAttendance($conn) {
     // Fetch school-day counts per quarter
     $schoolDays = getSchoolDaysPerQuarter($conn);
 
-    $where = "WHERE s.user_id = $userId AND (s.status IS NULL OR s.status != 'Dropout')";
-    if ($grade)   $where .= " AND s.grade = '$grade'";
-    if ($section) $where .= " AND s.section = '$section'";
+    // Build parameterised student query
+    $stuSql    = "SELECT s.id, s.full_name, s.gender
+                  FROM students s
+                  WHERE s.user_id = ? AND (s.status IS NULL OR s.status != 'Dropout')";
+    $stuTypes  = 'i';
+    $stuParams = [$userId];
+    if ($grade) {
+        $stuSql    .= " AND s.grade = ?";
+        $stuTypes  .= 's';
+        $stuParams[]= $grade;
+    }
+    if ($section) {
+        $stuSql    .= " AND s.section = ?";
+        $stuTypes  .= 's';
+        $stuParams[]= $section;
+    }
+    $stuSql .= " ORDER BY s.full_name ASC";
 
-    $result = $conn->query(
-        "SELECT s.id, s.full_name, s.gender
-         FROM students s $where
-         ORDER BY s.full_name ASC"
-    );
-    if (!$result) {
+    $stuStmt = $conn->prepare($stuSql);
+    if (!$stuStmt) {
         http_response_code(500);
         echo json_encode(['error' => $conn->error]);
         return;
     }
+    $stuStmt->bind_param($stuTypes, ...$stuParams);
+    $stuStmt->execute();
+    $result = $stuStmt->get_result();
+    $stuStmt->close();
 
     $students   = [];
     $studentIds = [];
@@ -467,8 +500,8 @@ function getSummary($conn) {
 function getMonthlyReport($conn) {
     $year   = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
     $month  = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
-    $grade   = $conn->real_escape_string($_GET['grade']   ?? '');
-    $section = $conn->real_escape_string($_GET['section'] ?? '');
+    $grade   = trim($_GET['grade']   ?? '');
+    $section = trim($_GET['section'] ?? '');
 
     ensureSchoolCalendar($conn);
 
@@ -499,15 +532,34 @@ function getMonthlyReport($conn) {
         $cur->modify('+1 day');
     }
 
-    // Filter students by grade/section (excluding dropouts)
-    $where = "WHERE (status IS NULL OR status != 'Dropout')";
-    if ($grade)   $where .= " AND grade = '$grade'";
-    if ($section) $where .= " AND section = '$section'";
+    // Filter students by grade/section (excluding dropouts) — parameterised
+    $stuSql    = "SELECT id, student_id, full_name, grade, section
+                  FROM students
+                  WHERE (status IS NULL OR status != 'Dropout')";
+    $stuTypes  = '';
+    $stuParams = [];
+    if ($grade) {
+        $stuSql    .= " AND grade = ?";
+        $stuTypes  .= 's';
+        $stuParams[]= $grade;
+    }
+    if ($section) {
+        $stuSql    .= " AND section = ?";
+        $stuTypes  .= 's';
+        $stuParams[]= $section;
+    }
+    $stuSql .= " ORDER BY full_name ASC";
 
-    $stuResult = $conn->query(
-        "SELECT id, student_id, full_name, grade, section
-         FROM students $where ORDER BY full_name ASC"
-    );
+    $stuStmt = $conn->prepare($stuSql);
+    if (!$stuStmt) {
+        http_response_code(500);
+        echo json_encode(['error' => $conn->error]);
+        return;
+    }
+    if ($stuTypes) $stuStmt->bind_param($stuTypes, ...$stuParams);
+    $stuStmt->execute();
+    $stuResult = $stuStmt->get_result();
+    $stuStmt->close();
     $students = [];
     $studentIds = [];
     while ($r = $stuResult->fetch_assoc()) {
@@ -610,7 +662,7 @@ function getMonthlyReport($conn) {
              FROM students s
              LEFT JOIN attendance a ON a.student_id = s.id
                                    AND a.date BETWEEN '$fromDate' AND '$toDate'
-             $where
+             
              GROUP BY s.grade, s.section
              ORDER BY s.grade ASC, s.section ASC"
         );
@@ -649,17 +701,77 @@ function getMonthlyReport($conn) {
 
 
 // ═══════════════════════════════════════════════
+//  POST — batch upsert/delete (single transaction)
+//  Body: { action: 'batch_save', changes: [{studentId, date, status}] }
+//  status = 'present'|'late'|'absent' to upsert, 'none' to delete.
+// ═══════════════════════════════════════════════
+function batchSave($conn, $data) {
+    global $userId;
+    $changes = $data['changes'] ?? [];
+    if (!is_array($changes) || !count($changes)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'changes array required']);
+        return;
+    }
+
+    $conn->begin_transaction();
+
+    $upsertStmt = $conn->prepare(
+        "INSERT INTO attendance (user_id, student_id, date, status)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE status = VALUES(status)"
+    );
+    $deleteStmt = $conn->prepare(
+        "DELETE FROM attendance WHERE user_id = ? AND student_id = ? AND date = ?"
+    );
+
+    $saved  = 0;
+    $failed = 0;
+
+    foreach ($changes as $item) {
+        $studentId = (int)($item['studentId'] ?? 0);
+        $date      = $item['date']   ?? '';
+        $status    = $item['status'] ?? '';
+
+        if (!$studentId || !$date) { $failed++; continue; }
+
+        if ($status === 'none') {
+            $deleteStmt->bind_param('iis', $userId, $studentId, $date);
+            $deleteStmt->execute() ? $saved++ : $failed++;
+        } elseif (in_array($status, ['present', 'late', 'absent'])) {
+            $upsertStmt->bind_param('iiss', $userId, $studentId, $date, $status);
+            $upsertStmt->execute() ? $saved++ : $failed++;
+        } else {
+            $failed++;
+        }
+    }
+
+    if ($failed === 0) {
+        $conn->commit();
+    } else {
+        // Partial failures → still commit successes but report counts
+        $conn->commit();
+    }
+
+    $upsertStmt->close();
+    $deleteStmt->close();
+
+    echo json_encode(['saved' => $saved, 'failed' => $failed]);
+}
+
+
+// ═══════════════════════════════════════════════
 //  POST — upsert single attendance record
 //  Body: { student_id, date, status }
 // ═══════════════════════════════════════════════
-function saveAttendance($conn) {
+function saveAttendance($conn, $data = null) {
     global $userId;
-    $data = json_decode(file_get_contents('php://input'), true);
+    if ($data === null) $data = json_decode(file_get_contents('php://input'), true);
     if (!$data) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); return; }
 
     $studentId = (int)($data['student_id'] ?? 0);
-    $date      = $conn->real_escape_string($data['date']   ?? '');
-    $status    = $conn->real_escape_string($data['status'] ?? '');
+    $date      = $data['date']   ?? '';
+    $status    = $data['status'] ?? '';
 
     if (!$studentId || !$date || !in_array($status, ['present','late','absent'])) {
         http_response_code(400);
@@ -688,8 +800,8 @@ function saveAttendance($conn) {
 //  PUT — bulk upsert for a whole day
 //  Body: { records: [{student_id, date, status}] }
 // ═══════════════════════════════════════════════
-function updateAttendance($conn) {
-    $data = json_decode(file_get_contents('php://input'), true);
+function updateAttendance($conn, $data = null) {
+    if ($data === null) $data = json_decode(file_get_contents('php://input'), true);
     if (!isset($data['records']) || !is_array($data['records'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Body must have a records array']);
