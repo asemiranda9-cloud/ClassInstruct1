@@ -329,61 +329,92 @@ body {
    RIGHT SIDEBAR
    ============================================ */
 .classinstruct-AI .right-sidebar {
-  width: 96px;
-  min-width: 96px;
+  width: 220px;
+  min-width: 220px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   flex-shrink: 0;
-  transition: width 0.2s;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+}
+
+/* Spacer so fixed sidebar doesn't overlap the chat area */
+.classinstruct-AI .content-wrapper {
+  padding-right: calc(220px + 24px);
 }
 
 .classinstruct-AI .sidebar-actions {
   background: var(--card-bg);
   border: 0.5px solid var(--card-border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  padding: 14px 10px;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  padding: 10px 10px 12px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
+  gap: 4px;
   transition: background 0.25s, border-color 0.25s;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Section label inside sidebar */
+.classinstruct-AI .sb-section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 6px 8px 2px;
 }
 
 .classinstruct-AI .icon-button {
-  width: 72px;
-  height: 68px;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
   border-radius: 10px;
-  border: none;
-  background: var(--input-bg);
+  border: 0.5px solid transparent;
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   font-family: inherit;
-  border: 0.5px solid var(--card-border);
 }
 
 .classinstruct-AI .icon-button:hover {
-  background: var(--sb-item-hover-bg);
+  background: var(--sb-item-hover-bg, rgba(108,99,255,0.08));
   color: #6c63ff;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-  border-color: rgba(108, 99, 255, 0.2);
+  border-color: rgba(108, 99, 255, 0.15);
 }
 
+.classinstruct-AI .icon-button svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+.classinstruct-AI .icon-button:hover svg { opacity: 1; }
+
 .classinstruct-AI .icon-button .icon-label {
-  font-size: 0.62rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   line-height: 1.2;
   letter-spacing: 0.01em;
   color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Collapsed state */
@@ -392,12 +423,29 @@ body {
   min-width: 56px;
 }
 
-.classinstruct-AI .right-sidebar.collapsed .icon-button {
-  width: 42px;
-  height: 42px;
+.classinstruct-AI .right-sidebar.collapsed ~ * .content-wrapper,
+.classinstruct-AI:has(.right-sidebar.collapsed) .content-wrapper {
+  padding-right: calc(56px + 24px);
 }
 
-.classinstruct-AI .right-sidebar.collapsed .icon-label {
+.classinstruct-AI .right-sidebar.collapsed .icon-button {
+  justify-content: center;
+  padding: 0;
+  min-height: 40px;
+}
+
+.classinstruct-AI .right-sidebar.collapsed .icon-label,
+.classinstruct-AI .right-sidebar.collapsed .sb-section-label {
+  display: none;
+}
+
+.classinstruct-AI .right-sidebar.collapsed .sidebar-actions {
+  align-items: center;
+  padding: 10px 6px;
+}
+
+.classinstruct-AI .right-sidebar.collapsed #hist-sidebar,
+.classinstruct-AI .right-sidebar.collapsed .hist-divider {
   display: none;
 }
 
@@ -437,6 +485,7 @@ input:focus-visible {
   }
   .classinstruct-AI .content-wrapper {
     padding: 14px;
+    padding-right: 14px; /* reset the fixed sidebar spacer */
   }
 }
 
