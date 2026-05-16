@@ -113,6 +113,14 @@ function dayKey(y, m, d) {
   return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
+// ── Returns true if the given date is strictly before today ──
+function isPastDate(y, m, d) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(y, m, d);
+  return target < today;
+}
+
 function saveEntries() { localStorage.setItem('ci_dayEntries', JSON.stringify(dayEntries)); }
 
 // ── Returns days in a given month/year (leap-year aware) ──
@@ -136,6 +144,8 @@ document.getElementById('typeChips').addEventListener('click', e => {
 
 // ── Modal ──
 function openModal(day) {
+  // ── Restriction: past dates are read-only, no modal ──
+  if (isPastDate(curYear, curMonthIdx, day)) return;
   modalKey = dayKey(curYear, curMonthIdx, day);
   document.getElementById('modalDayBig').textContent = day;
   document.getElementById('modalMonthLbl').textContent = months[curMonthIdx].name + ' ' + curYear;
@@ -184,6 +194,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 function addEntry() {
   const title = document.getElementById('entryTitle').value.trim();
   if (!title) { document.getElementById('entryTitle').focus(); return; }
+  // Extra safety: reject if modalKey resolves to a past date
+  if (modalKey) {
+    const [y, m, d] = modalKey.split('-').map(Number);
+    if (isPastDate(y, m - 1, d)) return;
+  }
   const time = document.getElementById('entryTime').value;
   const note = document.getElementById('entryNote').value.trim();
   if (!dayEntries[modalKey]) dayEntries[modalKey] = [];
@@ -360,6 +375,10 @@ function renderCalendar() {
     if (entries.length) d.classList.add('has-event');
     if (phHol) d.classList.add(phHol.type === 'regular' ? 'ph-regular' : 'ph-special');
 
+    // ── Past-date restriction ──
+    const past = isPastDate(curYear, curMonthIdx, day);
+    if (past) d.classList.add('past-day');
+
     // dots: PH holiday dot first, then user entry dots
     const uniqueTypes = [...new Set(entries.map(e => e.type))];
     let dots = '';
@@ -386,8 +405,14 @@ function renderCalendar() {
     d.setAttribute('role', 'button');
     d.setAttribute('tabindex', '0');
     d.setAttribute('aria-label', `${monthName} ${day}, ${curYear}${holLabel}${entLabel}`);
-    d.addEventListener('click', () => openModal(day));
-    d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openModal(day); });
+    if (!past) {
+      d.addEventListener('click', () => openModal(day));
+      d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openModal(day); });
+    } else {
+      d.setAttribute('aria-disabled', 'true');
+      d.setAttribute('tabindex', '-1');
+      d.title = 'Past date — cannot add events';
+    }
     container.appendChild(d);
   }
 

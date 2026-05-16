@@ -307,6 +307,31 @@ body {
   background: linear-gradient(145deg, var(--cal-primary) 0%, #a78bfa 100%);
 }
 
+/* ── Past dates — read-only, no interaction ── */
+.cal-day.past-day {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--input-bg);
+  border-color: var(--border);
+  filter: grayscale(0.4);
+}
+
+.cal-day.past-day .day-num {
+  color: var(--text-muted);
+}
+
+/* past-day with has-event: still show it existed, but muted */
+.cal-day.past-day.has-event {
+  background: var(--input-bg);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .cal-day.past-day {
+  opacity: 0.28;
+  background: var(--main-bg);
+}
+
 .day-num {
   font-weight: 600;
   font-size: 1.05rem;

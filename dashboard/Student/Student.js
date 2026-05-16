@@ -1608,11 +1608,128 @@ function clearBulkFields() {
   else if (dob) dob.value = '';
 }
 
+// ── Validation warning modal for missing required fields ─────────────
+function _showImportValidationWarning(incomplete) {
+  // Remove any previous instance
+  const old = document.getElementById('importValidationOverlay');
+  if (old) old.remove();
+
+  const rows = incomplete.map(({ s, missing }) => {
+    const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || '(No name)';
+    const badges = missing.map(f => {
+      const label = f === 'studentId' ? 'LRN / ID' : f === 'grade' ? 'Grade Level' : f === 'section' ? 'Section' : f;
+      return `<span style="
+        display:inline-block;background:rgba(239,68,68,0.12);color:#dc2626;
+        border:1px solid rgba(239,68,68,0.3);border-radius:5px;
+        font-size:0.72rem;font-weight:700;padding:1px 7px;margin-left:4px;letter-spacing:0.02em
+      ">${label}</span>`;
+    }).join('');
+    return `<li style="
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;
+      padding:8px 0;border-bottom:1px solid var(--bg-input,#f1f5f9)
+    ">
+      <span style="font-size:0.85rem;color:var(--text-primary,#1e293b);font-weight:500">${esc(name)}</span>
+      <span>${badges}</span>
+    </li>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'importValidationOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    animation:fadeIn 150ms ease
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background:var(--bg-card,#fff);border-radius:16px;width:100%;max-width:520px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;
+      animation:slideUp 200ms cubic-bezier(0.34,1.56,0.64,1)
+    ">
+      <!-- Header -->
+      <div style="
+        display:flex;align-items:center;gap:12px;
+        padding:20px 24px 16px;border-bottom:1px solid var(--bg-input,#f1f5f9)
+      ">
+        <div style="
+          width:40px;height:40px;border-radius:10px;flex-shrink:0;
+          background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center
+        ">
+          <svg width="22" height="22" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text-primary,#1e293b)">
+            Required Fields Missing
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-secondary,#64748b);margin-top:2px">
+            ${incomplete.length} student${incomplete.length > 1 ? 's' : ''} ${incomplete.length > 1 ? 'are' : 'is'} missing required information
+          </div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:16px 24px;max-height:280px;overflow-y:auto">
+        <p style="font-size:0.82rem;color:var(--text-secondary,#64748b);margin:0 0 10px">
+          The following students are missing <strong>LRN / ID</strong>, <strong>Grade Level</strong>, or <strong>Section</strong>.
+          Please fill in all required fields before importing.
+        </p>
+        <ul style="list-style:none;margin:0;padding:0">${rows}</ul>
+      </div>
+
+      <!-- Footer — Go Back only, no bypass allowed -->
+      <div style="
+        display:flex;justify-content:flex-end;
+        padding:14px 24px 20px;border-top:1px solid var(--bg-input,#f1f5f9);background:var(--bg-body,#f8fafc)
+      ">
+        <button onclick="document.getElementById('importValidationOverlay').remove()" style="
+          border:1px solid var(--bg-input,#e2e8f0);background:var(--bg-card,#fff);color:var(--text-primary,#1e293b);
+          border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer
+        ">
+          ← Go Back &amp; Fix
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  // No backdrop-click dismissal — user must click the button
+}
+
 // ── Commit (save to DB) ───────────────────────────────────────────────
 async function _commitImport() {
   const toImport = _importStudents.filter(s => s.selected);
   if (!toImport.length) {
     toast('No students selected to import', 'danger'); return;
+  }
+
+  // ── Validate required fields ──────────────────────────────────────
+  const incomplete = toImport.reduce((acc, s) => {
+    const missing = [];
+    if (!s.studentId || !String(s.studentId).trim()) missing.push('studentId');
+    if (!s.grade     || !String(s.grade).trim())     missing.push('grade');
+    if (!s.section   || !String(s.section).trim())   missing.push('section');
+    if (missing.length) acc.push({ s, missing });
+    return acc;
+  }, []);
+
+  if (incomplete.length > 0) {
+    _showImportValidationWarning(incomplete);
+    return;
+  }
+
+  // No issues — proceed directly
+  await _runImport(toImport);
+}
+
+// ── Shared import executor ────────────────────────────────────────────
+async function _runImport(toImport) {
+  if (!toImport.length) {
+    toast('No valid students to import after filtering', 'danger'); return;
   }
 
   const btn = document.getElementById('importActionBtn');
