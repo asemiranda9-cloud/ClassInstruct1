@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Log – ClassInstruct</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../sidebar.css">
+  <link rel="stylesheet" href="../dashboard.css">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  </script>
+  <script src="../shared.js"></script>
+  <style>
+    /* ── Page layout ── */
+    .al-page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    /* ── Header ── */
+    .al-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .al-header-left { display: flex; align-items: center; gap: 14px; }
+    .al-icon-wrap {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #6c63ff, #a78bfa);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.35);
+      flex-shrink: 0;
+    }
+    .al-icon-wrap svg { width: 22px; height: 22px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .al-title { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); letter-spacing: -.02em; }
+    .al-subtitle { font-size: .78rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+
+    /* ── Clear button ── */
+    .al-clear-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: 0.5px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: .8rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .al-clear-btn:hover { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,.06); }
+    .al-clear-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── Filter bar ── */
+    .al-filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .al-filter-chip {
+      padding: 6px 14px;
+      background: var(--input-bg);
+      border: 0.5px solid var(--input-border);
+      border-radius: 9999px;
+      font-size: .78rem; font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .al-filter-chip:hover { background: var(--primary-light); color: var(--primary); border-color: rgba(108,99,255,.3); }
+    .al-filter-chip.active { background: var(--primary-light); color: var(--primary); border-color: rgba(108,99,255,.35); }
+
+    /* ── Log list ── */
+    .al-list { display: flex; flex-direction: column; gap: 8px; }
+
+    /* ── Single entry ── */
+    .al-entry {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+      background: var(--card-bg);
+      border: 0.5px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: var(--sh-sm);
+      transition: box-shadow 0.2s, transform 0.2s, background 0.25s;
+      animation: fadeIn 0.25s ease both;
+    }
+    .al-entry:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
+
+    .al-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .al-body { flex: 1; min-width: 0; }
+    .al-entry-title {
+      font-size: .88rem; font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .al-entry-detail {
+      font-size: .75rem; color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .al-time {
+      font-size: .7rem; color: var(--text-muted);
+      white-space: nowrap; flex-shrink: 0;
+      background: var(--input-bg);
+      padding: 3px 9px; border-radius: 9999px;
+      border: 0.5px solid var(--input-border);
+    }
+
+    /* ── Empty state ── */
+    .al-empty {
+      text-align: center; padding: 60px 0;
+      color: var(--text-muted);
+    }
+    .al-empty-icon { font-size: 2.8rem; display: block; margin-bottom: 12px; }
+    .al-empty-title { font-size: 1rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+    .al-empty-sub { font-size: .82rem; }
+
+    /* ── Date group label ── */
+    .al-date-group {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text-muted);
+      padding: 10px 4px 4px;
+    }
+
+    /* ── Count badge ── */
+    .al-count {
+      font-size: .75rem; font-weight: 600;
+      color: var(--text-muted);
+      padding: 2px 0 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="al-page">
+
+  <!-- Header -->
+  <div class="al-header">
+    <div class="al-header-left">
+      <div class="al-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div>
+        <div class="al-title">Activity Log</div>
+        <div class="al-subtitle">All recent actions across ClassInstruct</div>
+      </div>
+    </div>
+    <button class="al-clear-btn" onclick="clearLog()">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      Clear Log
+    </button>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="al-filter-bar" id="filterBar">
+    <button class="al-filter-chip active" data-filter="all" onclick="setFilter('all',this)">All</button>
+    <button class="al-filter-chip" data-filter="attendance" onclick="setFilter('attendance',this)">Attendance</button>
+    <button class="al-filter-chip" data-filter="student" onclick="setFilter('student',this)">Students</button>
+    <button class="al-filter-chip" data-filter="grades" onclick="setFilter('grades',this)">Grades</button>
+    <button class="al-filter-chip" data-filter="ai" onclick="setFilter('ai',this)">AI / Lessons</button>
+    <button class="al-filter-chip" data-filter="calendar" onclick="setFilter('calendar',this)">Calendar</button>
+  </div>
+
+  <div id="alCount" class="al-count"></div>
+  <div class="al-list" id="alList"></div>
+</div>
+
+<script src="../activity_log.js"></script>
+<script>
+  const FILTER_MAP = {
+    all:       null,
+    attendance: ['attendance_saved','attendance_present','attendance_late','attendance_absent'],
+    student:    ['student_added','student_updated','student_deleted','student_imported'],
+    grades:     ['grades_saved'],
+    ai:         ['ai_chat','lesson_plan','quiz_generated'],
+    calendar:   ['calendar_entry'],
+  };
+
+  let currentFilter = 'all';
+
+  function setFilter(key, btn) {
+    currentFilter = key;
+    document.querySelectorAll('.al-filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function isSameDay(ts, ref) {
+    const d = new Date(ts), r = new Date(ref);
+    return d.getFullYear()===r.getFullYear() && d.getMonth()===r.getMonth() && d.getDate()===r.getDate();
+  }
+
+  function dayLabel(ts) {
+    const now = Date.now();
+    if (isSameDay(ts, now)) return 'Today';
+    if (isSameDay(ts, now - 86400000)) return 'Yesterday';
+    return new Date(ts).toLocaleDateString('en-PH', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  }
+
+  function render() {
+    const listEl  = document.getElementById('alList');
+    const countEl = document.getElementById('alCount');
+    if (!listEl) return;
+
+    // Get all 50 entries from storage
+    const all = window.CILog.get(50);
+
+    // Filter
+    const allowed = FILTER_MAP[currentFilter];
+    const entries = allowed ? all.filter(e => allowed.includes(e.type)) : all;
+
+    countEl.textContent = entries.length ? `${entries.length} entr${entries.length===1?'y':'ies'}` : '';
+
+    if (!entries.length) {
+      listEl.innerHTML = `
+        <div class="al-empty">
+          <span class="al-empty-icon">📋</span>
+          <div class="al-empty-title">No activity yet</div>
+          <div class="al-empty-sub">Actions you take across ClassInstruct will appear here.</div>
+        </div>`;
+      return;
+    }
+
+    // Group by day
+    let html = '';
+    let lastDay = null;
+    entries.forEach(e => {
+      const day = dayLabel(e.ts);
+      if (day !== lastDay) {
+        html += `<div class="al-date-group">${esc(day)}</div>`;
+        lastDay = day;
+      }
+      html += `
+        <div class="al-entry">
+          <div class="al-avatar" style="background:${esc(e.gradient)}">${esc(e.icon)}</div>
+          <div class="al-body">
+            <div class="al-entry-title">${esc(e.title)}</div>
+            <div class="al-entry-detail">${esc(e.detail)}</div>
+          </div>
+          <span class="al-time">${esc(e.relTime)}</span>
+        </div>`;
+    });
+    listEl.innerHTML = html;
+  }
+
+  function clearLog() {
+    if (!confirm('Clear all activity log entries?')) return;
+    window.CILog.clear();
+    render();
+  }
+
+  // Listen for new entries pushed from other pages
+  window.addEventListener('message', function(e) {
+    if (e.data && (e.data.type === 'CI_ACTIVITY_UPDATE')) render();
+    if (e.data && e.data.type === 'CI_THEME') {
+      document.documentElement.setAttribute('data-theme', e.data.theme);
+    }
+  });
+
+  // Initial render (wait for CILog to be available)
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.CILog !== 'undefined') { render(); return; }
+    const t = setInterval(function() {
+      if (typeof window.CILog !== 'undefined') { clearInterval(t); render(); }
+    }, 50);
+  });
+</script>
+</body>
+</html>

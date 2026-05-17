@@ -212,7 +212,7 @@ function renderRecentActivity() {
     return;
   }
 
-  const entries = window.CILog.get(10);
+  const entries = window.CILog.get(5);
 
   if (!entries.length) {
     el.innerHTML = `<div style="color:var(--text-3);font-size:13px;text-align:center;padding:20px 0">

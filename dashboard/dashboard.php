@@ -325,6 +325,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <article class="card">
           <div class="section-header">
             <h2>Recent Activity</h2>
+            <a href="#" onclick="sidebarNav('Profile/activity-log.html');return false;" style="font-size:.75rem;color:var(--primary);font-weight:600;text-decoration:none">View all →</a>
           </div>
           <div id="recentActivity" style="display:flex;flex-direction:column;gap:10px"></div>
         </article>
