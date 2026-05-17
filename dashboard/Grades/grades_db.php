@@ -779,7 +779,7 @@ function getAttByQuarter($conn) {
         // No attendance records yet — return 0% for everyone
         $rows = [];
         foreach ($studentIds as $sid) {
-            $rows[] = ['student_id' => $sid, 'att_pct' => 0.0, 'attended' => 0, 'total_days' => 0];
+            $rows[] = ['student_id' => $sid, 'att_pct' => 0.0, 'attended' => 0, 'late_count' => 0, 'absent_count' => 0, 'total_days' => 0];
         }
         echo json_encode($rows);
         return;
@@ -788,10 +788,13 @@ function getAttByQuarter($conn) {
     $escapedDates = array_map(function($d) use ($conn) { return "'" . $conn->real_escape_string($d) . "'"; }, $recordedDates);
     $dateList = implode(',', $escapedDates);
 
-    // Count how many of those recorded days each student was present or late
+    // Count how many of those recorded days each student was present, late, or absent
     $atResult = $conn->query(
         "SELECT student_id,
-                SUM(status IN ('present','late')) AS attended
+                SUM(status = 'present')            AS present_count,
+                SUM(status = 'late')               AS late_count,
+                SUM(status = 'absent')             AS absent_count,
+                SUM(status IN ('present','late'))   AS attended
          FROM attendance
          WHERE student_id IN ($idList)
            AND date IN ($dateList)
@@ -801,17 +804,23 @@ function getAttByQuarter($conn) {
 
     $attMap = [];
     while ($r = $atResult->fetch_assoc()) {
-        $attMap[(int)$r['student_id']] = (int)$r['attended'];
+        $attMap[(int)$r['student_id']] = [
+            'attended' => (int)$r['attended'],
+            'late'     => (int)($r['late_count']   ?? 0),
+            'absent'   => (int)($r['absent_count'] ?? 0),
+        ];
     }
 
     $rows = [];
     foreach ($studentIds as $sid) {
-        $attended = $attMap[$sid] ?? 0;
+        $a      = $attMap[$sid] ?? ['attended' => 0, 'late' => 0, 'absent' => 0];
         $rows[] = [
-            'student_id' => $sid,
-            'att_pct'    => min(100.0, round($attended / $totalDays * 100, 2)),
-            'attended'   => $attended,
-            'total_days' => $totalDays,
+            'student_id'   => $sid,
+            'att_pct'      => min(100.0, round($a['attended'] / $totalDays * 100, 2)),
+            'attended'     => $a['attended'],
+            'late_count'   => $a['late'],
+            'absent_count' => $a['absent'],
+            'total_days'   => $totalDays,
         ];
     }
 

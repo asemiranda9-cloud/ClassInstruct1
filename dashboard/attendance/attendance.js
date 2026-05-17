@@ -45,12 +45,12 @@ function toYMD(date) {
 }
 
 function weekDates(startMonday) {
-  // Mon-Fri only (5 school days)
-  return Array.from({ length: 5 }, function(_, i) { return addDays(startMonday, i); });
+  // Mon-Sun (full 7-day week)
+  return Array.from({ length: 7 }, function(_, i) { return addDays(startMonday, i); });
 }
 
 function fmtWeekLabel(startMonday) {
-  const end = addDays(startMonday, 4); // Mon → Fri
+  const end = addDays(startMonday, 6); // Mon → Sun
   const sm  = SHORT_MONTHS[startMonday.getMonth()];
   const em  = SHORT_MONTHS[end.getMonth()];
   if (startMonday.getMonth() === end.getMonth()) {
@@ -183,7 +183,7 @@ function renderWeekCalendar() {
   const today = new Date();
   const todayYMD  = toYMD(today);
   const wsYMD     = toYMD(state.weekStartDate);
-  const weYMD     = toYMD(addDays(state.weekStartDate, 4)); // Fri
+  const weYMD     = toYMD(addDays(state.weekStartDate, 6)); // Sun
 
   const firstDay    = new Date(calViewYear, calViewMonth, 1);
   const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();

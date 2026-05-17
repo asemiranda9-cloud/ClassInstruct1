@@ -125,10 +125,22 @@ body {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
 }
-.att-cal-day:hover:not(.empty):not(.weekend) { transform: scale(1.1); z-index: 2; box-shadow: var(--sh-md); }
+.att-cal-day:hover:not(.empty):not(.weekend):not(.no-data),
+.att-cal-day.weekend-data:hover { transform: scale(1.1); z-index: 2; box-shadow: var(--sh-md); }
 .att-cal-day.empty   { background: transparent; }
-.att-cal-day.weekend { background: rgba(108,99,255,.04); opacity: .6; }
-.att-cal-day.no-data { background: var(--input-bg); border: 0.5px solid var(--card-border); }
+.att-cal-day.weekend {
+  background: var(--input-bg);
+  border: 0.5px solid var(--card-border);
+  color: var(--text-muted);
+}
+/* Weekend day that has recorded attendance data — inherits inline heatmap colour */
+.att-cal-day.weekend-data {
+  border: 0.5px dashed rgba(255,255,255,.30);
+}
+.att-cal-day.no-data {
+  background: var(--input-bg);
+  border: 0.5px solid var(--card-border);
+}
 .att-cal-day.today-ring { box-shadow: 0 0 0 2px var(--primary) !important; }
 .att-cal-day .day-num { font-size: .68rem; font-weight: 700; line-height: 1; z-index: 1; }
 .att-cal-day .day-pct { font-size: .6rem; font-weight: 800; line-height: 1; z-index: 1; }

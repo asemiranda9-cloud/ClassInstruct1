@@ -135,10 +135,12 @@ async function loadAllStudents() {
       _section: r.section || '',
       name:     r.full_name,
       id:       r.student_id,
-      ww:   null,
-      pt:   null,
-      qa:   null,
-      att:  null,
+      ww:     null,
+      pt:     null,
+      qa:     null,
+      att:    null,
+      _late:  null,
+      _absent:null,
     }));
     filtered = [...students];
 
@@ -265,10 +267,12 @@ async function mergeGradesForSubject(subject, quarter) {
     // Merge into students (reset grades for all, then apply saved ones)
     students.forEach(s => {
       const g = gradeMap[s._id];
-      s.ww  = g ? g.ww  : null;
-      s.pt  = g ? g.pt  : null;
-      s.qa  = g ? g.qa  : null;
-      s.att = g ? g.att : null;
+      s.ww     = g ? g.ww  : null;
+      s.pt     = g ? g.pt  : null;
+      s.qa     = g ? g.qa  : null;
+      s.att    = g ? g.att : null;
+      // keep live L/A counts if already populated; they'll be refreshed by _fillMissingAttendance
+      if (!g) { s._late = null; s._absent = null; }
     });
     filtered = [...students];
 
@@ -1035,12 +1039,19 @@ function renderTable() {
         <div class="student-id">${esc(s.id || '')}${s._grade ? ' · ' + esc(s._grade) + ' ' + esc(s._section) : ''}</div>
       </td>
       ${compCells}
-      <td>
-        <div class="prog-wrap">
-          <div class="prog-bar"><div class="prog-fill" id="attbar-${i}" style="width:${attVal}%;background:${progColor(attVal)};"></div></div>
-          <input class="grade-input" type="number" min="0" max="100" step="0.01"
-            value="${s.att !== null ? s.att : ''}" placeholder="—" style="width:52px;margin-left:4px;"
+      <td class="att-cell">
+        <div class="att-pct-row">
+          <input class="att-pct-input" type="number" min="0" max="100" step="0.01"
+            value="${s.att !== null ? s.att : ''}" placeholder="—"
             oninput="updateGrade(${students.indexOf(s)},'att',this.value);">
+          <span class="att-pct-symbol">%</span>
+        </div>
+        <div class="att-bar-row">
+          <div class="prog-bar"><div class="prog-fill" id="attbar-${i}" style="width:${attVal}%;background:${progColor(attVal)};"></div></div>
+        </div>
+        <div class="att-badges-row">
+          <span class="att-badge att-late"  id="latebadge-${i}">L&nbsp;${s._late  !== null && s._late  !== undefined ? s._late  : '—'}</span>
+          <span class="att-badge att-absent" id="absentbadge-${i}">A&nbsp;${s._absent !== null && s._absent !== undefined ? s._absent : '—'}</span>
         </div>
       </td>
       <td><span class="final-grade" id="fg-${i}" style="color:${f !== null ? progColor(f) : 'var(--gray-400)'};">${f !== null ? f.toFixed(1) : '—'}</span></td>
@@ -1821,7 +1832,13 @@ async function _fetchAttPercent(grade, section) {
     const data = await res.json();
     if (!Array.isArray(data) || data.error) return null;
     const map = {};
-    data.forEach(function(r) { map[r.student_id] = r.att_pct; });
+    data.forEach(function(r) {
+      map[r.student_id] = {
+        att_pct: r.att_pct,
+        late:    r.late_count   || 0,
+        absent:  r.absent_count || 0,
+      };
+    });
     return map;
   } catch (_) { return null; }
 }
@@ -1833,9 +1850,11 @@ async function _fillMissingAttendance(grade, section) {
   if (!attMap) return;
   students.forEach(function(s) {
     // Always apply the live value — not just when att is null.
-    // The old null-guard meant att stopped updating after the first save.
-    if (attMap[s._id] !== undefined) {
-      s.att = attMap[s._id];
+    const attData = attMap[s._id];
+    if (attData !== undefined) {
+      s.att    = typeof attData === 'object' ? attData.att_pct : attData;
+      s._late  = typeof attData === 'object' ? attData.late    : null;
+      s._absent = typeof attData === 'object' ? attData.absent : null;
     }
   });
   filtered = students.slice();
@@ -1852,9 +1871,13 @@ async function _onAttendanceBroadcast() {
   if (!attMap) return;
   let changed = 0;
   students.forEach(function(s) {
-    const fresh = attMap[s._id];
-    if (fresh !== undefined && s.att !== fresh) {
-      s.att = fresh;
+    const attData = attMap[s._id];
+    if (attData === undefined) return;
+    const fresh = typeof attData === 'object' ? attData.att_pct : attData;
+    if (s.att !== fresh) {
+      s.att    = fresh;
+      s._late  = typeof attData === 'object' ? attData.late   : null;
+      s._absent = typeof attData === 'object' ? attData.absent : null;
       changed++;
     }
   });

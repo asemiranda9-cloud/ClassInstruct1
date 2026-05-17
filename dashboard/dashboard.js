@@ -15,7 +15,7 @@ function sidebarNav(url) {
 }
 
 
-const ATT_API    = '/dashboard/attendance/attedance_db.php';
+const ATT_API    = '/dashboard/attendance/attendance_db.php';
 const STUD_API   = '/dashboard/api/db.php';
 const GRADES_API = '/dashboard/Grades/grades_db.php';   // serves ?action=grades|subjects|gpa_scales|summary|weights
 const CAL_KEY    = 'ci_dayEntries';
@@ -502,13 +502,7 @@ function buildAttCalGrid(data, year, month, grid) {
   const students      = data.students || [];
   const totalStudents = students.length;
 
-  if (!totalStudents) {
-    appendGridMsg(grid, 'No students found for this selection.');
-    setAttStats(0,0,0,0);
-    return;
-  }
-
-  // Build per-date tallies
+  // Build per-date tallies (always — even with 0 students so the grid still renders)
   const dayMap = {};
   let totP=0, totL=0, totA=0;
   students.forEach(s => {
@@ -525,12 +519,31 @@ function buildAttCalGrid(data, year, month, grid) {
   const avg = totalRec > 0 ? Math.round(((totP+totL)/totalRec)*100) : 0;
   setAttStats(totP, totL, totA, avg);
 
+  // Always render day cells — if no students, all show as no-data
   appendDayCells(grid, year, month, (day, dateStr, dow) => {
     const rec = dayMap[dateStr];
-    if (dow === 0 || dow === 6) {
+    const isWeekend = dow === 0 || dow === 6;
+
+    if (isWeekend) {
+      // Weekend WITH attendance data → show heatmap color at reduced opacity
+      if (rec && totalStudents > 0) {
+        const attended = rec.present + rec.late;
+        const pct = Math.round((attended / totalStudents) * 100);
+        const bg  = pctToColor(pct);
+        const fg  = pct >= 45 ? '#fff' : '#1e293b';
+        const tip = `${dateStr} (Weekend)\nPresent: ${rec.present}  Late: ${rec.late}  Absent: ${rec.absent}\nRate: ${pct}%`;
+        return {
+          cls:   'weekend-data',
+          style: `background:${bg};color:${fg};opacity:0.78`,
+          html:  `<span class="day-num">${day}</span><span class="day-pct">${pct}%</span>`,
+          title: tip
+        };
+      }
+      // Weekend with no data → styled weekend rest day
       return { cls: 'weekend', html: `<span class="day-num">${day}</span>` };
     }
-    if (!rec) {
+
+    if (!totalStudents || !rec) {
       return { cls: 'no-data', html: `<span class="day-num">${day}</span>` };
     }
     const attended = rec.present + rec.late;
@@ -548,10 +561,10 @@ function buildAttCalGrid(data, year, month, grid) {
 
 function buildAttCalGridEmpty(year, month, grid) {
   appendDayCells(grid, year, month, (day, dateStr, dow) => {
-    if (dow===0||dow===6) return { cls:'weekend', html:`<span class="day-num">${day}</span>` };
-    return { cls:'no-data', html:`<span class="day-num">${day}</span>` };
+    if (dow === 0 || dow === 6) return { cls: 'weekend', html: `<span class="day-num">${day}</span>` };
+    return { cls: 'no-data', html: `<span class="day-num">${day}</span>` };
   });
-  setAttStats(0,0,0,0);
+  setAttStats(0, 0, 0, 0);
 }
 
 // Generic: renders empty + day cells into grid using a callback per day
