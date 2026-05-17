@@ -96,7 +96,6 @@ body {
 .filter:focus { border-color: var(--input-focus); }
 
 /* ══ ATTENDANCE CALENDAR ══ */
-.attendance-card { }
 .att-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .att-summary-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -354,7 +353,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); o
 }
 .hero-subtitle { font-size: .78rem; color: var(--text-muted); font-weight: 500; margin: 0; }
 
-.hero-stats { display: flex; gap: 12px; flex: 1; flex-wrap: wrap; }
+.hero-stats { display: flex; gap: 12px; flex: 1; flex-wrap: wrap; overflow-x: auto; padding-bottom: 4px; }
+.hero-stats::-webkit-scrollbar { height: 4px; }
+.hero-stats::-webkit-scrollbar-track { background: transparent; }
+.hero-stats::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 9999px; }
 .hero-stat-card {
   display: flex; align-items: center; gap: 10px;
   background: var(--input-bg); border-radius: var(--r-lg);
@@ -369,6 +371,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); o
 .hero-stat-icon--pink   { background: linear-gradient(135deg, #ec4899, #f472b6); }
 .hero-stat-icon--green  { background: linear-gradient(135deg, #10b981, #34d399); }
 .hero-stat-icon--purple { background: linear-gradient(135deg, var(--primary), #818cf8); }
+.hero-stat-icon--teal   { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.hero-stat-icon--indigo { background: linear-gradient(135deg, #4338ca, #818cf8); }
+.hero-stat-icon--orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.hero-stat-icon--red    { background: linear-gradient(135deg, #ef4444, #f87171); }
 .hero-stat-body { display: flex; flex-direction: column; gap: 1px; }
 .hero-stat-change { font-size: .68rem; font-weight: 700; letter-spacing: .02em; }
 .hero-stat-change--up   { color: var(--green); }

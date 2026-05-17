@@ -491,22 +491,14 @@ function renderTable() {
       <td>${esc(s.grade||'—')} · ${esc(s.section||'—')}</td>
       <td>${gender}</td>
       <td>
-        <div class="status-toggle-wrap" style="display:flex;gap:4px">
-          <button
-            onclick="setStudentStatus(${s.id},'Active')"
-            style="
-              border:none;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;outline:none;transition:all 150ms;
-              background:${(s.status||'Active')==='Active'?'rgba(16,185,129,0.18)':'var(--bg-input)'};
-              color:${(s.status||'Active')==='Active'?'#059669':'var(--text-secondary)'};
-              ${(s.status||'Active')==='Active'?'box-shadow:0 0 0 1.5px #10b981;':''}">Active</button>
-          <button
-            onclick="setStudentStatus(${s.id},'Dropout')"
-            style="
-              border:none;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;cursor:pointer;outline:none;transition:all 150ms;
-              background:${(s.status||'Active')==='Dropout'?'rgba(239,68,68,0.18)':'var(--bg-input)'};
-              color:${(s.status||'Active')==='Dropout'?'#dc2626':'var(--text-secondary)'};
-              ${(s.status||'Active')==='Dropout'?'box-shadow:0 0 0 1.5px #ef4444;':''}">Dropout</button>
-        </div>
+        <span style="
+          display:inline-block;border-radius:20px;padding:3px 12px;font-size:0.75rem;font-weight:600;
+          background:${(s.status||'Active')==='Active'?'rgba(16,185,129,0.18)':'rgba(239,68,68,0.18)'};
+          color:${(s.status||'Active')==='Active'?'#059669':'#dc2626'};
+          box-shadow:0 0 0 1.5px ${(s.status||'Active')==='Active'?'#10b981':'#ef4444'};
+          user-select:none;">
+          ${esc(s.status||'Active')}
+        </span>
       </td>
       <td style="font-size:0.85rem">${email}</td>
       <td style="font-size:0.85rem">${phone}</td>

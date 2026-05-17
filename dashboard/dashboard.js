@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderUpcomingEvents();
   renderRecentActivity();
   await loadStudents();
+  loadStudentStatusStats();   // ← computes Active / Passing / At-Risk / Dropouts
   loadAttendanceCal();
   loadSubjectsForPerf();
   loadGradesSectionsForPerf();
@@ -303,6 +304,96 @@ async function loadStudents() {
       }
     }
   } catch(e) { /* leave as — */ }
+}
+
+// ════════════════════════════════════════════════
+//  STUDENT STATUS HERO STATS
+//  Computes: Active · Passing · At-Risk · Dropouts
+//
+//  DATA SOURCES NEEDED
+//  ─────────────────────────────────────────────
+//  1. _allStudents  (already loaded by loadStudents())
+//     FROM: /dashboard/api/db.php  (STUD_API)
+//     FIELDS EXPECTED ON EACH STUDENT RECORD:
+//       • status  — string: 'active' | 'inactive' | 'dropout' | 'transferred'
+//                   If your student table uses a different column name
+//                   (e.g. enrollment_status, is_active) update the filter
+//                   expressions inside _computeStudentCounts() below.
+//
+//  2. grades summary
+//     FROM: /dashboard/Grades/grades_db.php  (GRADES_API)
+//     ACTION: ?action=grades&quarter=Q1  (already used by loadStudents)
+//     FIELDS:  written_works, performance_tasks, quarterly_assessment
+//     Used to determine per-student computed average → Passing (≥75) vs At-Risk (<75)
+//
+//  HOW TO ADD DROPOUT / STATUS DATA (if not yet in your DB):
+//  • Add a `status` column to your students table
+//      ALTER TABLE students ADD COLUMN status VARCHAR(20) DEFAULT 'active';
+//  • Expose it through db.php (it will appear in _allStudents automatically)
+//  • Values: 'active', 'dropout', 'inactive', 'transferred'
+// ════════════════════════════════════════════════
+async function loadStudentStatusStats() {
+  // ── Step 1: Status counts from _allStudents ──
+  // Adjust field name / values to match YOUR database schema:
+  const statusField = 'status';   // ← change if your column is named differently
+  const activeStatuses  = ['active', 'enrolled'];   // ← values that mean "active"
+  const dropoutStatuses = ['dropout', 'dropped', 'inactive', 'transferred']; // ← dropout
+
+  const total    = _allStudents.length;
+  const dropouts = _allStudents.filter(s => dropoutStatuses.includes((s[statusField] || '').toLowerCase())).length;
+  const active   = _allStudents.filter(s => activeStatuses.includes((s[statusField]  || 'active').toLowerCase())).length;
+  // If your student records don't have a status field yet, fall back: treat all as active
+  const activeCount  = active  || (total - dropouts);
+  const dropoutCount = dropouts;
+
+  setEl('heroActiveStudents', activeCount  || '—');
+  setEl('heroDropouts',       dropoutCount || '0');
+  if (dropoutCount > 0 && total > 0) {
+    setEl('heroDropoutChange', Math.round((dropoutCount / total) * 100) + '% of total');
+  }
+
+  // ── Step 2: Passing & At-Risk from grades API ──
+  // Reuses the same GRADES_API call already made in loadStudents() —
+  // this is a second call so we keep the two concerns independent and
+  // the hero cards update even if the performance chart hasn't loaded yet.
+  try {
+    const params = new URLSearchParams({ action: 'grades', quarter: 'Q1' });
+    const res    = await fetch(GRADES_API + '?' + params, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+
+    // Build per-student average: group grade rows by student_id
+    // EXPECTED FIELDS on each grade row:
+    //   student_id, written_works, performance_tasks, quarterly_assessment
+    const studentMap = {};
+    rows.forEach(r => {
+      const sid = r.student_id;
+      if (!sid) return;
+      const ww  = r.written_works        !== null ? parseFloat(r.written_works)        : null;
+      const pt  = r.performance_tasks    !== null ? parseFloat(r.performance_tasks)    : null;
+      const qa  = r.quarterly_assessment !== null ? parseFloat(r.quarterly_assessment) : null;
+      if (ww === null && pt === null && qa === null) return;
+      const avg = Math.round(((ww||0)*0.30 + (pt||0)*0.50 + (qa||0)*0.20) * 100) / 100;
+      if (!studentMap[sid] || studentMap[sid] < avg) studentMap[sid] = avg;
+    });
+
+    const graded   = Object.values(studentMap);
+    const passing  = graded.filter(g => g >= 75).length;
+    const atRisk   = graded.filter(g => g > 0 && g < 75).length;
+
+    setEl('heroPassingCount', passing || '—');
+    setEl('heroAtRisk',       atRisk  || '0');
+
+    if (graded.length > 0) {
+      setEl('heroPassingChange', Math.round((passing / graded.length) * 100) + '% of graded');
+      if (atRisk > 0) {
+        setEl('heroAtRiskChange', atRisk + ' student' + (atRisk !== 1 ? 's' : '') + ' below 75');
+      }
+    }
+  } catch(e) {
+    console.warn('Status stats grades fetch error:', e.message);
+  }
 }
 
 function populateDropdown(id) {

@@ -103,6 +103,51 @@ if (session_status() === PHP_SESSION_NONE) {
               <span class="hero-stat-val" id="heroPassRate">—</span>
             </div>
           </div>
+
+          <!-- ── NEW STATUS CARDS ── -->
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--teal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change" id="heroActiveChange" style="color:var(--green)">Enrolled</span>
+              <span class="hero-stat-label">Active Students</span>
+              <span class="hero-stat-val" id="heroActiveStudents">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change" id="heroPassingChange" style="color:var(--green)">≥75 avg</span>
+              <span class="hero-stat-label">Passing</span>
+              <span class="hero-stat-val" id="heroPassingCount">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change hero-stat-change--down" id="heroAtRiskChange">Needs Help</span>
+              <span class="hero-stat-label">At Risk</span>
+              <span class="hero-stat-val" id="heroAtRisk">—</span>
+            </div>
+          </div>
+
+          <div class="hero-stat-card">
+            <div class="hero-stat-icon hero-stat-icon--red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <div class="hero-stat-body">
+              <span class="hero-stat-change hero-stat-change--down" id="heroDropoutChange">Inactive</span>
+              <span class="hero-stat-label">Dropouts</span>
+              <span class="hero-stat-val" id="heroDropouts">—</span>
+            </div>
+          </div>
         </div>
 
       </div><!-- /hero-bottom-row -->

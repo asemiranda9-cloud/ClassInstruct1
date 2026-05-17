@@ -104,6 +104,26 @@ function renderProfileCard(s) {
   setText('infoDob',        dob);
   setText('infoPhone',      phone);
   setText('infoAddress',    address);
+
+  // Status badge
+  const status = s.status || 'Active';
+  const badge = document.getElementById('studentStatusBadge');
+  if (badge) {
+    badge.textContent = status;
+    if (status === 'Active') {
+      badge.style.background = 'rgba(16,185,129,0.18)';
+      badge.style.color = '#059669';
+      badge.style.boxShadow = '0 0 0 1.5px #10b981';
+    } else {
+      badge.style.background = 'rgba(239,68,68,0.18)';
+      badge.style.color = '#dc2626';
+      badge.style.boxShadow = '0 0 0 1.5px #ef4444';
+    }
+  }
+
+  // Hide dropout button if already a dropout
+  const dropoutBtn = document.getElementById('dropoutBtn');
+  if (dropoutBtn && status === 'Dropout') dropoutBtn.style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════
@@ -1334,3 +1354,61 @@ function siToast(msg, type) {
 function goEditStudent() {
   if (studentId) window.location.href = 'Student.html?edit=' + studentId;
 }
+
+// ════════════════════════════════════════════════════
+//  DROPOUT FUNCTIONS
+// ════════════════════════════════════════════════════
+function confirmMarkDropout() {
+  if (!_cachedStudent) return;
+  const currentStatus = _cachedStudent.status || 'Active';
+  if (currentStatus === 'Dropout') {
+    siToast('This student is already marked as Dropout.', '');
+    return;
+  }
+  const name = buildFullName(_cachedStudent);
+  const nameEl = document.getElementById('dropoutStudentName');
+  if (nameEl) nameEl.textContent = name;
+  const overlay = document.getElementById('dropoutConfirmOverlay');
+  if (overlay) { overlay.style.display = 'flex'; }
+}
+
+function closeDropoutConfirm() {
+  const overlay = document.getElementById('dropoutConfirmOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function executeMarkDropout() {
+  if (!_cachedStudent || !studentId) return;
+  closeDropoutConfirm();
+  try {
+    const updated = { ..._cachedStudent, status: 'Dropout' };
+    const res = await fetch(API_STUDENTS + '?id=' + studentId, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update status');
+    _cachedStudent = { ..._cachedStudent, status: 'Dropout' };
+    // Update badge and hide dropout button
+    const badge = document.getElementById('studentStatusBadge');
+    if (badge) {
+      badge.textContent = 'Dropout';
+      badge.style.background = 'rgba(239,68,68,0.18)';
+      badge.style.color = '#dc2626';
+      badge.style.boxShadow = '0 0 0 1.5px #ef4444';
+    }
+    const dropoutBtn = document.getElementById('dropoutBtn');
+    if (dropoutBtn) dropoutBtn.style.display = 'none';
+    siToast(buildFullName(_cachedStudent) + ' has been marked as Dropout.', 'success');
+  } catch (e) {
+    siToast('Failed to update status: ' + e.message, 'danger');
+  }
+}
+
+// Close dropout confirm on backdrop click
+document.addEventListener('click', function(e) {
+  const overlay = document.getElementById('dropoutConfirmOverlay');
+  if (overlay && e.target === overlay) closeDropoutConfirm();
+});

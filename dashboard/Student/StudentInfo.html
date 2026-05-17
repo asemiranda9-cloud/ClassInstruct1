@@ -74,6 +74,9 @@
           <div class="student-name font-serif" id="studentName">—</div>
           <div class="student-lrn font-mono" id="studentLrn">—</div>
           <div class="student-section-badge" id="studentSection">—</div>
+          <div style="margin-top:8px">
+            <span id="studentStatusBadge" style="display:inline-block;border-radius:20px;padding:3px 14px;font-size:0.75rem;font-weight:600;user-select:none;background:rgba(16,185,129,0.18);color:#059669;box-shadow:0 0 0 1.5px #10b981">Active</span>
+          </div>
           <div class="divider"></div>
           <div class="info-rows">
             <div class="info-row">
@@ -101,11 +104,42 @@
               <span class="info-text" id="infoAddress">—</span>
             </div>
           </div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100)">
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100);display:flex;flex-direction:column;gap:8px">
             <button class="btn-edit-profile" onclick="goEditStudent()" title="Edit student information" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:10px;border:1.5px solid var(--primary,#4f46e5);background:transparent;color:var(--primary,#4f46e5);font-size:13px;font-weight:600;cursor:pointer;transition:background 150ms,color 150ms" onmouseover="this.style.background='var(--primary,#4f46e5)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--primary,#4f46e5)'">
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               Edit Student
             </button>
+            <button id="dropoutBtn" onclick="confirmMarkDropout()" title="Mark student as dropout"
+              style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:10px;border:1.5px solid #ef4444;background:transparent;color:#ef4444;font-size:13px;font-weight:600;cursor:pointer;transition:background 150ms,color 150ms"
+              onmouseover="this.style.background='#ef4444';this.style.color='#fff'"
+              onmouseout="this.style.background='transparent';this.style.color='#ef4444'">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"/></svg>
+              Mark as Dropout
+            </button>
+          </div>
+
+          <!-- Dropout Confirmation Dialog -->
+          <div id="dropoutConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:16px">
+            <div style="background:var(--bg-card,#fff);border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;animation:slideUp 200ms cubic-bezier(0.34,1.56,0.64,1)">
+              <div style="display:flex;align-items:center;gap:12px;padding:20px 24px 16px;border-bottom:1px solid var(--gray-100,#f1f5f9)">
+                <div style="width:40px;height:40px;border-radius:10px;flex-shrink:0;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center">
+                  <svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:1rem;font-weight:700;color:var(--text-primary,#1e293b)">Mark as Dropout?</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary,#64748b);margin-top:2px">This will update the student's status.</div>
+                </div>
+              </div>
+              <div style="padding:16px 24px">
+                <p style="font-size:0.875rem;color:var(--text-secondary,#64748b);margin:0">
+                  Are you sure you want to mark <strong id="dropoutStudentName"></strong> as a <strong style="color:#ef4444">Dropout</strong>? You can reverse this by editing the student record later.
+                </p>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:10px;padding:12px 24px 20px;border-top:1px solid var(--gray-100,#f1f5f9);background:var(--bg-body,#f8fafc)">
+                <button onclick="closeDropoutConfirm()" style="border:1px solid var(--gray-100,#e2e8f0);background:var(--bg-card,#fff);color:var(--text-primary,#1e293b);border-radius:8px;padding:8px 18px;font-size:0.85rem;font-weight:600;cursor:pointer">Cancel</button>
+                <button onclick="executeMarkDropout()" style="border:none;background:#ef4444;color:#fff;border-radius:8px;padding:8px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 150ms" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Yes, Mark as Dropout</button>
+              </div>
+            </div>
           </div>
         </div>
 
