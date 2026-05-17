@@ -87,6 +87,7 @@
       <button class="tab active"  onclick="switchTab(this,'gradesheet')">Grade Sheet</button>
       <button class="tab"         onclick="switchTab(this,'components')">Grade Components</button>
       <button class="tab"         onclick="switchTab(this,'summary')">Class Summary</button>
+      <button class="tab"         onclick="switchTab(this,'consultation')">Grade Consultation</button>
       <button class="tab"         onclick="switchTab(this,'gpa')">GPA Scale</button>
       <button class="tab"         onclick="switchTab(this,'subjects')">Manage Subjects</button>
     </div>
@@ -183,6 +184,35 @@
         <div id="compItemsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
           <!-- Rendered by JS -->
         </div>
+      </div>
+
+      <!-- ══ GRADE CONSULTATION ══ -->
+      <div id="tab-consultation" style="display:none;">
+
+        <!-- ID lookup form -->
+        <div class="consult-id-lookup">
+          <div class="consult-id-form">
+            <div class="consult-id-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            </div>
+            <p class="consult-id-title">Student Grade Consultation</p>
+            <p class="consult-id-sub">Enter your Student ID to view your grade breakdown</p>
+            <div class="consult-id-input-row">
+              <input type="text" id="consultIdInput" class="consult-id-input" placeholder="e.g. 231231232133" autocomplete="off"
+                onkeydown="if(event.key==='Enter') lookupStudentById()">
+              <button class="btn btn-primary consult-id-btn" onclick="lookupStudentById()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Look Up
+              </button>
+            </div>
+            <div id="consultIdError" class="consult-id-error" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div id="consultationList"></div>
+
+        <!-- hidden, still needed for PDF -->
+        <div class="consult-summary-bar" id="consultSummaryBar" style="display:none;"></div>
       </div>
 
       <!-- ══ SUMMARY ══ -->

@@ -1659,14 +1659,345 @@ function exportExcel() {
 function switchTab(el, tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['gradesheet','components','summary','gpa','subjects'].forEach(t => {
+  ['gradesheet','components','summary','consultation','gpa','subjects'].forEach(t => {
     const el2 = document.getElementById('tab-' + t);
     if (el2) el2.style.display = t === tab ? '' : 'none';
   });
-  if (tab === 'components') { renderWeights(); renderComponentItems(); }
-  if (tab === 'summary')    renderSummary();
-  if (tab === 'gpa')        renderGpaTable();
-  if (tab === 'subjects')   renderSubjectTable();
+  if (tab === 'components')   { renderWeights(); renderComponentItems(); }
+  if (tab === 'summary')      renderSummary();
+  if (tab === 'consultation') renderConsultation();
+  if (tab === 'gpa')          renderGpaTable();
+  if (tab === 'subjects')     renderSubjectTable();
+}
+
+// ════════════════════════════════════════
+//  GRADE CONSULTATION
+// ════════════════════════════════════════
+function renderConsultation() {
+  // Just reset to the prompt state whenever the tab is opened
+  const el = document.getElementById('consultationList');
+  if (el) el.innerHTML = '';
+  const inp = document.getElementById('consultIdInput');
+  if (inp) inp.value = '';
+  _consultIdHideError();
+}
+
+function lookupStudentById() {
+  const inp = document.getElementById('consultIdInput');
+  if (!inp) return;
+  const raw = inp.value.trim();
+
+  // ── Validation ──────────────────────────────────────
+  if (!raw) {
+    _consultIdShowError('Please enter a Student ID.');
+    inp.focus();
+    return;
+  }
+
+  // Match by student ID field (exact, case-insensitive)
+  const match = students.find(s =>
+    (s.id || '').toLowerCase() === raw.toLowerCase()
+  );
+
+  if (!match) {
+    // Try partial match as fallback — still show error if ambiguous or missing
+    const partials = students.filter(s =>
+      (s.id || '').toLowerCase().includes(raw.toLowerCase())
+    );
+    if (partials.length === 1) {
+      _consultIdHideError();
+      _renderConsultCards([partials[0]]);
+    } else if (partials.length > 1) {
+      _consultIdShowError(`Multiple students match "${raw}". Please enter the full ID.`);
+    } else {
+      _consultIdShowError(`No student found with ID "${raw}". Please check and try again.`);
+    }
+    return;
+  }
+
+  _consultIdHideError();
+  _renderConsultCards([match]);
+}
+
+function _consultIdShowError(msg) {
+  const box = document.getElementById('consultIdError');
+  if (!box) return;
+  box.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${msg}`;
+  box.style.display = 'flex';
+  // Shake animation
+  const inp = document.getElementById('consultIdInput');
+  if (inp) { inp.classList.remove('consult-id-shake'); void inp.offsetWidth; inp.classList.add('consult-id-shake'); }
+}
+
+function _consultIdHideError() {
+  const box = document.getElementById('consultIdError');
+  if (box) box.style.display = 'none';
+}
+
+// Keep these stubs so nothing else breaks
+function filterConsultation(q) {}
+function filterConsultationByDesc(d) {}
+function _populateConsultDescFilter() {}
+
+function _renderConsultCards(list) {
+  const el      = document.getElementById('consultationList');
+  const barEl   = document.getElementById('consultSummaryBar');
+  const subject = document.getElementById('subjectSel').value;
+  const quarter = document.getElementById('quarterSel').value;
+  if (!el) return;
+
+  const graded = list.filter(s => hasAnyGrade(s));
+
+  // ── Summary bar ──────────────────────────────────────────────────────────
+  if (barEl) {
+    if (graded.length) {
+      const finals   = graded.map(s => computeFinal(s));
+      const avg      = (finals.reduce((a,b)=>a+b,0)/finals.length).toFixed(2);
+      const passing  = finals.filter(f=>f>=75).length;
+      const passRate = Math.round((passing/finals.length)*100);
+      const highest  = Math.max(...finals).toFixed(1);
+      const lowest   = Math.min(...finals).toFixed(1);
+      const subLabel = subject ? subject + ' · ' + quarter : quarter;
+      barEl.innerHTML = `
+        <div class="consult-sum-item">
+          <span class="consult-sum-label">Subject / Period</span>
+          <span class="consult-sum-val" style="color:var(--primary)">${esc(subLabel || '—')}</span>
+        </div>
+        <div class="consult-sum-item">
+          <span class="consult-sum-label">Graded Students</span>
+          <span class="consult-sum-val">${graded.length} / ${list.length}</span>
+        </div>
+        <div class="consult-sum-item">
+          <span class="consult-sum-label">Class Average</span>
+          <span class="consult-sum-val">${avg}</span>
+        </div>
+        <div class="consult-sum-item">
+          <span class="consult-sum-label">Pass Rate</span>
+          <span class="consult-sum-val" style="color:var(--success)">${passRate}% (${passing})</span>
+        </div>
+        <div class="consult-sum-item">
+          <span class="consult-sum-label">Highest / Lowest</span>
+          <span class="consult-sum-val"><span style="color:var(--success)">${highest}</span> / <span style="color:var(--danger)">${lowest}</span></span>
+        </div>`;
+    } else {
+      barEl.innerHTML = '';
+    }
+  }
+
+  // ── Empty state — no match ───────────────────────────────────────────────
+  if (!list.length) {
+    el.innerHTML = `<div class="consult-empty">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <p>No student found. Try a different name or ID.</p>
+    </div>`;
+    return;
+  }
+
+  // ── Card per student (always render, even if ungraded) ────────────────────
+  const totalWeight = components.reduce((a,c)=>a+c.pct,0) || 100;
+
+  el.innerHTML = list.map((s, idx) => {
+    const isUngraded = !hasAnyGrade(s);
+    const final   = isUngraded ? null : computeFinal(s);
+    const info    = isUngraded ? { descriptor: '—', gpa: '—', letter: '—' } : getGpaInfo(final);
+    const bClass  = isUngraded ? 'badge-inactive' : badgeClass(info.descriptor);
+    const fColor  = isUngraded ? 'var(--gray-300)' : progColor(final);
+
+    // ── Per-component breakdown ───────────────────────────────────────────
+    const compRows = components.map(c => {
+      const raw       = s[c.key] !== null && s[c.key] !== undefined ? parseFloat(s[c.key]) : null;
+      const weight    = c.pct;
+      const contrib   = raw !== null ? (raw * weight / 100) : null;
+      const barWidth  = raw !== null ? Math.min(100, raw) : 0;
+      const pctOfTotal = (weight / totalWeight * 100).toFixed(0);
+      return { c, raw, weight, contrib, barWidth, pctOfTotal };
+    });
+
+    // Stacked contribution bar segments
+    const stackSegs = compRows.map(r => {
+      const seg = r.contrib !== null ? (r.contrib / final * 100) : 0;
+      return `<div class="consult-stack-seg" style="width:${Math.max(0,Math.min(100,seg))}%;background:${r.c.color};" title="${esc(r.c.label)}: ${r.contrib !== null ? r.contrib.toFixed(2) : '—'} pts"></div>`;
+    }).join('');
+
+    // Component detail rows (with individual item breakdown)
+    const compDetails = compRows.map(r => {
+      // Build per-item chips for this component
+      const items = r.c.items || [];
+      let itemsHtml = '';
+      if (items.length) {
+        const chips = items.map(it => {
+          const score = getStudentItemScore(s._id, r.c.key, it.id);
+          const max   = parseFloat(it.maxScore) || 100;
+          const pct   = score !== null ? Math.round((score / max) * 100) : null;
+          const label = esc(it.name || (r.c.label.split(' ').map(w=>w[0]).join('').toUpperCase() + it.id));
+          const scoreStr = score !== null ? `${score}/${max}` : '—';
+          const chipColor = score === null
+            ? (isUngraded ? 'var(--gray-200)' : 'var(--gray-300)')
+            : pct >= 90 ? 'var(--success)'
+            : pct >= 75 ? '#3b82f6'
+            : 'var(--danger)';
+          return `<span class="consult-item-chip" style="--chip-color:${chipColor}" title="${label}: ${scoreStr}">
+            <span class="consult-item-chip-name">${label}</span>
+            <span class="consult-item-chip-score">${scoreStr}</span>
+          </span>`;
+        }).join('');
+        itemsHtml = `<div class="consult-item-chips">${chips}</div>`;
+      }
+      return `
+      <div class="consult-comp-block">
+        <div class="consult-comp-row">
+          <div class="consult-comp-dot" style="background:${r.c.color};"></div>
+          <div class="consult-comp-label">${esc(r.c.label)}</div>
+          <div class="consult-comp-score">
+            ${r.raw !== null ? r.raw.toFixed(1) : '<span style="color:var(--gray-400)">—</span>'}
+          </div>
+          <div class="consult-comp-op">
+            <span class="consult-op-tag">× ${r.weight}%</span>
+          </div>
+          <div class="consult-comp-bar-wrap">
+            <div class="consult-comp-bar" style="width:${r.barWidth}%;background:${r.c.color};"></div>
+          </div>
+          <div class="consult-comp-contrib" style="color:${r.c.color}">
+            = ${r.contrib !== null ? r.contrib.toFixed(2) : '—'}
+          </div>
+        </div>
+        ${itemsHtml}
+      </div>`;
+    }).join('');
+
+    // Attendance row
+    const attRow = s.att !== null ? `
+      <div class="consult-comp-row consult-comp-row--att">
+        <div class="consult-comp-dot" style="background:#64748b;"></div>
+        <div class="consult-comp-label" style="color:var(--gray-500)">Attendance</div>
+        <div class="consult-comp-score">${parseFloat(s.att).toFixed(1)}%</div>
+        <div class="consult-comp-op"><span class="consult-op-tag" style="background:rgba(100,116,139,.12);color:#64748b;">info</span></div>
+        <div class="consult-comp-bar-wrap">
+          <div class="consult-comp-bar" style="width:${Math.min(100,parseFloat(s.att))}%;background:#64748b;"></div>
+        </div>
+        <div class="consult-comp-contrib" style="color:var(--gray-400)">not weighted</div>
+      </div>` : '';
+
+    // Plain-language explanation (only when graded)
+    const explanation = isUngraded ? '' : _buildExplanation(s, compRows, final, info);
+
+    // Formula string (only when graded)
+    const formulaParts = isUngraded ? '' : compRows.filter(r=>r.raw!==null).map(r=>`${r.raw.toFixed(1)}×${r.weight}%`).join(' + ');
+    const formulaStr   = formulaParts ? `(${formulaParts}) ÷ ${totalWeight}% = <strong>${final.toFixed(2)}</strong>` : '';
+
+    // Header right side — grade result or "not yet graded" banner
+    const headerRight = isUngraded
+      ? `<div class="consult-ungraded-badge">
+           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+           No grades entered yet — open the Grade Sheet to start grading
+         </div>`
+      : `<div class="consult-card-result">
+           <span class="consult-final" style="color:${fColor}">${final.toFixed(2)}</span>
+           <span class="badge ${bClass}">${esc(info.descriptor)}</span>
+           <span class="consult-gpa-badge">GPA ${info.gpa} · ${esc(info.letter)}</span>
+         </div>`;
+
+    // Stacked bar — flat grey placeholder when ungraded
+    const stackBar = isUngraded
+      ? `<div class="consult-stack-bar consult-stack-bar--empty">
+           <div style="width:100%;height:100%;background:repeating-linear-gradient(90deg,var(--gray-200) 0,var(--gray-200) 14px,var(--gray-100) 14px,var(--gray-100) 18px);border-radius:8px;"></div>
+         </div>`
+      : `<div class="consult-stack-bar">${stackSegs}</div>`;
+
+    // Formula row — placeholder when ungraded
+    const formulaRow = isUngraded
+      ? `<div class="consult-formula-row consult-formula-row--empty">
+           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+           Formula: <span style="color:var(--gray-400);font-style:italic;">waiting for grades…</span>
+         </div>`
+      : `<div class="consult-formula-row">
+           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+           Formula: ${formulaStr}
+         </div>`;
+
+    return `<div class="consult-card${isUngraded ? ' consult-card--ungraded' : ''}" id="cc-${s._id}">
+      <div class="consult-card-header">
+        <div class="consult-card-name">
+          <span class="consult-idx">${idx+1}</span>
+          <div>
+            <div class="consult-name">${esc(s.name)}</div>
+            <div class="consult-meta">${esc(s.id||'')}${s._grade?' · '+esc(s._grade)+' '+esc(s._section):''}</div>
+          </div>
+        </div>
+        ${headerRight}
+      </div>
+
+      <!-- Stacked bar -->
+      <div class="consult-stack-wrap" title="Each colour shows a component's share of the final grade">
+        ${stackBar}
+        <div class="consult-stack-legend">
+          ${compRows.map(r=>`<span class="consult-legend-dot" style="background:${r.c.color};opacity:${isUngraded?0.35:1};"></span><span style="opacity:${isUngraded?0.45:1}">${esc(r.c.label)} (${r.weight}%)</span>`).join('')}
+        </div>
+      </div>
+
+      <!-- Component rows -->
+      <div class="consult-comp-table">
+        <div class="consult-comp-thead">
+          <span>Component</span><span>Score</span><span></span><span>Progress</span><span>Contribution</span>
+        </div>
+        ${compDetails}
+        ${attRow}
+        ${formulaRow}
+      </div>
+
+      ${explanation ? `<div class="consult-explanation">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        ${explanation}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function _buildExplanation(s, compRows, final, info) {
+  const lines = [];
+
+  // Strongest / weakest component
+  const scored = compRows.filter(r => r.raw !== null);
+  if (scored.length) {
+    const best  = scored.reduce((a,b) => a.raw > b.raw ? a : b);
+    const worst = scored.reduce((a,b) => a.raw < b.raw ? a : b);
+    if (scored.length > 1 && best !== worst) {
+      lines.push(`<strong>${esc(best.c.label)}</strong> is the strongest component at <strong>${best.raw.toFixed(1)}</strong>, while <strong>${esc(worst.c.label)}</strong> brought the average down at <strong>${worst.raw.toFixed(1)}</strong>.`);
+    } else if (scored.length === 1) {
+      lines.push(`Only <strong>${esc(best.c.label)}</strong> has been entered (${best.raw.toFixed(1)}).`);
+    }
+  }
+
+  // Pass/fail status
+  if (final >= 75) {
+    lines.push(`The student is <span style="color:var(--success);font-weight:600">passing</span> with a final grade of <strong>${final.toFixed(2)}</strong> — ${(final-75).toFixed(2)} points above the passing mark of 75.`);
+  } else {
+    const gap = (75 - final).toFixed(2);
+    lines.push(`The student is <span style="color:var(--danger);font-weight:600">below passing</span> with a final grade of <strong>${final.toFixed(2)}</strong> — <strong>${gap}</strong> points below the passing mark of 75.`);
+
+    // Which component can be improved the most?
+    const improvable = compRows.filter(r=>r.raw!==null && r.raw < 75).sort((a,b)=>b.weight-a.weight);
+    if (improvable.length) {
+      const focus = improvable[0];
+      const needed = Math.min(100, (75 + (75 - final) / (focus.weight/100))).toFixed(1);
+      lines.push(`Improving <strong>${esc(focus.c.label)}</strong> (currently ${focus.raw.toFixed(1)}) to approximately <strong>${needed}</strong> could bring the grade to passing.`);
+    }
+  }
+
+  // Attendance note
+  if (s.att !== null) {
+    if (s.att < 75) {
+      lines.push(`⚠️ Attendance is low at <strong>${parseFloat(s.att).toFixed(1)}%</strong> — this may be affecting academic performance.`);
+    } else if (s.att >= 95) {
+      lines.push(`✅ Excellent attendance at <strong>${parseFloat(s.att).toFixed(1)}%</strong>.`);
+    }
+  }
+
+  return lines.join(' ');
+}
+
+function exportConsultationPDF() {
+  window.print();
 }
 
 // ════════════════════════════════════════

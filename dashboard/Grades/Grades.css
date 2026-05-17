@@ -949,3 +949,718 @@ html[data-theme="dark"] .att-pct-input:focus {
 html[data-theme="dark"] .att-bar-row .prog-bar { background: rgba(255,255,255,.08); }
 html[data-theme="dark"] .att-late   { background: rgba(245,158,11,.15); color: #fcd34d; }
 html[data-theme="dark"] .att-absent { background: rgba(239,68,68,.15);  color: #fca5a5; }
+/* ══════════════════════════════════════════════════════
+   CONSULTATION — ID LOOKUP FORM
+══════════════════════════════════════════════════════ */
+
+.consult-id-lookup {
+  display: flex;
+  justify-content: center;
+  padding: 48px 20px 32px;
+}
+
+.consult-id-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.consult-id-icon {
+  width: 52px; height: 52px;
+  background: var(--primary-light);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.consult-id-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
+}
+
+.consult-id-sub {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-bottom: 6px;
+}
+
+.consult-id-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.consult-id-input {
+  flex: 1;
+  height: 42px !important;
+  padding: 0 14px !important;
+  font-size: 15px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px;
+  border: 2px solid var(--gray-200) !important;
+  border-radius: var(--radius) !important;
+  background: var(--white) !important;
+  background-image: none !important;
+  color: var(--gray-900) !important;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease !important;
+}
+.consult-id-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(108,99,255,.13) !important;
+}
+
+.consult-id-btn {
+  height: 42px;
+  padding: 0 20px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: var(--radius) !important;
+}
+
+/* Error message */
+.consult-id-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--danger-light);
+  border: 1px solid rgba(239,68,68,.25);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #991b1b;
+  width: 100%;
+  text-align: left;
+  animation: consult-fadein 200ms ease;
+}
+.consult-id-error svg { flex-shrink: 0; color: var(--danger); }
+
+/* Shake animation on bad input */
+@keyframes consult-shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+@keyframes consult-fadein {
+  from { opacity:0; transform:translateY(-4px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.consult-id-shake { animation: consult-shake 320ms ease; }
+
+/* Dark mode */
+html[data-theme="dark"] .consult-id-icon {
+  background: rgba(108,99,255,.18);
+}
+html[data-theme="dark"] .consult-id-title { color: #e8e8f4; }
+html[data-theme="dark"] .consult-id-sub   { color: #44445e; }
+html[data-theme="dark"] .consult-id-input {
+  background: #1a1a2e !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #e8e8f4 !important;
+}
+html[data-theme="dark"] .consult-id-input:focus {
+  border-color: var(--primary) !important;
+}
+html[data-theme="dark"] .consult-id-error {
+  background: rgba(239,68,68,.12);
+  border-color: rgba(239,68,68,.25);
+  color: #fca5a5;
+}
+html[data-theme="dark"] .consult-id-error svg { color: #f87171; }
+
+/* ══════════════════════════════════════════════════════
+   GRADE CONSULTATION TAB — Enhanced Computation Design
+══════════════════════════════════════════════════════ */
+
+/* ── Top controls bar ──────────────────────────────── */
+.consult-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.consult-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+}
+.consult-search-wrap svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  pointer-events: none;
+}
+.consult-search-wrap input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 20px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--gray-800);
+  background: var(--white);
+  outline: none;
+  transition: var(--transition);
+}
+.consult-search-wrap input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+}
+
+/* ── Summary bar ────────────────────────────────────── */
+.consult-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.consult-sum-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  position: relative;
+  border-right: 1px solid var(--gray-100);
+}
+.consult-sum-item:last-child { border-right: none; }
+.consult-sum-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  opacity: 0;
+  transition: opacity 200ms ease;
+  border-radius: 0;
+}
+.consult-sum-item:hover::before { opacity: 1; }
+.consult-sum-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--gray-400);
+}
+.consult-sum-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── Empty state ────────────────────────────────────── */
+.consult-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 20px;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+.consult-empty svg { opacity: .35; }
+
+/* ── Cards list ─────────────────────────────────────── */
+#consultationList { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Individual card ────────────────────────────────── */
+.consult-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.consult-card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,.09);
+  transform: translateY(-1px);
+}
+.consult-card--empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  opacity: .65;
+}
+.consult-no-grade { font-size: 12px; color: var(--gray-400); font-style: italic; }
+
+/* ── Card header ─────────────────────────────────────── */
+.consult-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+}
+.consult-card-name { display: flex; align-items: center; gap: 12px; }
+.consult-idx {
+  width: 30px; height: 30px;
+  background: var(--primary-light);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -0.3px;
+}
+.consult-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.2px;
+}
+.consult-meta {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.2px;
+}
+
+/* ── Card result (right side) ───────────────────────── */
+.consult-card-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.consult-final-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.consult-final-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--gray-400);
+}
+.consult-final {
+  font-size: 30px;
+  font-weight: 900;
+  font-family: 'DM Mono', monospace;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.consult-gpa-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  border-radius: 20px;
+  padding: 4px 12px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+/* ── Stacked bar ─────────────────────────────────────── */
+.consult-stack-wrap {
+  padding: 16px 20px 0;
+  margin-bottom: 18px;
+}
+.consult-stack-bar {
+  height: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  background: var(--gray-100);
+  margin-bottom: 10px;
+  gap: 2px;
+}
+.consult-stack-seg {
+  height: 100%;
+  border-radius: 6px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.consult-stack-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--gray-500);
+  align-items: center;
+}
+.consult-legend-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ── Component breakdown section ─────────────────────── */
+.consult-comp-table { margin-bottom: 10px; padding: 0 20px; }
+
+/*
+  Row has 6 direct children: [dot][label][score][op][bar][contrib]
+  Thead has 5 spans — span:first-child spans cols 1-2 to cover dot+label.
+*/
+.consult-comp-thead {
+  display: grid;
+  grid-template-columns: 14px 1fr 62px 58px 90px 82px;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--gray-400);
+  padding: 0 6px 6px;
+  border-bottom: 1px solid var(--gray-100);
+  margin-bottom: 2px;
+}
+.consult-comp-thead span:first-child { grid-column: 1 / 3; }
+
+/* Component row — 6 children in 6 columns */
+.consult-comp-row {
+  display: grid;
+  grid-template-columns: 14px 1fr 62px 58px 90px 82px;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+}
+.consult-comp-row:hover { background: var(--gray-50); }
+.consult-comp-row + .consult-comp-row { border-top: 1px solid var(--gray-100); }
+.consult-comp-row--att { opacity: .65; }
+
+/* Dot — its own 14px slot */
+.consult-comp-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  justify-self: center;
+  align-self: center;
+}
+
+/* Label */
+.consult-comp-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gray-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Score number */
+.consult-comp-score {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  color: var(--gray-900);
+  text-align: right;
+}
+
+/* Weight operator tag */
+.consult-comp-op { display: flex; align-items: center; justify-content: center; }
+.consult-op-tag {
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 5px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  border: 1px solid rgba(108,99,255,.15);
+}
+
+/* Mini progress bar */
+.consult-comp-bar-wrap {
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+}
+.consult-comp-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+
+/* Contribution value — right-aligned, colored */
+.consult-comp-contrib {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  text-align: right;
+  white-space: nowrap;
+  letter-spacing: -0.3px;
+}
+
+/* ── Formula row ─────────────────────────────────────── */
+.consult-formula-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(108,99,255,.05) 100%);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  color: var(--gray-700);
+  border: 1px solid rgba(108,99,255,.18);
+  font-family: 'DM Mono', monospace;
+  line-height: 1.6;
+  letter-spacing: 0.1px;
+}
+.consult-formula-row svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.consult-formula-row strong {
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+/* ── Explanation block ──────────────────────────────── */
+.consult-explanation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(108,99,255,.04);
+  border: 1px solid rgba(108,99,255,.13);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 11px 14px;
+  font-size: 12.5px;
+  color: var(--gray-700);
+  line-height: 1.7;
+  margin: 0 20px 18px;
+}
+.consult-explanation svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary);
+  opacity: .8;
+}
+
+/* ── Ungraded card state ────────────────────────────── */
+.consult-card--ungraded .consult-card-header {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--gray-50) 0,
+    var(--gray-50) 6px,
+    var(--white)   6px,
+    var(--white)   12px
+  );
+}
+
+.consult-ungraded-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  border: 1.5px dashed var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  max-width: 360px;
+  line-height: 1.4;
+}
+.consult-ungraded-badge svg { flex-shrink: 0; color: var(--warning); }
+
+.consult-stack-bar--empty {
+  opacity: .5;
+}
+
+/* Ungraded comp row — dimmed, dashed score slot */
+.consult-card--ungraded .consult-comp-score {
+  color: var(--gray-300);
+  font-style: italic;
+}
+.consult-card--ungraded .consult-comp-bar {
+  width: 0 !important;
+}
+.consult-card--ungraded .consult-comp-contrib {
+  color: var(--gray-300) !important;
+}
+.consult-card--ungraded .consult-op-tag {
+  opacity: .45;
+}
+
+/* Formula row — waiting state */
+.consult-formula-row--empty {
+  opacity: .6;
+  border-style: dashed;
+  background: var(--gray-50);
+}
+
+/* Dark mode */
+html[data-theme="dark"] .consult-card--ungraded .consult-card-header {
+  background: repeating-linear-gradient(
+    -45deg,
+    #13131f 0,
+    #13131f 6px,
+    #17172a 6px,
+    #17172a 12px
+  );
+}
+html[data-theme="dark"] .consult-ungraded-badge {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.12);
+  color: #55556e;
+}
+
+/* ── Component item chips ──────────────────────────── */
+.consult-comp-block { display: flex; flex-direction: column; }
+
+.consult-item-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px 6px 10px 20px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.consult-item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 7px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-left: 3px solid var(--chip-color, var(--gray-300));
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: default;
+  transition: box-shadow 120ms ease, background 120ms ease;
+}
+.consult-item-chip:hover {
+  background: var(--white);
+  box-shadow: 0 2px 6px rgba(0,0,0,.07);
+}
+.consult-item-chip-name {
+  font-weight: 600;
+  color: var(--gray-600);
+  white-space: nowrap;
+}
+.consult-item-chip-score {
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: var(--chip-color, var(--gray-500));
+  white-space: nowrap;
+}
+
+/* ── Dark mode ──────────────────────────────────────── */
+html[data-theme="dark"] .consult-card {
+  background: #17172a;
+  border-color: rgba(255,255,255,.07);
+}
+html[data-theme="dark"] .consult-card-header {
+  background: linear-gradient(135deg, #13131f 0%, #17172a 100%);
+  border-bottom-color: rgba(255,255,255,.06);
+}
+html[data-theme="dark"] .consult-card--empty { opacity: .5; }
+html[data-theme="dark"] .consult-summary-bar {
+  background: #17172a;
+  border-color: rgba(255,255,255,.07);
+}
+html[data-theme="dark"] .consult-sum-item { border-right-color: rgba(255,255,255,.05); }
+html[data-theme="dark"] .consult-sum-val { color: #e8e8f4; font-family: 'DM Mono', monospace; }
+html[data-theme="dark"] .consult-sum-label { color: #44445e; }
+html[data-theme="dark"] .consult-name { color: #e8e8f4; }
+html[data-theme="dark"] .consult-meta { color: #55556e; }
+html[data-theme="dark"] .consult-idx { background: rgba(108,99,255,.2); color: #a89fff; }
+html[data-theme="dark"] .consult-gpa-badge { background: rgba(255,255,255,.07); color: #7777a0; }
+
+html[data-theme="dark"] .consult-comp-thead {
+  color: #44445e;
+  border-color: rgba(255,255,255,.06);
+}
+html[data-theme="dark"] .consult-comp-row + .consult-comp-row { border-top-color: rgba(255,255,255,.05); }
+html[data-theme="dark"] .consult-comp-row:hover { background: rgba(255,255,255,.04); }
+html[data-theme="dark"] .consult-comp-label { color: #c0c0d8; }
+html[data-theme="dark"] .consult-comp-score { color: #e8e8f4; }
+html[data-theme="dark"] .consult-op-tag {
+  background: rgba(108,99,255,.18);
+  color: #a89fff;
+  border-color: rgba(108,99,255,.25);
+}
+html[data-theme="dark"] .consult-comp-bar-wrap { background: rgba(255,255,255,.08); }
+html[data-theme="dark"] .consult-stack-bar { background: rgba(255,255,255,.07); }
+html[data-theme="dark"] .consult-stack-legend { color: #55556e; }
+
+html[data-theme="dark"] .consult-formula-row {
+  background: linear-gradient(135deg, rgba(108,99,255,.12) 0%, rgba(108,99,255,.06) 100%);
+  border-color: rgba(108,99,255,.25);
+  color: #c0c0d8;
+}
+html[data-theme="dark"] .consult-formula-row strong { color: #a89fff; }
+
+html[data-theme="dark"] .consult-explanation {
+  background: rgba(108,99,255,.07);
+  border-color: rgba(108,99,255,.18);
+  border-left-color: var(--primary);
+  color: #c0c0d8;
+}
+
+html[data-theme="dark"] .consult-search-wrap input {
+  background: #1a1a2e;
+  border-color: rgba(255,255,255,.10);
+  color: #e8e8f4;
+}
+html[data-theme="dark"] .consult-search-wrap input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+}
+
+html[data-theme="dark"] .consult-item-chips { border-bottom-color: rgba(255,255,255,.05); }
+html[data-theme="dark"] .consult-item-chip {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+  border-left-color: var(--chip-color, rgba(255,255,255,.2));
+}
+html[data-theme="dark"] .consult-item-chip:hover { background: rgba(255,255,255,.07); }
+html[data-theme="dark"] .consult-item-chip-name { color: #9090b0; }
+
+/* ── Print styles ───────────────────────────────────── */
+@media print {
+  .consult-topbar, .tabs, .filters-bar, .topbar { display: none !important; }
+  .consult-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+    transform: none !important;
+  }
+  .consult-card-header { background: #f8f9fc !important; }
+  .consult-formula-row { background: #ede9ff !important; border-color: #c4b8ff !important; }
+}
