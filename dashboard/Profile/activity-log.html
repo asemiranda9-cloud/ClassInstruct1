@@ -12,7 +12,6 @@
   </script>
   <script src="../shared.js"></script>
   <style>
-    /* ── Page layout ── */
     .al-page {
       max-width: 780px;
       margin: 0 auto;
@@ -21,12 +20,9 @@
 
     /* ── Header ── */
     .al-header {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
-      gap: 12px;
-      flex-wrap: wrap;
+      margin-bottom: 24px; gap: 12px; flex-wrap: wrap;
     }
     .al-header-left { display: flex; align-items: center; gap: 14px; }
     .al-icon-wrap {
@@ -34,8 +30,7 @@
       background: linear-gradient(135deg, #6c63ff, #a78bfa);
       border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 14px rgba(108,99,255,0.35);
-      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(108,99,255,0.35); flex-shrink: 0;
     }
     .al-icon-wrap svg { width: 22px; height: 22px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .al-title { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); letter-spacing: -.02em; }
@@ -43,12 +38,9 @@
 
     /* ── Clear button ── */
     .al-clear-btn {
-      padding: 8px 16px;
-      background: transparent;
-      border: 0.5px solid var(--input-border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      font-size: .8rem; font-weight: 600;
+      padding: 8px 16px; background: transparent;
+      border: 0.5px solid var(--input-border); border-radius: 8px;
+      color: var(--text-muted); font-size: .8rem; font-weight: 600;
       cursor: pointer; font-family: inherit;
       display: flex; align-items: center; gap: 6px;
       transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -57,18 +49,12 @@
     .al-clear-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
     /* ── Filter bar ── */
-    .al-filter-bar {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
-    }
+    .al-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
     .al-filter-chip {
-      padding: 6px 14px;
-      background: var(--input-bg);
-      border: 0.5px solid var(--input-border);
-      border-radius: 9999px;
-      font-size: .78rem; font-weight: 600;
-      color: var(--text-secondary);
-      cursor: pointer; font-family: inherit;
-      transition: all 0.15s;
+      padding: 6px 14px; background: var(--input-bg);
+      border: 0.5px solid var(--input-border); border-radius: 9999px;
+      font-size: .78rem; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
     }
     .al-filter-chip:hover { background: var(--primary-light); color: var(--primary); border-color: rgba(108,99,255,.3); }
     .al-filter-chip.active { background: var(--primary-light); color: var(--primary); border-color: rgba(108,99,255,.35); }
@@ -79,15 +65,15 @@
     /* ── Single entry ── */
     .al-entry {
       display: flex; align-items: center; gap: 14px;
-      padding: 14px 16px;
-      background: var(--card-bg);
-      border: 0.5px solid var(--card-border);
-      border-radius: 14px;
+      padding: 14px 16px; background: var(--card-bg);
+      border: 0.5px solid var(--card-border); border-radius: 14px;
       box-shadow: var(--sh-sm);
       transition: box-shadow 0.2s, transform 0.2s, background 0.25s;
       animation: fadeIn 0.25s ease both;
     }
-    .al-entry:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
+    .al-entry.clickable { cursor: pointer; }
+    .al-entry.clickable:hover { box-shadow: var(--sh-md); transform: translateY(-1px); background: var(--primary-light); }
+    .al-entry:not(.clickable):hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
 
     .al-avatar {
       width: 42px; height: 42px; border-radius: 50%;
@@ -97,28 +83,29 @@
     }
     .al-body { flex: 1; min-width: 0; }
     .al-entry-title {
-      font-size: .88rem; font-weight: 600;
-      color: var(--text-primary);
+      font-size: .88rem; font-weight: 600; color: var(--text-primary);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .al-entry-detail {
-      font-size: .75rem; color: var(--text-muted);
-      margin-top: 2px;
+      font-size: .75rem; color: var(--text-muted); margin-top: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .al-time {
       font-size: .7rem; color: var(--text-muted);
       white-space: nowrap; flex-shrink: 0;
-      background: var(--input-bg);
-      padding: 3px 9px; border-radius: 9999px;
-      border: 0.5px solid var(--input-border);
+      background: var(--input-bg); padding: 3px 9px;
+      border-radius: 9999px; border: 0.5px solid var(--input-border);
     }
+    .al-chevron {
+      width: 14px; height: 14px; flex-shrink: 0; margin-left: 2px;
+      stroke: var(--text-muted); fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+      transition: stroke 0.15s;
+    }
+    .al-entry.clickable:hover .al-chevron { stroke: var(--primary); }
 
     /* ── Empty state ── */
-    .al-empty {
-      text-align: center; padding: 60px 0;
-      color: var(--text-muted);
-    }
+    .al-empty { text-align: center; padding: 60px 0; color: var(--text-muted); }
     .al-empty-icon { font-size: 2.8rem; display: block; margin-bottom: 12px; }
     .al-empty-title { font-size: 1rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
     .al-empty-sub { font-size: .82rem; }
@@ -126,16 +113,15 @@
     /* ── Date group label ── */
     .al-date-group {
       font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .07em; color: var(--text-muted);
-      padding: 10px 4px 4px;
+      letter-spacing: .07em; color: var(--text-muted); padding: 10px 4px 4px;
     }
 
-    /* ── Count badge ── */
-    .al-count {
-      font-size: .75rem; font-weight: 600;
-      color: var(--text-muted);
-      padding: 2px 0 16px;
-    }
+    /* ── Count ── */
+    .al-count { font-size: .75rem; font-weight: 600; color: var(--text-muted); padding: 2px 0 16px; }
+
+    /* ── Modal animations ── */
+    @keyframes alFadeIn  { from { opacity:0 } to { opacity:1 } }
+    @keyframes alSlideUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
   </style>
 </head>
 <body>
@@ -160,12 +146,12 @@
 
   <!-- Filter chips -->
   <div class="al-filter-bar" id="filterBar">
-    <button class="al-filter-chip active" data-filter="all" onclick="setFilter('all',this)">All</button>
-    <button class="al-filter-chip" data-filter="attendance" onclick="setFilter('attendance',this)">Attendance</button>
-    <button class="al-filter-chip" data-filter="student" onclick="setFilter('student',this)">Students</button>
-    <button class="al-filter-chip" data-filter="grades" onclick="setFilter('grades',this)">Grades</button>
-    <button class="al-filter-chip" data-filter="ai" onclick="setFilter('ai',this)">AI / Lessons</button>
-    <button class="al-filter-chip" data-filter="calendar" onclick="setFilter('calendar',this)">Calendar</button>
+    <button class="al-filter-chip active" onclick="setFilter('all',this)">All</button>
+    <button class="al-filter-chip" onclick="setFilter('attendance',this)">Attendance</button>
+    <button class="al-filter-chip" onclick="setFilter('student',this)">Students</button>
+    <button class="al-filter-chip" onclick="setFilter('grades',this)">Grades</button>
+    <button class="al-filter-chip" onclick="setFilter('ai',this)">AI / Lessons</button>
+    <button class="al-filter-chip" onclick="setFilter('calendar',this)">Calendar</button>
   </div>
 
   <div id="alCount" class="al-count"></div>
@@ -174,13 +160,31 @@
 
 <script src="../activity_log.js"></script>
 <script>
+  // ── Filter map ──
   const FILTER_MAP = {
-    all:       null,
+    all:        null,
     attendance: ['attendance_saved','attendance_present','attendance_late','attendance_absent'],
     student:    ['student_added','student_updated','student_deleted','student_imported'],
     grades:     ['grades_saved'],
     ai:         ['ai_chat','lesson_plan','quiz_generated'],
     calendar:   ['calendar_entry'],
+  };
+
+  // ── Route map: activity type → sidebar URL ──
+  const ROUTE_MAP = {
+    attendance_saved:   'attendance/attendance.html',
+    attendance_present: 'attendance/attendance.html',
+    attendance_late:    'attendance/attendance.html',
+    attendance_absent:  'attendance/attendance.html',
+    student_added:      'Student/Student.html',
+    student_updated:    'Student/Student.html',
+    student_deleted:    'Student/Student.html',
+    student_imported:   'Student/Student.html',
+    grades_saved:       'Grades/Grades.php',
+    ai_chat:            'ai/classinstruct-ai.html',
+    lesson_plan:        'ai/classinstruct-ai.html',
+    quiz_generated:     'ai/classinstruct-ai.html',
+    calendar_entry:     'Calendar/calendarPAGE.html',
   };
 
   let currentFilter = 'all';
@@ -190,6 +194,16 @@
     document.querySelectorAll('.al-filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     render();
+  }
+
+  function navigateTo(type) {
+    const url = ROUTE_MAP[type];
+    if (!url) return;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'CI_NAV', url: url }, '*');
+    } else {
+      window.location.href = '../' + url;
+    }
   }
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -211,10 +225,7 @@
     const countEl = document.getElementById('alCount');
     if (!listEl) return;
 
-    // Get all 50 entries from storage
-    const all = window.CILog.get(50);
-
-    // Filter
+    const all     = window.CILog.get(50);
     const allowed = FILTER_MAP[currentFilter];
     const entries = allowed ? all.filter(e => allowed.includes(e.type)) : all;
 
@@ -230,7 +241,6 @@
       return;
     }
 
-    // Group by day
     let html = '';
     let lastDay = null;
     entries.forEach(e => {
@@ -239,34 +249,69 @@
         html += `<div class="al-date-group">${esc(day)}</div>`;
         lastDay = day;
       }
+      const hasRoute  = !!ROUTE_MAP[e.type];
+      const clickAttr = hasRoute ? `onclick="navigateTo('${esc(e.type)}')"` : '';
+      const chevron   = hasRoute
+        ? `<svg class="al-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`
+        : '';
       html += `
-        <div class="al-entry">
+        <div class="al-entry${hasRoute ? ' clickable' : ''}" ${clickAttr}>
           <div class="al-avatar" style="background:${esc(e.gradient)}">${esc(e.icon)}</div>
           <div class="al-body">
             <div class="al-entry-title">${esc(e.title)}</div>
             <div class="al-entry-detail">${esc(e.detail)}</div>
           </div>
           <span class="al-time">${esc(e.relTime)}</span>
+          ${chevron}
         </div>`;
     });
     listEl.innerHTML = html;
   }
 
+  // ── Custom clear confirmation modal ──
   function clearLog() {
-    if (!confirm('Clear all activity log entries?')) return;
-    window.CILog.clear();
-    render();
+    const overlay = document.createElement('div');
+    overlay.id = 'alClearModal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:alFadeIn 0.15s ease;';
+    overlay.innerHTML = `
+      <div style="background:var(--card-bg);border:0.5px solid var(--card-border);border-radius:18px;padding:28px 28px 24px;width:340px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);animation:alSlideUp 0.18s ease;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+          </svg>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Clear Activity Log?</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:24px;">This will permanently delete all activity entries. This action cannot be undone.</div>
+        <div style="display:flex;gap:10px;">
+          <button id="alClearCancel" style="flex:1;padding:11px;background:var(--input-bg);border:0.5px solid var(--input-border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all 0.15s;">Cancel</button>
+          <button id="alClearConfirm" style="flex:1;padding:11px;background:#ef4444;border:none;border-radius:10px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;transition:all 0.15s;">Clear All</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    document.getElementById('alClearCancel').focus();
+
+    function close() { document.body.removeChild(overlay); }
+
+    document.getElementById('alClearCancel').onclick  = close;
+    document.getElementById('alClearConfirm').onclick = function() {
+      window.CILog.clear();
+      close();
+      render();
+    };
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    overlay.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
   }
 
-  // Listen for new entries pushed from other pages
+  // ── Listen for messages ──
   window.addEventListener('message', function(e) {
-    if (e.data && (e.data.type === 'CI_ACTIVITY_UPDATE')) render();
-    if (e.data && e.data.type === 'CI_THEME') {
+    if (e.data && e.data.type === 'CI_ACTIVITY_UPDATE') render();
+    if (e.data && (e.data.type === 'CI_THEME' || e.data.type === 'CI_SET_THEME')) {
       document.documentElement.setAttribute('data-theme', e.data.theme);
     }
   });
 
-  // Initial render (wait for CILog to be available)
+  // ── Initial render ──
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.CILog !== 'undefined') { render(); return; }
     const t = setInterval(function() {
