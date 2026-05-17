@@ -457,39 +457,39 @@ function addAiMessage(text, isError = false) {
   const qMeta = pendingQuizMeta;
   pendingQuizMeta = null;
 
-  let pdfBtnHTML = '';
-  if (lpMeta && !isError) {
-    const attrs = `data-text="${escapeAttr(text)}" data-subject="${escapeAttr(lpMeta.subject)}" data-grade="${escapeAttr(lpMeta.grade)}" data-topic="${escapeAttr(lpMeta.topic)}" data-framework="${escapeAttr(lpMeta.frameworkLabel)}" data-duration="${escapeAttr(lpMeta.duration)}"`;
-    pdfBtnHTML = `
-      <div class="lp-export-bar">
-        <span class="pdf-label">Lesson Plan Ready</span>
-        <div class="lp-export-btns">
-          <button class="lp-export-btn lp-btn-pdf" onclick="downloadLessonPlanPDF(this)" ${attrs} title="Download formatted lesson plan PDF">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Lesson Plan PDF
-          </button>
-          <button class="lp-export-btn lp-btn-handout" onclick="downloadHandoutPDF(this)" ${attrs} title="Download student handout PDF">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Student Handout
-          </button>
-          <button class="lp-export-btn lp-btn-text" onclick="copyPlainText(this)" ${attrs} title="Copy plain text to clipboard">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            Copy Text
-          </button>
-        </div>
-      </div>`;
+  const isCollapsible = (lpMeta || qMeta) && !isError;
+
+  if (isCollapsible) {
+    // Show compact summary card — full text hidden, revealed via View Full modal
+    const label  = lpMeta ? 'Lesson Plan' : 'Quiz';
+    const topic  = lpMeta ? lpMeta.topic  : qMeta.topic;
+    const grade  = lpMeta ? lpMeta.grade  : qMeta.grade;
+    const subject = lpMeta ? lpMeta.subject : '';
+    const meta2  = lpMeta
+      ? `${lpMeta.frameworkLabel} · ${lpMeta.duration}`
+      : `${qMeta.count} questions · ${qMeta.type} · ${qMeta.diff}`;
+
+    messageDiv.innerHTML = buildCollapsedCard({ label, topic, grade, subject, meta2 });
+
+    if (lpMeta) {
+      const attrs = `data-text="${escapeAttr(text)}" data-subject="${escapeAttr(lpMeta.subject)}" data-grade="${escapeAttr(lpMeta.grade)}" data-topic="${escapeAttr(lpMeta.topic)}" data-framework="${escapeAttr(lpMeta.frameworkLabel)}" data-duration="${escapeAttr(lpMeta.duration)}"`;
+      const exportBar = document.createElement('div');
+      exportBar.className = 'lp-export-bar';
+      exportBar.innerHTML = buildLpExportBtnsHTML(attrs);
+      messageDiv.appendChild(exportBar);
+    }
+
+    if (qMeta) {
+      const qAttrs = `data-text="${escapeAttr(text)}" data-topic="${escapeAttr(qMeta.topic)}" data-grade="${escapeAttr(qMeta.grade)}" data-count="${escapeAttr(qMeta.count)}" data-qtype="${escapeAttr(qMeta.type)}" data-diff="${escapeAttr(qMeta.diff)}"`;
+      const qBar = document.createElement('div');
+      qBar.className = 'quiz-export-bar';
+      qBar.innerHTML = buildQuizExportBarHTML(qAttrs);
+      messageDiv.appendChild(qBar);
+    }
+  } else {
+    messageDiv.innerHTML = `<div class="message-content">${formatMessage(text)}</div>`;
   }
 
-  messageDiv.innerHTML = `<div class="message-content">${formatMessage(text)}</div>${pdfBtnHTML}`;
-
-  // Append quiz export bar if needed
-  if (qMeta && !isError) {
-    const qAttrs = `data-text="${escapeAttr(text)}" data-topic="${escapeAttr(qMeta.topic)}" data-grade="${escapeAttr(qMeta.grade)}" data-count="${escapeAttr(qMeta.count)}" data-qtype="${escapeAttr(qMeta.type)}" data-diff="${escapeAttr(qMeta.diff)}"`;
-    const qBar = document.createElement('div');
-    qBar.className = 'quiz-export-bar';
-    qBar.innerHTML = buildQuizExportBarHTML(qAttrs);
-    messageDiv.appendChild(qBar);
-  }
   chatMessages.appendChild(messageDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   if (!isError) { chatHistory.push({ role: 'ai', text, timestamp: new Date() }); saveChat(); }
@@ -866,41 +866,40 @@ window.handleSendMessageWithFile = async function() {
       { imageBase64: isVideoFile ? null : imageB64, imageMimeType: isVideoFile ? null : imageMime, docText, fileUri, fileMimeType }
     );
 
-    // Attach export buttons if this was a lesson plan
+    // Attach export buttons if this was a lesson plan or quiz
     const lpMeta = pendingLessonPlanMeta;
     pendingLessonPlanMeta = null;
-    if (lpMeta && fullText) {
-      const attrs = `data-text="${escapeAttr(fullText)}" data-subject="${escapeAttr(lpMeta.subject)}" data-grade="${escapeAttr(lpMeta.grade)}" data-topic="${escapeAttr(lpMeta.topic)}" data-framework="${escapeAttr(lpMeta.frameworkLabel)}" data-duration="${escapeAttr(lpMeta.duration)}"`;
-      const exportBar = document.createElement('div');
-      exportBar.className = 'lp-export-bar';
-      exportBar.innerHTML = `
-        <span class="pdf-label">Lesson Plan Ready</span>
-        <div class="lp-export-btns">
-          <button class="lp-export-btn lp-btn-pdf" onclick="downloadLessonPlanPDF(this)" ${attrs} title="Download formatted lesson plan PDF">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Lesson Plan PDF
-          </button>
-          <button class="lp-export-btn lp-btn-handout" onclick="downloadHandoutPDF(this)" ${attrs} title="Download student handout PDF">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Student Handout
-          </button>
-          <button class="lp-export-btn lp-btn-text" onclick="copyPlainText(this)" ${attrs} title="Copy plain text to clipboard">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            Copy Text
-          </button>
-        </div>`;
-      messageDiv.appendChild(exportBar);
-    }
-
-    // Attach quiz export bar if this was a quiz
     const qMeta = pendingQuizMeta;
     pendingQuizMeta = null;
-    if (qMeta && fullText) {
-      const qAttrs = `data-text="${escapeAttr(fullText)}" data-topic="${escapeAttr(qMeta.topic)}" data-grade="${escapeAttr(qMeta.grade)}" data-count="${escapeAttr(qMeta.count)}" data-qtype="${escapeAttr(qMeta.type)}" data-diff="${escapeAttr(qMeta.diff)}"`;
-      const qBar = document.createElement('div');
-      qBar.className = 'quiz-export-bar';
-      qBar.innerHTML = buildQuizExportBarHTML(qAttrs);
-      messageDiv.appendChild(qBar);
+
+    if ((lpMeta || qMeta) && fullText) {
+      // Collapse the live-streamed text into a compact summary card
+      const label  = lpMeta ? 'Lesson Plan' : 'Quiz';
+      const topic  = lpMeta ? lpMeta.topic  : qMeta.topic;
+      const grade  = lpMeta ? lpMeta.grade  : qMeta.grade;
+      const subject = lpMeta ? lpMeta.subject : '';
+      const meta2  = lpMeta
+        ? `${lpMeta.frameworkLabel} · ${lpMeta.duration}`
+        : `${qMeta.count} questions · ${qMeta.type} · ${qMeta.diff}`;
+
+      // Replace streamed text with the collapsed card
+      contentDiv.outerHTML = buildCollapsedCard({ label, topic, grade, subject, meta2 });
+
+      if (lpMeta) {
+        const attrs = `data-text="${escapeAttr(fullText)}" data-subject="${escapeAttr(lpMeta.subject)}" data-grade="${escapeAttr(lpMeta.grade)}" data-topic="${escapeAttr(lpMeta.topic)}" data-framework="${escapeAttr(lpMeta.frameworkLabel)}" data-duration="${escapeAttr(lpMeta.duration)}"`;
+        const exportBar = document.createElement('div');
+        exportBar.className = 'lp-export-bar';
+        exportBar.innerHTML = buildLpExportBtnsHTML(attrs);
+        messageDiv.appendChild(exportBar);
+      }
+
+      if (qMeta) {
+        const qAttrs = `data-text="${escapeAttr(fullText)}" data-topic="${escapeAttr(qMeta.topic)}" data-grade="${escapeAttr(qMeta.grade)}" data-count="${escapeAttr(qMeta.count)}" data-qtype="${escapeAttr(qMeta.type)}" data-diff="${escapeAttr(qMeta.diff)}"`;
+        const qBar = document.createElement('div');
+        qBar.className = 'quiz-export-bar';
+        qBar.innerHTML = buildQuizExportBarHTML(qAttrs);
+        messageDiv.appendChild(qBar);
+      }
     }
 
     if (fullText) {
@@ -1842,6 +1841,9 @@ async function parseModalResource(inputEl, topicFieldId, statusId, subjectFieldI
       white-space: nowrap;
     }
     .lp-export-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+    .lp-btn-view    { background: #f5f3ff; color: #6c63ff; border: 1.5px solid #c4b5fd; }
+    .lp-btn-view:hover:not(:disabled) { background: #ede9fe; transform: translateY(-1px); }
+    [data-theme="dark"] .lp-btn-view { background: #1c1a3a; color: #a78bfa; border-color: #4c3d8f; }
     .lp-btn-pdf     { background: #6c63ff; color: #fff; }
     .lp-btn-pdf:hover:not(:disabled) { background: #5548e8; transform: translateY(-1px); }
     .lp-btn-handout { background: #0891b2; color: #fff; }
@@ -2038,6 +2040,451 @@ async function copyPlainText(btn) {
 }
 
 // ============================================
+// COLLAPSED CARD — shown instead of long text
+// ============================================
+
+function buildCollapsedCard({ label, topic, grade, subject, meta2 }) {
+  const icon = label === 'Lesson Plan'
+    ? `<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`
+    : `<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>`;
+  const subjectLine = subject ? `<span class="cc-tag">${escapeHtml(subject)}</span>` : '';
+  return `
+    <div class="collapsed-card">
+      <div class="cc-icon">${icon}</div>
+      <div class="cc-body">
+        <div class="cc-label">${label} Generated</div>
+        <div class="cc-topic">${escapeHtml(topic)}</div>
+        <div class="cc-meta">${escapeHtml(grade)}${subject ? ' &nbsp;·&nbsp; ' + escapeHtml(subject) : ''} &nbsp;·&nbsp; ${escapeHtml(meta2)}</div>
+      </div>
+      <div class="cc-hint">Click <strong>View Full</strong> to read</div>
+    </div>`;
+}
+
+function buildLpExportBtnsHTML(attrs) {
+  return `
+    <span class="pdf-label">Lesson Plan Ready</span>
+    <div class="lp-export-btns">
+      <button class="lp-export-btn lp-btn-view" onclick="openFullTextModal(this, 'Lesson Plan')" ${attrs} title="View full lesson plan">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        View Full
+      </button>
+      <button class="lp-export-btn lp-btn-pdf" onclick="downloadLessonPlanPDF(this)" ${attrs} title="Download lesson plan PDF">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Lesson Plan PDF
+      </button>
+      <button class="lp-export-btn lp-btn-handout" onclick="downloadHandoutPDF(this)" ${attrs} title="Download student handout PDF">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Student Handout
+      </button>
+      <button class="lp-export-btn lp-btn-text" onclick="copyPlainText(this)" ${attrs} title="Copy plain text">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        Copy Text
+      </button>
+    </div>`;
+}
+
+// ── Format content for full-text modal (renders markdown properly) ──
+function formatModalContent(text) {
+  // Work on raw lines FIRST (before escaping) so regex patterns match cleanly
+  const rawLines = text.split('\n');
+  let html = '';
+  let inList = false;
+  let listTag = '';
+
+  const closeList = () => {
+    if (inList) { html += `</${listTag}>`; inList = false; listTag = ''; }
+  };
+
+  // Escape then apply inline markdown
+  const render = (str) => {
+    // escape HTML first
+    let s = str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    // then apply inline markdown
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    s = s.replace(/`([^`]+)`/g, '<code class="ftm-code">$1</code>');
+    return s;
+  };
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const raw = rawLines[i];
+    const line = raw.trim();
+
+    // blank line
+    if (!line) {
+      closeList();
+      html += '<div class="ftm-spacer"></div>';
+      continue;
+    }
+
+    // Markdown headings (### ## #)
+    const h3m = line.match(/^###\s+(.+)/);
+    if (h3m) { closeList(); html += `<h3 class="ftm-h3">${render(h3m[1])}</h3>`; continue; }
+
+    const h2m = line.match(/^##\s+(.+)/);
+    if (h2m) { closeList(); html += `<h2 class="ftm-h2">${render(h2m[1])}</h2>`; continue; }
+
+    const h1m = line.match(/^#\s+(.+)/);
+    if (h1m) { closeList(); html += `<h1 class="ftm-h1">${render(h1m[1])}</h1>`; continue; }
+
+    // Phase headings: "1. ENGAGE - 15 minutes" or "1. ACTIVATE"
+    const isPhaseHeading = /^\d+\.\s+[A-Z]{2,}/.test(line);
+    if (isPhaseHeading) {
+      closeList();
+      html += `<div class="ftm-phase">${render(line)}</div>`;
+      continue;
+    }
+
+    // ALL CAPS section headings like "LEARNING OBJECTIVES" or "MATERIALS NEEDED"
+    const isAllCaps = /^[A-Z][A-Z\s\/\-–]{4,}$/.test(line) && line.length < 70;
+    if (isAllCaps) {
+      closeList();
+      html += `<div class="ftm-allcaps">${render(line)}</div>`;
+      continue;
+    }
+
+    // Sub-label lines like "Activity: Exit Ticket" or "Description:" or "Time: 15 minutes"
+    const isSubLabel = /^(Activity|Description|Time|Materials?|Objective|Assessment|Note|Example|Instructions?|Step|Vocabulary|Standard|Differentiat|Resources?|Cross-curricular|Connection)\b.*:/.test(line);
+    if (isSubLabel) {
+      closeList();
+      html += `<div class="ftm-sublabel">${render(line)}</div>`;
+      continue;
+    }
+
+    // Unordered list: - item or * item
+    const ulm = line.match(/^[-*•]\s+(.+)/);
+    if (ulm) {
+      if (!inList || listTag !== 'ul') { closeList(); html += '<ul class="ftm-ul">'; inList = true; listTag = 'ul'; }
+      html += `<li>${render(ulm[1])}</li>`;
+      continue;
+    }
+
+    // Ordered sub-list inside a section (e.g. "1. Calculating the area...")
+    // Only treat as list if NOT a phase heading
+    const olm = line.match(/^(\d+)[.)]\s+(.+)/);
+    if (olm && !isPhaseHeading) {
+      if (!inList || listTag !== 'ol') { closeList(); html += '<ol class="ftm-ol">'; inList = true; listTag = 'ol'; }
+      html += `<li>${render(olm[2])}</li>`;
+      continue;
+    }
+
+    // Normal paragraph
+    closeList();
+    html += `<p class="ftm-p">${render(line)}</p>`;
+  }
+
+  closeList();
+  return html;
+}
+
+// ── Safe clipboard copy with execCommand fallback ──────────
+function copyFtmContent(btn) {
+  const el = document.getElementById('ftm-overlay');
+  if (!el) return;
+  const text = el.querySelector('.ftm-content').innerText || '';
+
+  const originalHTML = btn.innerHTML;
+  const success = () => {
+    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!`;
+    showToast('Copied to clipboard!');
+    setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+  };
+
+  // Modern Clipboard API (https only)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(success).catch(() => {
+      // fallback if rejected (e.g. permissions)
+      execCommandCopy(text, success);
+    });
+  } else {
+    execCommandCopy(text, success);
+  }
+}
+
+function execCommandCopy(text, onSuccess) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    const ok = document.execCommand('copy');
+    if (ok && onSuccess) onSuccess();
+    else showToast('Copy failed — please copy manually.', 'error');
+  } catch {
+    showToast('Copy failed — please copy manually.', 'error');
+  }
+  ta.remove();
+}
+
+// ── Full-text view modal ───────────────────────────────────
+function openFullTextModal(btn, label) {
+  const text = btn.dataset.text || '';
+
+  const existing = document.getElementById('ftm-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ftm-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-panel modal-panel-wide" style="max-width:700px; display:flex; flex-direction:column; max-height:88vh;">
+      <div class="modal-header">
+        <div>
+          <p class="modal-title">${label}</p>
+          <p class="modal-subtitle">Full generated content</p>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('ftm-overlay').remove()" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body ftm-scroll" style="flex:1; overflow-y:auto; padding:24px 28px;">
+        <div class="ftm-content">${formatModalContent(text)}</div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel-btn" onclick="document.getElementById('ftm-overlay').remove()">Close</button>
+        <button class="modal-action-btn" onclick="copyFtmContent(this)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          Copy All
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  // Always re-inject styles (removes stale version if present)
+  const _old = document.getElementById('ftm-styles');
+  if (_old) _old.remove();
+  {
+    const s = document.createElement('style');
+    s.id = 'ftm-styles';
+    s.textContent = `
+      /* ── Collapsed card ── */
+      .collapsed-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        border: 1.5px solid #c4b5fd;
+        border-radius: 14px;
+        min-width: 260px;
+      }
+      [data-theme="dark"] .collapsed-card {
+        background: linear-gradient(135deg, #1c1a3a, #251f4a);
+        border-color: #4c3d8f;
+      }
+      .cc-icon {
+        width: 42px; height: 42px;
+        background: #6c63ff;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .cc-body { flex: 1; min-width: 0; }
+      .cc-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #6c63ff;
+        margin-bottom: 2px;
+      }
+      .cc-topic {
+        font-size: 0.97rem;
+        font-weight: 700;
+        color: var(--modal-title, #1e293b);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cc-meta {
+        font-size: 0.75rem;
+        color: var(--modal-subtitle, #64748b);
+        margin-top: 2px;
+      }
+      .cc-hint {
+        font-size: 0.72rem;
+        color: #a78bfa;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* ── Full-text modal scrollbar ── */
+      .ftm-scroll::-webkit-scrollbar { width: 5px; }
+      .ftm-scroll::-webkit-scrollbar-track { background: transparent; }
+      .ftm-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
+
+      /* ── Full text content ── */
+      .ftm-content {
+        font-size: 0.93rem;
+        line-height: 1.7;
+        color: var(--form-input-color, #1e293b);
+      }
+
+      /* Phase headings: "1. ENGAGE - 10 minutes" */
+      .ftm-phase {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 22px 0 10px;
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: #6c63ff;
+        letter-spacing: -0.01em;
+        padding: 10px 14px;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        border-left: 4px solid #6c63ff;
+        border-radius: 0 8px 8px 0;
+      }
+      [data-theme="dark"] .ftm-phase {
+        background: linear-gradient(135deg, #1c1a3a, #251f4a);
+        color: #a78bfa;
+        border-left-color: #a78bfa;
+      }
+
+      /* Section label headings: "Activity:" / "Description:" */
+      .ftm-section-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 14px 0 4px;
+      }
+      [data-theme="dark"] .ftm-section-label { color: #94a3b8; }
+
+      /* Markdown headings */
+      .ftm-h1 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--modal-title, #1e293b);
+        margin: 20px 0 10px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e8e5ff;
+      }
+      .ftm-h2 {
+        font-size: 1.08rem;
+        font-weight: 700;
+        color: #6c63ff;
+        margin: 18px 0 8px;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        border-left: 3px solid #6c63ff;
+        border-radius: 0 7px 7px 0;
+      }
+      [data-theme="dark"] .ftm-h2 {
+        background: linear-gradient(135deg, #1c1a3a, #251f4a);
+        color: #a78bfa;
+        border-left-color: #a78bfa;
+      }
+      .ftm-h3 {
+        font-size: 0.97rem;
+        font-weight: 700;
+        color: var(--modal-title, #1e293b);
+        margin: 14px 0 6px;
+      }
+
+      /* Paragraph */
+      .ftm-p {
+        margin: 4px 0 6px;
+        color: var(--form-input-color, #334155);
+      }
+
+      /* Spacer (blank line) */
+      .ftm-spacer { height: 8px; }
+
+      /* Lists */
+      .ftm-ul {
+        list-style: none;
+        padding: 0;
+        margin: 6px 0 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .ftm-ul li {
+        position: relative;
+        padding-left: 20px;
+        color: var(--form-input-color, #334155);
+        line-height: 1.55;
+      }
+      .ftm-ul li::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 9px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #6c63ff;
+      }
+      .ftm-ol {
+        padding-left: 24px;
+        margin: 6px 0 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .ftm-ol li {
+        color: var(--form-input-color, #334155);
+        line-height: 1.55;
+        padding-left: 4px;
+      }
+      .ftm-ol li::marker { color: #6c63ff; font-weight: 700; }
+
+      /* Inline code */
+      .ftm-code {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.82em;
+        background: rgba(108,99,255,0.10);
+        color: #5548e8;
+        border: 1px solid rgba(108,99,255,0.22);
+        border-radius: 5px;
+        padding: 1px 6px;
+      }
+      [data-theme="dark"] .ftm-code {
+        background: rgba(108,99,255,0.18);
+        color: #a78bfa;
+        border-color: rgba(108,99,255,0.35);
+      }
+
+      /* ALL CAPS headings like "LEARNING OBJECTIVES" */
+      .ftm-allcaps {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6c63ff;
+        margin: 20px 0 6px;
+        padding: 0 0 5px;
+        border-bottom: 1.5px solid #e8e5ff;
+      }
+      [data-theme="dark"] .ftm-allcaps {
+        color: #a78bfa;
+        border-bottom-color: #2d274a;
+      }
+
+      /* Sub-labels: "Activity: Exit Ticket" / "Description: ..." */
+      .ftm-sublabel {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--modal-title, #1e293b);
+        margin: 12px 0 3px;
+      }
+      .ftm-sublabel strong { color: #6c63ff; }
+      [data-theme="dark"] .ftm-sublabel { color: var(--modal-title, #e2e8f0); }
+
+      strong { font-weight: 700; }
+      em { font-style: italic; }
+    `;
+    document.head.appendChild(s);
+  }
+}
+
+// ============================================
 // QUIZ EXPORT — PPT + Copy Text
 // ============================================
 
@@ -2045,6 +2492,10 @@ function buildQuizExportBarHTML(attrs) {
   return `
     <span class="pdf-label" style="color:#7c3aed;">Quiz Ready</span>
     <div class="lp-export-btns">
+      <button class="lp-export-btn lp-btn-view" onclick="openFullTextModal(this, 'Quiz')" ${attrs} title="View full quiz">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        View Full
+      </button>
       <button class="lp-export-btn quiz-btn-ppt" onclick="downloadQuizPPT(this)" ${attrs} title="Download interactive quiz PowerPoint">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
         Quiz PPT

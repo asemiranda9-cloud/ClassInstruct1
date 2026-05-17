@@ -230,13 +230,14 @@ select.form-input {
 /* Modal footer */
 .modal-footer {
   padding: 16px 24px; border-top: 1px solid var(--modal-sep);
-  display: flex; gap: 10px; justify-content: flex-end;
+  display: flex; gap: 10px; justify-content: flex-end; align-items: center;
 }
 .modal-cancel-btn {
   padding: 10px 20px; border-radius: 10px;
   border: 1.5px solid var(--cancel-border);
   background: var(--cancel-bg); color: var(--cancel-color);
   font-size: 0.9rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s;
+  display: inline-flex; align-items: center;
 }
 .modal-cancel-btn:hover { border-color: #6c63ff; color: var(--cancel-hover-color); }
 .modal-cancel-btn.danger { color: #ef4444; border-color: #f87171; }

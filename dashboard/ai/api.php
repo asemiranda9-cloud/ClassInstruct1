@@ -123,7 +123,7 @@ function curlGet(string $url, int $timeout = 10): array {
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $ctype  = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $err    = curl_error($ch);
-    curl_close($ch);
+
     return ['body' => $body, 'status' => $status, 'ctype' => $ctype, 'error' => $err];
 }
 
@@ -139,7 +139,7 @@ function curlPost(string $url, array $headers, string $payload, int $timeout = 3
     $body   = curl_exec($ch);
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err    = curl_error($ch);
-    curl_close($ch);
+
     return ['body' => $body, 'status' => $status, 'error' => $err];
 }
 
@@ -269,7 +269,7 @@ function handleUploadVideo(array $body, string $apiKey): void {
     ]);
     $initResp   = curl_exec($ch);
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-    curl_close($ch);
+
 
     $rawHeaders = substr($initResp, 0, $headerSize);
     $uploadUrl  = '';
@@ -295,7 +295,7 @@ function handleUploadVideo(array $body, string $apiKey): void {
         CURLOPT_TIMEOUT => 120,
     ]);
     $uploadBody = curl_exec($ch2);
-    curl_close($ch2);
+
 
     $fileData = json_decode($uploadBody, true);
     $fileUri  = $fileData['file']['uri']   ?? '';
@@ -414,7 +414,7 @@ function handleChat(array $body, string $apiKey): void {
     $ok     = curl_exec($ch);
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err    = curl_error($ch);
-    curl_close($ch);
+
 
     if (!$ok || $err) {
         $sendEvent(['error' => 'Server error. Please try again.']);
