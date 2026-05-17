@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library – ClassInstruct</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="library.css">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  </script>
+</head>
+<body data-page="library">
+
+<!-- TOAST -->
+<div class="toast" id="libToast"></div>
+
+<!-- ── HEADER ── -->
+<header class="lib-header">
+  <div class="lib-header-left">
+    <div>
+      <div class="lib-title">📚 Library</div>
+      <div class="lib-subtitle">Your lesson plans, quizzes & teaching resources</div>
+    </div>
+  </div>
+  <div class="lib-header-right">
+    <div class="lib-search">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="search" id="libSearch" placeholder="Search library..." oninput="filterLibrary()" />
+    </div>
+    <button class="lib-add-btn" onclick="openAddModal()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Add Resource
+    </button>
+  </div>
+</header>
+
+<!-- ── BODY ── -->
+<div class="lib-body">
+
+  <!-- LEFT FILTER PANEL -->
+  <aside class="lib-filter-panel">
+    <div>
+      <div class="filter-section-label">Browse</div>
+      <button class="filter-btn active" onclick="setFilter('all', this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        All Items
+        <span class="filter-count" id="count-all">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('lesson_plan', this)">
+        <span class="filter-dot" style="background:#6c63ff"></span>
+        Lesson Plans
+        <span class="filter-count" id="count-lesson_plan">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('quiz', this)">
+        <span class="filter-dot" style="background:#10b981"></span>
+        Quizzes
+        <span class="filter-count" id="count-quiz">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('ai_chat', this)">
+        <span class="filter-dot" style="background:#0ea5e9"></span>
+        From AI Chat
+        <span class="filter-count" id="count-ai_chat">0</span>
+      </button>
+    </div>
+    <div>
+      <div class="filter-section-label">Subject</div>
+      <div id="subjectFilterList"></div>
+      <div class="add-subject-row">
+        <input class="add-subject-input" id="newSubjectInput" placeholder="New subject…" maxlength="40"
+          onkeydown="if(event.key==='Enter')addSubject()" />
+        <button class="add-subject-btn" onclick="addSubject()" title="Add subject">+</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="lib-main">
+
+    <!-- STATS -->
+    <div class="lib-stats" id="libStats">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--purple-lt)">
+          <svg width="16" height="16" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">Total Resources</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--green-lt)">
+          <svg width="16" height="16" fill="none" stroke="#10b981" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <div class="stat-num" id="stat-quizzes">0</div>
+        <div class="stat-label">Quizzes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--amber-lt)">
+          <svg width="16" height="16" fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="stat-num" id="stat-lessons">0</div>
+        <div class="stat-label">Lesson Plans</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--sky-lt)">
+          <svg width="16" height="16" fill="none" stroke="#0ea5e9" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="stat-num" id="stat-ai">0</div>
+        <div class="stat-label">From AI Chat</div>
+      </div>
+    </div>
+
+    <!-- GRID SECTION -->
+    <div class="section-header">
+      <span class="section-title" id="sectionTitle">All Resources</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:0.75rem;gap:5px" onclick="openAddModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          New
+        </button>
+        <div class="view-toggle">
+          <button class="view-btn active" id="gridViewBtn" onclick="setView('grid')" title="Grid view">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button class="view-btn" id="listViewBtn" onclick="setView('list')" title="List view">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="lib-grid" id="libGrid"></div>
+
+  </main>
+</div>
+
+<!-- ── ADD / EDIT MODAL ── -->
+<div class="modal-backdrop" id="addModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-icon" id="modalIcon" style="background:var(--purple-lt)">
+        <svg width="20" height="20" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <div>
+        <div class="modal-title" id="modalTitle">Add Resource</div>
+        <div class="modal-subtitle" id="modalSubtitle">Add a lesson plan, quiz, or teaching material</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-input" id="itemType" onchange="updateModalIcon()">
+            <option value="lesson_plan">📋 Lesson Plan</option>
+            <option value="quiz">✅ Quiz</option>
+            <option value="ai_chat">🤖 AI Chat Resource</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select class="form-input" id="itemSubject">
+            <option value="General">General</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="itemTitle" placeholder="e.g. Grade 5 – Fractions Lesson" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grade Level</label>
+          <select class="form-input" id="itemGrade">
+            <option value="">Select Grade Level</option>
+            <optgroup label="Basic Education">
+              <option>Kindergarten</option>
+              <option>Grade 1</option>
+              <option>Grade 2</option>
+              <option>Grade 3</option>
+              <option>Grade 4</option>
+              <option>Grade 5</option>
+              <option>Grade 6</option>
+              <option>Grade 7</option>
+              <option>Grade 8</option>
+              <option>Grade 9</option>
+              <option>Grade 10</option>
+              <option>Grade 11</option>
+              <option>Grade 12</option>
+            </optgroup>
+            <optgroup label="College">
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option>4th Year</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Content / Preview</label>
+        <textarea class="form-input" id="itemContent" placeholder="Paste your lesson plan, quiz questions, or notes here..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Import File (optional)</label>
+        <div class="file-drop-zone" id="fileDropZone"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleFileDrop(event)">
+          <input type="file" id="fileInput" multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
+            onchange="handleFileSelect(this.files)" />
+          <div class="file-drop-icon">📁</div>
+          <div class="file-drop-text">Drop files here or click to browse</div>
+          <div class="file-drop-sub">PDF, Word, Excel, Images supported</div>
+        </div>
+        <div class="file-attached-list" id="attachedFilesList"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input type="text" class="form-input" id="itemTags" placeholder="e.g. fractions, multiplication, quarter 1" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Save to Library
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW / EDIT MODAL ── -->
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal-panel" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-icon" id="viewModalIcon" style="background:var(--purple-lt)">
+        <svg width="20" height="20" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="modal-title" id="viewTitle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Resource</div>
+        <div class="modal-subtitle" id="viewMeta"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem" id="editToggleBtn" onclick="toggleEditMode()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit
+        </button>
+        <button class="modal-close" onclick="closeViewModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="viewBody">
+      <!-- read view -->
+      <div id="readView">
+        <div style="padding:14px;background:var(--input-bg);border-radius:10px;border:0.5px solid var(--input-border);font-size:0.875rem;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;max-height:340px;overflow-y:auto" id="viewContent"></div>
+      </div>
+      <!-- edit view -->
+      <div class="edit-view" id="editView">
+        <div class="edit-toolbar">
+          <button class="edit-tool" onclick="wrapText('**','**')"><b>B</b></button>
+          <button class="edit-tool" onclick="wrapText('*','*')"><i>I</i></button>
+          <button class="edit-tool" onclick="insertText('\n- ')">• List</button>
+          <button class="edit-tool" onclick="insertText('\n1. ')">1. List</button>
+          <button class="edit-tool" onclick="insertText('\n## ')">H2</button>
+          <button class="edit-tool" onclick="insertText('\n---\n')">Divider</button>
+        </div>
+        <textarea class="edit-area" id="editArea" placeholder="Edit your content here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-danger" onclick="deleteItem()" style="margin-right:auto">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete
+      </button>
+      <button class="btn btn-ghost" onclick="downloadPDF()" id="dlPdfBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Export PDF
+      </button>
+      <button class="btn btn-ghost" onclick="downloadPPT()" id="dlPptBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export PPT
+      </button>
+      <button class="btn btn-primary" id="saveEditBtn" style="display:none" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="library.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library – ClassInstruct</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="library.css">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light'); })();
+  </script>
+</head>
+<body data-page="library">
+
+<!-- TOAST -->
+<div class="toast" id="libToast"></div>
+
+<!-- ── HEADER ── -->
+<header class="lib-header">
+  <div class="lib-header-left">
+    <div>
+      <div class="lib-title">📚 Library</div>
+      <div class="lib-subtitle">Your lesson plans, quizzes & teaching resources</div>
+    </div>
+  </div>
+  <div class="lib-header-right">
+    <div class="lib-search">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="search" id="libSearch" placeholder="Search library..." oninput="filterLibrary()" />
+    </div>
+    <button class="lib-add-btn" onclick="openAddModal()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Add Resource
+    </button>
+  </div>
+</header>
+
+<!-- ── BODY ── -->
+<div class="lib-body">
+
+  <!-- LEFT FILTER PANEL -->
+  <aside class="lib-filter-panel">
+    <div>
+      <div class="filter-section-label">Browse</div>
+      <button class="filter-btn active" onclick="setFilter('all', this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        All Items
+        <span class="filter-count" id="count-all">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('lesson_plan', this)">
+        <span class="filter-dot" style="background:#6c63ff"></span>
+        Lesson Plans
+        <span class="filter-count" id="count-lesson_plan">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('quiz', this)">
+        <span class="filter-dot" style="background:#10b981"></span>
+        Quizzes
+        <span class="filter-count" id="count-quiz">0</span>
+      </button>
+      <button class="filter-btn" onclick="setFilter('ai_chat', this)">
+        <span class="filter-dot" style="background:#0ea5e9"></span>
+        From AI Chat
+        <span class="filter-count" id="count-ai_chat">0</span>
+      </button>
+    </div>
+    <div>
+      <div class="filter-section-label">Subject</div>
+      <div id="subjectFilterList"></div>
+      <div class="add-subject-row">
+        <input class="add-subject-input" id="newSubjectInput" placeholder="New subject…" maxlength="40"
+          onkeydown="if(event.key==='Enter')addSubject()" />
+        <button class="add-subject-btn" onclick="addSubject()" title="Add subject">+</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="lib-main">
+
+    <!-- STATS -->
+    <div class="lib-stats" id="libStats">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--purple-lt)">
+          <svg width="16" height="16" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">Total Resources</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--green-lt)">
+          <svg width="16" height="16" fill="none" stroke="#10b981" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <div class="stat-num" id="stat-quizzes">0</div>
+        <div class="stat-label">Quizzes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--amber-lt)">
+          <svg width="16" height="16" fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="stat-num" id="stat-lessons">0</div>
+        <div class="stat-label">Lesson Plans</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--sky-lt)">
+          <svg width="16" height="16" fill="none" stroke="#0ea5e9" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="stat-num" id="stat-ai">0</div>
+        <div class="stat-label">From AI Chat</div>
+      </div>
+    </div>
+
+    <!-- GRID SECTION -->
+    <div class="section-header">
+      <span class="section-title" id="sectionTitle">All Resources</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:0.75rem;gap:5px" onclick="openAddModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          New
+        </button>
+        <div class="view-toggle">
+          <button class="view-btn active" id="gridViewBtn" onclick="setView('grid')" title="Grid view">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button class="view-btn" id="listViewBtn" onclick="setView('list')" title="List view">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="lib-grid" id="libGrid"></div>
+
+  </main>
+</div>
+
+<!-- ── ADD / EDIT MODAL ── -->
+<div class="modal-backdrop" id="addModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-icon" id="modalIcon" style="background:var(--purple-lt)">
+        <svg width="20" height="20" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <div>
+        <div class="modal-title" id="modalTitle">Add Resource</div>
+        <div class="modal-subtitle" id="modalSubtitle">Add a lesson plan, quiz, or teaching material</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-input" id="itemType" onchange="updateModalIcon()">
+            <option value="lesson_plan">📋 Lesson Plan</option>
+            <option value="quiz">✅ Quiz</option>
+            <option value="ai_chat">🤖 AI Chat Resource</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select class="form-input" id="itemSubject">
+            <option value="General">General</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="itemTitle" placeholder="e.g. Grade 5 – Fractions Lesson" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grade Level</label>
+          <select class="form-input" id="itemGrade">
+            <option value="">Select Grade Level</option>
+            <optgroup label="Basic Education">
+              <option>Kindergarten</option>
+              <option>Grade 1</option>
+              <option>Grade 2</option>
+              <option>Grade 3</option>
+              <option>Grade 4</option>
+              <option>Grade 5</option>
+              <option>Grade 6</option>
+              <option>Grade 7</option>
+              <option>Grade 8</option>
+              <option>Grade 9</option>
+              <option>Grade 10</option>
+              <option>Grade 11</option>
+              <option>Grade 12</option>
+            </optgroup>
+            <optgroup label="College">
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option>4th Year</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Content / Preview</label>
+        <textarea class="form-input" id="itemContent" placeholder="Paste your lesson plan, quiz questions, or notes here..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Import File (optional)</label>
+        <div class="file-drop-zone" id="fileDropZone"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleFileDrop(event)">
+          <input type="file" id="fileInput" multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp"
+            onchange="handleFileSelect(this.files)" />
+          <div class="file-drop-icon">📁</div>
+          <div class="file-drop-text">Drop files here or click to browse</div>
+          <div class="file-drop-sub">PDF, Word, Excel, Images supported</div>
+        </div>
+        <div class="file-attached-list" id="attachedFilesList"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input type="text" class="form-input" id="itemTags" placeholder="e.g. fractions, multiplication, quarter 1" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Save to Library
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW / EDIT MODAL ── -->
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal-panel" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-icon" id="viewModalIcon" style="background:var(--purple-lt)">
+        <svg width="20" height="20" fill="none" stroke="#6c63ff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="modal-title" id="viewTitle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Resource</div>
+        <div class="modal-subtitle" id="viewMeta"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem" id="editToggleBtn" onclick="toggleEditMode()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit
+        </button>
+        <button class="modal-close" onclick="closeViewModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="viewBody">
+      <!-- read view -->
+      <div id="readView">
+        <div style="padding:14px;background:var(--input-bg);border-radius:10px;border:0.5px solid var(--input-border);font-size:0.875rem;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;max-height:340px;overflow-y:auto" id="viewContent"></div>
+      </div>
+      <!-- edit view -->
+      <div class="edit-view" id="editView">
+        <div class="edit-toolbar">
+          <button class="edit-tool" onclick="wrapText('**','**')"><b>B</b></button>
+          <button class="edit-tool" onclick="wrapText('*','*')"><i>I</i></button>
+          <button class="edit-tool" onclick="insertText('\n- ')">• List</button>
+          <button class="edit-tool" onclick="insertText('\n1. ')">1. List</button>
+          <button class="edit-tool" onclick="insertText('\n## ')">H2</button>
+          <button class="edit-tool" onclick="insertText('\n---\n')">Divider</button>
+        </div>
+        <textarea class="edit-area" id="editArea" placeholder="Edit your content here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-danger" onclick="deleteItem()" style="margin-right:auto">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete
+      </button>
+      <button class="btn btn-ghost" onclick="downloadPDF()" id="dlPdfBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Export PDF
+      </button>
+      <button class="btn btn-ghost" onclick="downloadPPT()" id="dlPptBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export PPT
+      </button>
+      <button class="btn btn-primary" id="saveEditBtn" style="display:none" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="library.js"></script>
+</body>
+</html>

@@ -7,9 +7,40 @@ let chatHistory = [];
 let pendingLessonPlanMeta = null;
 let pendingQuizMeta       = null;
 
+// ── Auto-populate grade from DB ──────────────────────────
+let _cachedUserGrade = null;
+
+async function fetchUserGrade() {
+  if (_cachedUserGrade !== null) return _cachedUserGrade;
+  try {
+    const res = await fetch('../api/user.php');
+    if (!res.ok) return null;
+    const data = await res.json();
+    const g = data.grade_level || data.grade || null;
+    _cachedUserGrade = g;
+    return g;
+  } catch { return null; }
+}
+
+function applyGradeToSelect(selectId, grade) {
+  if (!grade) return;
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const gradeStr = String(grade).trim();
+  for (const opt of sel.options) {
+    if (!opt.value) continue;
+    if (opt.value === gradeStr || opt.text === gradeStr) { sel.value = opt.value; return; }
+  }
+  for (const opt of sel.options) {
+    if (!opt.value) continue;
+    if (opt.text.includes(gradeStr) || gradeStr.includes(opt.text)) { sel.value = opt.value; return; }
+  }
+}
+
 // ── Multi-session storage ──────────────────────────────────
 const SESSIONS_KEY    = 'ci_sessions';      // array of session objects
 const ACTIVE_KEY      = 'ci_active_session'; // id of current session
+const PINNED_KEY      = 'ci_pinned_sessions';  // set of pinned session ids
 
 function getSessions() {
   try { return JSON.parse(localStorage.getItem(SESSIONS_KEY)) || []; }
@@ -85,10 +116,19 @@ function loadSession(id) {
   renderHistorySidebar();
 }
 
+function getPinned() {
+  try { return new Set(JSON.parse(localStorage.getItem(PINNED_KEY)) || []); }
+  catch { return new Set(); }
+}
+function savePinned(set) {
+  try { localStorage.setItem(PINNED_KEY, JSON.stringify([...set])); } catch {}
+}
+
 function deleteSession(id, e) {
-  e.stopPropagation();
+  if (e) e.stopPropagation();
   const sessions = getSessions().filter(s => s.id !== id);
   saveSessions(sessions);
+  const pinned = getPinned(); pinned.delete(id); savePinned(pinned);
   if (getActiveId() === id) {
     if (sessions.length > 0) loadSession(sessions[0].id);
     else startNewSession();
@@ -96,6 +136,164 @@ function deleteSession(id, e) {
     renderHistorySidebar();
   }
 }
+
+function togglePin(id, e) {
+  if (e) e.stopPropagation();
+  const pinned = getPinned();
+  if (pinned.has(id)) pinned.delete(id); else pinned.add(id);
+  savePinned(pinned);
+  renderHistorySidebar();
+  closeContextMenu();
+}
+
+function renameSession(id, e) {
+  if (e) e.stopPropagation();
+  closeContextMenu();
+  const sessions = getSessions();
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  const newTitle = prompt('Rename conversation:', s.title);
+  if (!newTitle || !newTitle.trim()) return;
+  s.title = newTitle.trim().substring(0, 80);
+  saveSessions(sessions);
+  renderHistorySidebar();
+}
+
+function summarizeSession(id, e) {
+  if (e) e.stopPropagation();
+  closeContextMenu();
+  const sessions = getSessions();
+  const s = sessions.find(x => x.id === id);
+  if (!s || !s.messages || s.messages.length === 0) { showToast('No messages to summarize.', 'error'); return; }
+  loadSession(id);
+  const msgs = s.messages.slice(0, 20).map(m => (m.role === 'user' ? 'User: ' : 'AI: ') + m.text).join('\n');
+  chatInput.value = 'Summarize this conversation in a concise paragraph:\n\n' + msgs.substring(0, 2000);
+  window.handleSendMessageWithFile();
+}
+
+function moveToLibrary(id, e) {
+  if (e) e.stopPropagation();
+  closeContextMenu();
+  const sessions = getSessions();
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  s.inLibrary = true;
+  saveSessions(sessions);
+  renderHistorySidebar();
+  showToast('Moving to Library…');
+
+  // Build a summary of the AI conversation content
+  const aiMessages = (s.messages || []).filter(m => m.role === 'ai' || m.role === 'assistant');
+  const userMessages = (s.messages || []).filter(m => m.role === 'user');
+  const content = s.messages.slice(0, 20)
+    .map(m => (m.role === 'user' ? '👤 ' : '🤖 ') + (m.text || ''))
+    .join('\n\n');
+
+  // Detect type from content
+  const lowerContent = content.toLowerCase();
+  let type = 'ai_chat';
+  if (lowerContent.includes('lesson plan') || lowerContent.includes('learning objective')) type = 'lesson_plan';
+  else if (lowerContent.includes('quiz') || lowerContent.includes('question') || lowerContent.includes('answer')) type = 'quiz';
+
+  // Try to navigate to Library via parent frame (sidebar) or direct
+  const payload = {
+    type: 'CI_MOVE_TO_LIBRARY',
+    payload: {
+      title: s.title || 'AI Chat Resource',
+      type,
+      content,
+      subject: 'General',
+    }
+  };
+
+  // If in iframe, post to parent (sidebar); sidebar then navigates to Library
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'CI_NAV', url: 'Library/library.html', libraryPayload: payload.payload }, '*');
+  } else {
+    // Fallback: store in localStorage and open library page
+    try { localStorage.setItem('ci_lib_pending', JSON.stringify(payload.payload)); } catch {}
+    window.location.href = '../Library/library.html';
+  }
+}
+
+function inviteToSession(id, e) {
+  if (e) e.stopPropagation();
+  closeContextMenu();
+  const url = window.location.href.split('?')[0] + '?session=' + id;
+  navigator.clipboard.writeText(url).then(() => showToast('Link copied \u2713')).catch(() => showToast('Could not copy link.', 'error'));
+}
+
+let _ctxTarget = null;
+function openContextMenu(id, btn, e) {
+  if (e) e.stopPropagation();
+  closeContextMenu();
+  const pinned = getPinned();
+  const isPinned = pinned.has(id);
+  const sessions = getSessions();
+  const s = sessions.find(x => x.id === id);
+  const inLibrary = s && s.inLibrary;
+
+  const menu = document.createElement('div');
+  menu.id = 'hist-ctx-menu';
+  menu.innerHTML = `
+    <button onclick="togglePin('${id}', event)">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l14 14M9 4h10v10"/></svg>
+      ${isPinned ? 'Unpin' : 'Pin'}
+    </button>
+    <button onclick="renameSession('${id}', event)">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      Rename
+    </button>
+    <button onclick="inviteToSession('${id}', event)">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      Invite
+    </button>
+    <button onclick="summarizeSession('${id}', event)">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Summarize in a page
+    </button>
+    <button onclick="moveToLibrary('${id}', event)" ${inLibrary ? 'disabled' : ''}>
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+      ${inLibrary ? 'In Library' : 'Move to Library'}
+    </button>
+    <div class="ctx-divider"></div>
+    <button class="ctx-danger" onclick="deleteSession('${id}', null); closeContextMenu()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      Delete
+    </button>`;
+
+  document.body.appendChild(menu);
+  _ctxTarget = id;
+
+  const rect = btn.getBoundingClientRect();
+  const menuW = 192;
+  const menuH = 230; // approx height of full menu
+  let left = rect.left;
+  if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+  // Flip upward if menu would overflow bottom of viewport
+  let top;
+  if (rect.bottom + menuH + 6 > window.innerHeight - 8) {
+    top = rect.top - menuH - 6;
+    if (top < 8) top = 8; // never go off top
+  } else {
+    top = rect.bottom + 6;
+  }
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+  setTimeout(() => menu.classList.add('ctx-visible'), 10);
+}
+
+function closeContextMenu() {
+  const m = document.getElementById('hist-ctx-menu');
+  if (m) m.remove();
+  _ctxTarget = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#hist-ctx-menu') && !e.target.closest('.hist-view-btn') && !e.target.closest('.hist-pin-btn')) {
+    closeContextMenu();
+  }
+});
 
 function showWelcome() {
   chatMessages.innerHTML = `
@@ -114,9 +312,10 @@ function showWelcome() {
 // ── Render the history sidebar panel ─────────────────────
 function renderHistorySidebar() {
   let panel = document.getElementById('hist-sidebar');
-  if (!panel) return; // not mounted yet
+  if (!panel) return;
   const sessions = getSessions();
   const activeId = getActiveId();
+  const pinned = getPinned();
 
   if (sessions.length === 0) {
     panel.querySelector('.hist-list').innerHTML =
@@ -124,9 +323,13 @@ function renderHistorySidebar() {
     return;
   }
 
-  // Group by date
+  // Separate pinned vs unpinned
+  const pinnedSessions = sessions.filter(s => pinned.has(s.id));
+  const unpinned = sessions.filter(s => !pinned.has(s.id));
+
+  // Group unpinned by date
   const groups = {};
-  sessions.forEach(s => {
+  unpinned.forEach(s => {
     const d = new Date(s.updatedAt);
     const today = new Date();
     const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
@@ -138,17 +341,36 @@ function renderHistorySidebar() {
     groups[label].push(s);
   });
 
+  function makeItem(s) {
+    const active = s.id === activeId ? ' hist-item-active' : '';
+    const isPinned = pinned.has(s.id);
+    return `
+      <div class="hist-item-wrap">
+        <button class="hist-item${active}" onclick="loadSession('${s.id}'); closeMobileHistory()">
+          ${isPinned ? `<svg class="hist-pin-icon" width="9" height="9" fill="currentColor" viewBox="0 0 24 24"><path d="M16 4v6l2 2-6 6-2-2-4 4-2-2 4-4-2-2 6-6z"/></svg>` : ''}
+          <span class="hist-item-title">${escapeHtml(s.title)}</span>
+        </button>
+        <div class="hist-item-actions">
+          <button class="hist-pin-btn" title="${isPinned ? 'Unpin' : 'Pin'}" onclick="togglePin('${s.id}', event)">
+            <svg width="11" height="11" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v6l2 2-6 6-2-2-4 4-2-2 4-4-2-2 6-6z"/></svg>
+          </button>
+          <button class="hist-view-btn" title="Options" onclick="openContextMenu('${s.id}', this, event)">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }
+
   let html = '';
+
+  if (pinnedSessions.length > 0) {
+    html += `<div class="hist-group-label">&#128204; Pinned</div>`;
+    pinnedSessions.forEach(s => { html += makeItem(s); });
+  }
+
   Object.entries(groups).forEach(([label, items]) => {
     html += `<div class="hist-group-label">${label}</div>`;
-    items.forEach(s => {
-      const active = s.id === activeId ? ' hist-item-active' : '';
-      html += `
-        <button class="hist-item${active}" onclick="loadSession('${s.id}'); closeMobileHistory()">
-          <span class="hist-item-title">${escapeHtml(s.title)}</span>
-          <span class="hist-delete" onclick="deleteSession('${s.id}', event)" title="Delete">✕</span>
-        </button>`;
-    });
+    items.forEach(s => { html += makeItem(s); });
   });
 
   panel.querySelector('.hist-list').innerHTML = html;
@@ -258,28 +480,37 @@ document.addEventListener('DOMContentLoaded', () => {
       line-height: 1.5;
     }
     .hist-empty span { font-size: 0.65rem; display: block; margin-top: 4px; opacity: 0.7; }
+    /* History item wrapper */
+    .hist-item-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      border-radius: 7px;
+      transition: background 0.15s;
+    }
+    .hist-item-wrap:hover { background: rgba(108,99,255,0.07); }
     .hist-item {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 4px;
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       background: none;
       border: none;
       border-radius: 7px;
-      padding: 6px 8px;
+      padding: 6px 4px 6px 8px;
       cursor: pointer;
       text-align: left;
       font-family: inherit;
-      transition: background 0.15s;
       color: var(--text-primary, #1e293b);
     }
-    .hist-item:hover { background: rgba(108,99,255,0.07); }
+    .hist-item:hover { background: none; }
     .hist-item-active {
-      background: rgba(108,99,255,0.1);
       border-left: 2.5px solid #6c63ff;
       padding-left: 6px;
+      background: rgba(108,99,255,0.1) !important;
     }
+    .hist-item-wrap:has(.hist-item-active) { background: rgba(108,99,255,0.1); }
     .hist-item-title {
       font-size: 0.76rem;
       font-weight: 400;
@@ -292,19 +523,82 @@ document.addEventListener('DOMContentLoaded', () => {
       text-align: left;
     }
     .hist-item-active .hist-item-title { color: #6c63ff; font-weight: 500; }
-    .hist-delete {
-      font-size: 0.58rem;
-      color: var(--text-muted, #94a3b8);
-      opacity: 0;
-      padding: 2px 5px;
-      border-radius: 4px;
-      transition: opacity 0.15s, background 0.15s, color 0.15s;
+    .hist-pin-icon {
       flex-shrink: 0;
+      color: #6c63ff;
+      opacity: 0.7;
+      margin-right: 2px;
+    }
+    /* Action buttons (pin + view) */
+    .hist-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      padding-right: 4px;
+      flex-shrink: 0;
+    }
+    .hist-item-wrap:hover .hist-item-actions { opacity: 1; }
+    .hist-pin-btn, .hist-view-btn {
+      background: none;
+      border: none;
       cursor: pointer;
+      color: var(--text-muted, #94a3b8);
+      padding: 3px 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
       line-height: 1;
     }
-    .hist-item:hover .hist-delete { opacity: 1; }
-    .hist-delete:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+    .hist-pin-btn:hover { background: rgba(108,99,255,0.12); color: #6c63ff; }
+    .hist-view-btn:hover { background: rgba(108,99,255,0.12); color: #6c63ff; }
+    /* Context menu */
+    #hist-ctx-menu {
+      position: fixed;
+      z-index: 9999;
+      background: var(--modal-bg, #ffffff);
+      border: 0.5px solid var(--modal-border, #e2e8f0);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      padding: 5px;
+      min-width: 192px;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+      transition: opacity 0.15s, transform 0.15s;
+      pointer-events: none;
+    }
+    #hist-ctx-menu.ctx-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+    #hist-ctx-menu button {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      background: none;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 0.79rem;
+      font-weight: 500;
+      color: var(--text-primary, #1e293b);
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    #hist-ctx-menu button:hover { background: rgba(108,99,255,0.08); color: #6c63ff; }
+    #hist-ctx-menu button:disabled { opacity: 0.45; cursor: default; }
+    #hist-ctx-menu button:disabled:hover { background: none; color: var(--text-primary, #1e293b); }
+    #hist-ctx-menu button svg { flex-shrink: 0; opacity: 0.7; }
+    #hist-ctx-menu .ctx-danger { color: #ef4444; }
+    #hist-ctx-menu .ctx-danger:hover { background: rgba(239,68,68,0.08); color: #ef4444; }
+    .ctx-divider { height: 0.5px; background: var(--modal-sep, #f1f5f9); margin: 4px 6px; }
     .hist-footer {
       padding: 6px 4px 2px;
       flex-shrink: 0;
@@ -1085,20 +1379,42 @@ Also include: Learning Objectives, Materials Needed, and Standards Alignment. Fo
 
 Also include: Learning Objectives, Materials Needed, and Differentiation Strategies. Format clearly with section headers.`
   },
-  'dld': {
-    label: 'DLD Model',
+  'dlp': {
+    label: 'DLP Model',
     color: '#7c3aed',
     bg: '#f5f3ff',
-    tagline: 'Direct, Link, Do',
-    description: 'Structured model emphasizing explicit instruction, connection-making, and active practice.',
+    tagline: 'Daily Lesson Planning',
+    description: 'The DepEd-aligned Daily Lesson Plan format structuring each class with objectives, content, procedures, and evaluation.',
     prompt: (subject, grade, topic, duration) =>
-      `Create a detailed ${duration} lesson plan for ${grade} ${subject} on "${topic}" using the DLD (Direct-Link-Do) Lesson Plan Model. Structure it with these 3 phases (include time allocation for each):
+      `Create a detailed ${duration} Daily Lesson Plan (DLP) for ${grade} ${subject} on "${topic}" following the DepEd Daily Lesson Plan format. Structure it with all required sections (include time allocation for procedural steps):
 
-1. DIRECT - Explicit, clear instruction where the teacher models and demonstrates the concept or skill. Include: Learning Objective statement, key vocabulary, and teacher modeling steps.
-2. LINK - Guided practice where students connect new learning to prior knowledge through worked examples and collaborative discussion.
-3. DO - Independent or group practice where students apply the skill on their own. Include task description and success criteria.
+I. OBJECTIVES
+- Content Standard: What students should know
+- Performance Standard: What students should be able to do
+- Learning Competency / Objectives: Specific, measurable objectives with DepEd competency code if applicable
 
-Also include: Materials Needed, Differentiation for struggling and advanced learners, and Assessment strategy. Format clearly with section headers.`
+II. CONTENT
+- Subject Matter / Topic
+- Reference(s): DepEd textbook, Teacher's Guide page numbers, and other materials
+- Materials: Visual aids, manipulatives, technology tools, worksheets
+
+III. LEARNING PROCEDURES (detailed step-by-step with time allocation)
+A. Reviewing Previous Lesson / Presenting the New Lesson (Motivation/Review)
+B. Establishing a Purpose for the Lesson (Motive Questions)
+C. Presenting Examples / Instances of the New Lesson (Presentation)
+D. Discussing New Concepts and Practicing New Skills (Discussion)
+E. Developing Mastery (Guided/Independent Practice)
+F. Finding Practical Applications (Generalization / Abstraction)
+G. Making Generalizations and Abstractions about the Lesson
+
+IV. EVALUATION
+- Assessment activity aligned to objectives (quiz, seatwork, performance task)
+- Rubric or scoring guide if applicable
+
+V. ASSIGNMENT / AGREEMENT
+- Homework or follow-up activity for reinforcement
+
+Also include: Remarks section (for teacher's notes on lesson delivery) and Reflection section (what worked, what needs improvement). Format clearly with section headers.`
   },
   'pisa': {
     label: 'PISA-Based',
@@ -1159,12 +1475,18 @@ function openLessonPlan() {
           <div class="form-group">
             <label class="form-label">Grade Level</label>
             <select class="form-input" id="lp-grade">
-              <option value="">Select grade...</option>
-              <option>Kindergarten</option>
-              <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
-              <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
-              <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
-              <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              <option value="">Select Grade Level</option>
+              <optgroup label="Basic Education">
+                <option>Kindergarten</option>
+                <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+                <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+                <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+                <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              </optgroup>
+              <optgroup label="College">
+                <option>1st Year</option><option>2nd Year</option>
+                <option>3rd Year</option><option>4th Year</option>
+              </optgroup>
             </select>
           </div>
           <div class="form-group">
@@ -1202,6 +1524,7 @@ function openLessonPlan() {
   document.body.appendChild(modal);
   setTimeout(() => modal.classList.add('visible'), 10);
   document.getElementById('lp-subject').focus();
+  fetchUserGrade().then(g => applyGradeToSelect('lp-grade', g));
 }
 
 function selectFramework(btn) {
@@ -1272,11 +1595,18 @@ function openQuiz() {
           <div class="form-group">
             <label class="form-label">Grade Level</label>
             <select class="form-input" id="q-grade">
-              <option value="">Select grade...</option>
-              <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
-              <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
-              <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
-              <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              <option value="">Select Grade Level</option>
+              <optgroup label="Basic Education">
+                <option>Kindergarten</option>
+                <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+                <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+                <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+                <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              </optgroup>
+              <optgroup label="College">
+                <option>1st Year</option><option>2nd Year</option>
+                <option>3rd Year</option><option>4th Year</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -1321,6 +1651,7 @@ function openQuiz() {
   document.body.appendChild(modal);
   setTimeout(() => modal.classList.add('visible'), 10);
   document.getElementById('q-topic').focus();
+  fetchUserGrade().then(g => applyGradeToSelect('q-grade', g));
 }
 
 function generateQuiz() {
@@ -2608,15 +2939,16 @@ function parseQuizText(text) {
 function loadPptxGenJS() {
   return new Promise((resolve, reject) => {
     if (window.PptxGenJS) return resolve(window.PptxGenJS);
+    if (window.pptxgen)   return resolve(window.pptxgen);
+    if (window.PptxGen)   return resolve(window.PptxGen);
     const script = document.createElement('script');
-    script.src = 'pptxgen.bundle.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
     script.onload = () => {
-      // v4.x bundle sets window.PptxGenJS as the class
       const PPT = window.PptxGenJS || window.pptxgen || window.PptxGen;
       if (PPT) resolve(PPT);
-      else reject(new Error('PptxGenJS bundle loaded but class not found on window'));
+      else reject(new Error('PptxGenJS loaded but not found on window'));
     };
-    script.onerror = reject;
+    script.onerror = (e) => reject(new Error('Failed to load PptxGenJS from CDN'));
     document.head.appendChild(script);
   });
 }
@@ -2631,7 +2963,7 @@ async function downloadQuizPPT(btn) {
   const diff  = btn.dataset.diff  || 'medium';
 
   const original = btn.innerHTML;
-  btn.innerHTML = 'Building PPT…';
+  btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Building PPT…`;
   btn.disabled = true;
 
   try {
@@ -2642,316 +2974,281 @@ async function downloadQuizPPT(btn) {
 
     // ── Colour palette ───────────────────────────────────────
     const C = {
-      purple:     '7C3AED',
-      purpleLight:'EDE9FE',
-      purpleMid:  'A78BFA',
-      teal:       '0891B2',
-      tealLight:  'ECFEFF',
-      green:      '059669',
-      greenLight: 'D1FAE5',
-      red:        'DC2626',
-      redLight:   'FEE2E2',
-      amber:      'D97706',
-      amberLight: 'FEF3C7',
-      white:      'FFFFFF',
-      dark:       '1E1B4B',
-      gray:       '64748B',
-      grayLight:  'F1F5F9',
-      slate:      '334155',
+      purple:    '5B4FCF',
+      purpleDk:  '3D34A5',
+      purpleLt:  'EDE9FD',
+      white:     'FFFFFF',
+      slate:     '1E293B',
+      muted:     '64748B',
+      border:    'D1C9F8',
+      bg:        'F8F7FF',
+      green:     '22C55E',
+      greenLt:   'EDFBF0',
+      greenBdr:  '86EFAC',
+      greenTxt:  '16A34A',
+      fadedCirc: 'ABA4E2',
+      fadedTxt:  '94A3B8',
     };
 
-    const optionColors = [
-      { bg: '3B82F6', light: 'DBEAFE', label: 'A' }, // blue
-      { bg: '10B981', light: 'D1FAE5', label: 'B' }, // green
-      { bg: 'F59E0B', light: 'FEF3C7', label: 'C' }, // amber
-      { bg: 'EF4444', light: 'FEE2E2', label: 'D' }, // red
-    ];
-
-    const diffColors = { easy: '059669', medium: 'D97706', hard: 'DC2626' };
-    const diffColor  = diffColors[diff] || diffColors.medium;
+    const LABELS = ['A', 'B', 'C', 'D'];
+    const FONT_H = 'Trebuchet MS';
+    const FONT_B = 'Calibri';
+    const makeShadow = () => ({ type: 'outer', color: '000000', blur: 10, offset: 3, angle: 135, opacity: 0.08 });
 
     // ── SLIDE 1: Title ───────────────────────────────────────
     {
       const sl = prs.addSlide();
-
-      // Full purple gradient background
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%', fill: { color: C.dark } });
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%',
-        fill: { color: C.purple, transparency: 30 } });
+      sl.background = { color: C.purple };
 
       // Decorative circles
-      sl.addShape('ellipse', { x: -1, y: -1, w: 3.5, h: 3.5,
-        fill: { color: C.purpleMid, transparency: 70 }, line: { color: 'FFFFFF', transparency: 100 } });
-      sl.addShape('ellipse', { x: 10.5, y: 5.5, w: 4, h: 4,
-        fill: { color: C.teal, transparency: 75 }, line: { color: 'FFFFFF', transparency: 100 } });
+      sl.addShape('ellipse', { x: 10.5, y: -1.5, w: 5, h: 5,
+        fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
+      sl.addShape('ellipse', { x: -1, y: 5, w: 3.5, h: 3.5,
+        fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
 
-      // Quiz badge
-      sl.addShape('roundRect', { x: 0.5, y: 1.0, w: 2.4, h: 0.45,
-        rectRadius: 0.22, fill: { color: C.purpleMid, transparency: 30 }, line: { color: 'FFFFFF', transparency: 100 } });
-      sl.addText('INTERACTIVE QUIZ', { x: 0.5, y: 1.0, w: 2.4, h: 0.45,
-        fontSize: 9, bold: true, color: C.white, align: 'center', valign: 'middle' });
+      // Badge
+      sl.addShape('roundRect', { x: 4.65, y: 1.4, w: 4, h: 0.55,
+        rectRadius: 0.1, fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
+      sl.addText('INTERACTIVE QUIZ', { x: 4.65, y: 1.4, w: 4, h: 0.55,
+        fontSize: 11, fontFace: FONT_B, bold: true, color: 'D1C9F8',
+        align: 'center', valign: 'middle', charSpacing: 3 });
 
       // Title
-      sl.addText(topic, { x: 0.5, y: 1.7, w: 12.3, h: 1.8,
-        fontSize: 40, bold: true, color: C.white, align: 'left', valign: 'middle',
-        breakLine: true });
+      sl.addText(topic, { x: 1.5, y: 2.1, w: 10.3, h: 1.4,
+        fontSize: 52, fontFace: FONT_H, bold: true, color: C.white,
+        align: 'center', valign: 'middle', breakLine: true });
 
-      // Meta pills row
-      const pills = [
-        { icon: '🎓', label: grade },
-        { icon: '❓', label: `${count} Questions` },
-        { icon: '📝', label: (qtype || 'quiz').charAt(0).toUpperCase() + (qtype || 'quiz').slice(1) },
-        { icon: '⚡', label: (diff || 'medium').charAt(0).toUpperCase() + (diff || 'medium').slice(1) },
-      ];
-      pills.forEach((p, i) => {
-        const px = 0.5 + i * 3.1;
-        sl.addShape('roundRect', { x: px, y: 4.0, w: 2.9, h: 0.5,
-          rectRadius: 0.25, fill: { color: C.white, transparency: 80 }, line: { color: 'FFFFFF', transparency: 100 } });
-        sl.addText(`${p.icon}  ${p.label}`, { x: px, y: 4.0, w: 2.9, h: 0.5,
-          fontSize: 11, bold: true, color: C.white, align: 'center', valign: 'middle' });
+      // Subtitle
+      sl.addText(`${grade}  ·  ${count} Questions  ·  ${(diff || 'Medium').charAt(0).toUpperCase() + (diff || 'medium').slice(1)}`, {
+        x: 1.5, y: 3.5, w: 10.3, h: 0.7,
+        fontSize: 18, fontFace: FONT_B, color: 'BDB5F7',
+        align: 'center', valign: 'middle' });
+
+      // Info pills
+      const infoLabels = [`${count} Questions`, (qtype || 'Multiple Choice').charAt(0).toUpperCase() + (qtype || 'multiple choice').slice(1), 'Think carefully!'];
+      infoLabels.forEach((lbl, i) => {
+        const bx = 2.9 + i * 2.8;
+        sl.addShape('roundRect', { x: bx, y: 5.0, w: 2.4, h: 0.72,
+          rectRadius: 0.08, fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
+        sl.addText(lbl, { x: bx, y: 5.0, w: 2.4, h: 0.72,
+          fontSize: 13, fontFace: FONT_B, bold: true, color: C.white,
+          align: 'center', valign: 'middle' });
       });
 
-      // Generated by
       sl.addText(`Generated by ClassInstruct AI  ·  ${new Date().toLocaleDateString()}`,
-        { x: 0.5, y: 6.8, w: 12.3, h: 0.4, fontSize: 9, color: C.purpleMid, align: 'left' });
+        { x: 0.5, y: 7.05, w: 12.3, h: 0.3, fontSize: 9, fontFace: FONT_B,
+          color: 'BDB5F7', align: 'center' });
     }
 
     // ── SLIDE 2: Instructions ────────────────────────────────
-    {
-      const sl = prs.addSlide();
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%', fill: { color: C.grayLight } });
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: 1.1, fill: { color: C.purple } });
-
-      sl.addText('How to Play', { x: 0.5, y: 0.15, w: 12.3, h: 0.8,
-        fontSize: 28, bold: true, color: C.white, align: 'left', valign: 'middle' });
-
-      const tips = [
-        { icon: '👀', text: 'Read each question carefully before answering.' },
-        { icon: '⏱️', text: 'Answer each question before revealing the correct answer.' },
-        { icon: '✅', text: 'The correct answer will be highlighted in green on the answer slide.' },
-        { icon: '🏆', text: 'Keep track of your score — one point per correct answer!' },
-        { icon: '🤔', text: 'Discuss your reasoning with classmates after each question.' },
-      ];
-      tips.forEach((t, i) => {
-        const ty = 1.35 + i * 0.98;
-        sl.addShape('roundRect', { x: 0.5, y: ty, w: 12.3, h: 0.82,
-          rectRadius: 0.12, fill: { color: C.white }, line: { color: 'E2E8F0', pt: 1 } });
-        sl.addShape('ellipse', { x: 0.65, y: ty + 0.16, w: 0.5, h: 0.5,
-          fill: { color: C.purpleLight }, line: { color: 'FFFFFF', transparency: 100 } });
-        sl.addText(t.icon, { x: 0.65, y: ty + 0.16, w: 0.5, h: 0.5,
-          fontSize: 16, align: 'center', valign: 'middle' });
-        sl.addText(t.text, { x: 1.3, y: ty + 0.1, w: 11.2, h: 0.62,
-          fontSize: 13, color: C.slate, valign: 'middle' });
-      });
-
-      sl.addText(`Topic: ${topic}  ·  ${grade}  ·  ${diff} difficulty`,
-        { x: 0.5, y: 6.9, w: 12.3, h: 0.35, fontSize: 9, color: C.gray, align: 'center' });
-    }
-
     // ── Parse questions ──────────────────────────────────────
     const questions = parseQuizText(text);
+    const total = questions.length;
 
-    // ── SLIDES 3+: One question slide + one answer slide per Q ─
+    // Helper: add the purple top bar used on question + answer slides
+    function addTopBar(sl, rightLabel) {
+      sl.addShape('rect', { x: 0, y: 0, w: 13.33, h: 0.55,
+        fill: { color: C.purple }, line: { color: C.purple } });
+      sl.addText('ClassInstruct AI  ·  Interactive Quiz', {
+        x: 0.3, y: 0, w: 9, h: 0.55,
+        fontSize: 11, fontFace: FONT_B, color: C.white, valign: 'middle' });
+      sl.addText(rightLabel, {
+        x: 10, y: 0, w: 3, h: 0.55,
+        fontSize: 11, fontFace: FONT_B, color: 'D1C9F8',
+        valign: 'middle', align: 'right', bold: true });
+      // Progress dots
+      questions.forEach((_, di) => {
+        sl.addShape('ellipse', {
+          x: 5.9 + di * 0.32, y: 0.195, w: 0.14, h: 0.14,
+          fill: { color: 'FFFFFF' }, line: { color: 'FFFFFF' }
+        });
+      });
+    }
+
+    // ── SLIDES: One question slide + one answer slide per Q ────
     questions.forEach((q, qi) => {
       const qNum  = qi + 1;
-      const total = questions.length;
       const hasMC = q.options && q.options.length > 0;
 
       // ── QUESTION SLIDE ───────────────────────────────────
       {
         const sl = prs.addSlide();
+        sl.background = { color: C.bg };
 
-        // Background
-        sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%', fill: { color: C.white } });
-        sl.addShape('rect', { x: 0, y: 0, w: '100%', h: 1.25, fill: { color: C.purple } });
+        addTopBar(sl, `Q ${qNum} of ${total}`);
 
-        // Progress dots
-        for (let d = 0; d < total; d++) {
-          sl.addShape('ellipse', {
-            x: 0.35 + d * 0.3, y: 0.08, w: 0.18, h: 0.18,
-            fill: { color: d === qi ? C.white : C.purpleMid, transparency: d === qi ? 0 : 50 },
-            line: { color: 'FFFFFF', transparency: 100 }
-          });
-        }
-
-        // Question counter badge
-        sl.addShape('roundRect', { x: 0.35, y: 0.35, w: 1.1, h: 0.55,
-          rectRadius: 0.12, fill: { color: C.white, transparency: 20 }, line: { color: 'FFFFFF', transparency: 100 } });
-        sl.addText(`${qNum}/${total}`, { x: 0.35, y: 0.35, w: 1.1, h: 0.55,
-          fontSize: 16, bold: true, color: C.white, align: 'center', valign: 'middle' });
-
-        // Difficulty badge
-        sl.addShape('roundRect', { x: 11.5, y: 0.38, w: 1.48, h: 0.48,
-          rectRadius: 0.12, fill: { color: diffColor, transparency: 30 }, line: { color: 'FFFFFF', transparency: 100 } });
-        sl.addText(diff.toUpperCase(), { x: 11.5, y: 0.38, w: 1.48, h: 0.48,
-          fontSize: 10, bold: true, color: C.white, align: 'center', valign: 'middle' });
+        // Q-number pill
+        sl.addShape('roundRect', { x: 0.5, y: 0.75, w: 1.1, h: 0.44,
+          rectRadius: 0.08, fill: { color: C.purple }, line: { color: C.purple } });
+        sl.addText(`Q${qNum}`, { x: 0.5, y: 0.75, w: 1.1, h: 0.44,
+          fontSize: 14, fontFace: FONT_B, bold: true, color: C.white,
+          align: 'center', valign: 'middle' });
 
         // Question text box
-        sl.addShape('roundRect', { x: 0.35, y: 1.4, w: 12.63, h: hasMC ? 1.55 : 2.4,
-          rectRadius: 0.18, fill: { color: C.purpleLight }, line: { color: C.purpleMid, pt: 1.5 } });
-        sl.addText(`Q${qNum}. ${q.question}`, {
-          x: 0.55, y: 1.48, w: 12.23, h: hasMC ? 1.38 : 2.24,
-          fontSize: hasMC ? 17 : 20, bold: true, color: C.dark,
+        sl.addShape('rect', { x: 0.5, y: 1.28, w: 12.3, h: 1.55,
+          fill: { color: C.purpleLt }, line: { color: C.border, pt: 1.2 } });
+        sl.addText(`${q.question}`, {
+          x: 0.7, y: 1.28, w: 11.9, h: 1.55,
+          fontSize: 20, fontFace: FONT_H, bold: true, color: C.slate,
           valign: 'middle', breakLine: true
         });
 
         if (hasMC) {
-          // 2×2 option grid
-          const grid = [[0,1],[2,3]];
-          grid.forEach((pair, row) => {
-            pair.forEach((idx, col) => {
-              if (idx >= q.options.length) return;
-              const opt  = q.options[idx];
-              const oc   = optionColors[idx];
-              const ox   = 0.35 + col * 6.47;
-              const oy   = 3.15 + row * 1.58;
-
-              sl.addShape('roundRect', { x: ox, y: oy, w: 6.25, h: 1.42,
-                rectRadius: 0.18,
-                fill: { color: oc.light },
-                line: { color: oc.bg, pt: 2 }
-              });
-              // Letter badge
-              sl.addShape('ellipse', { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                fill: { color: oc.bg }, line: { color: 'FFFFFF', transparency: 100 } });
-              sl.addText(oc.label, { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                fontSize: 16, bold: true, color: C.white, align: 'center', valign: 'middle' });
-              sl.addText(opt.text, { x: ox + 1.05, y: oy + 0.15, w: 5.0, h: 1.12,
-                fontSize: 13, color: C.slate, valign: 'middle', breakLine: true });
-            });
+          // 2×2 uniform option cards — NO colour coding
+          const cardW = 5.8, cardH = 1.6;
+          const cols = [0.5, 7.0];
+          const rows = [3.1, 4.9];
+          q.options.slice(0, 4).forEach((opt, ci) => {
+            const cx = cols[ci % 2];
+            const cy = rows[Math.floor(ci / 2)];
+            // Card
+            sl.addShape('rect', { x: cx, y: cy, w: cardW, h: cardH,
+              fill: { color: C.white }, line: { color: 'E2DDF8', pt: 1.2 } });
+            // Left strip
+            sl.addShape('rect', { x: cx, y: cy, w: 0.07, h: cardH,
+              fill: { color: C.border }, line: { color: C.border } });
+            // Label circle
+            sl.addShape('ellipse', { x: cx + 0.2, y: cy + 0.35, w: 0.9, h: 0.9,
+              fill: { color: C.purple }, line: { color: C.purple } });
+            sl.addText(LABELS[ci], { x: cx + 0.2, y: cy + 0.35, w: 0.9, h: 0.9,
+              fontSize: 17, fontFace: FONT_H, bold: true, color: C.white,
+              align: 'center', valign: 'middle' });
+            // Choice text
+            sl.addText(opt.text, { x: cx + 1.3, y: cy, w: cardW - 1.45, h: cardH,
+              fontSize: 16, fontFace: FONT_B, color: C.slate, valign: 'middle', breakLine: true });
           });
         } else {
-          // True / False or short answer — show blank lines
-          const ansType = qtype === 'true/false' ? 'True / False' : 'Short Answer';
-          sl.addShape('roundRect', { x: 0.35, y: 4.05, w: 12.63, h: 1.9,
-            rectRadius: 0.18, fill: { color: C.grayLight }, line: { color: 'CBD5E1', pt: 1 } });
-          sl.addText(`Your answer (${ansType}):`, { x: 0.6, y: 4.15, w: 12.13, h: 0.4,
-            fontSize: 11, bold: true, color: C.gray });
-
+          // True/False or short answer
+          const ansType = (qtype === 'true/false') ? 'True / False' : 'Short Answer';
+          sl.addShape('rect', { x: 0.5, y: 3.1, w: 12.3, h: 3.4,
+            fill: { color: C.white }, line: { color: 'E2DDF8', pt: 1.2 } });
+          sl.addText(`Answer space (${ansType})`, { x: 0.7, y: 3.3, w: 11.9, h: 0.5,
+            fontSize: 12, fontFace: FONT_B, bold: true, color: C.muted });
           if (qtype === 'true/false') {
             ['TRUE', 'FALSE'].forEach((lbl, ti) => {
-              const tc = ti === 0 ? C.green : C.red;
-              sl.addShape('roundRect', { x: 0.6 + ti * 3.8, y: 4.6, w: 3.3, h: 0.9,
-                rectRadius: 0.15, fill: { color: tc, transparency: 85 }, line: { color: tc, pt: 2 } });
-              sl.addText(lbl, { x: 0.6 + ti * 3.8, y: 4.6, w: 3.3, h: 0.9,
-                fontSize: 18, bold: true, color: tc, align: 'center', valign: 'middle' });
+              sl.addShape('rect', { x: 0.7 + ti * 4.5, y: 3.9, w: 4.0, h: 1.3,
+                fill: { color: C.purpleLt }, line: { color: C.border, pt: 1.5 } });
+              sl.addText(lbl, { x: 0.7 + ti * 4.5, y: 3.9, w: 4.0, h: 1.3,
+                fontSize: 20, fontFace: FONT_H, bold: true, color: C.purple,
+                align: 'center', valign: 'middle' });
             });
-          } else {
-            for (let li = 0; li < 2; li++) {
-              sl.addShape('line', { x: 0.6, y: 4.7 + li * 0.55, w: 12.13, h: 0,
-                line: { color: 'CBD5E1', pt: 1 } });
-            }
           }
         }
 
-        // "Think before you click!" footer
-        sl.addShape('rect', { x: 0, y: 7.1, w: '100%', h: 0.4, fill: { color: C.purpleLight } });
-        sl.addText('💡  Think before you click the next slide for the answer!',
-          { x: 0.5, y: 7.1, w: 12.3, h: 0.4, fontSize: 10, color: C.purple,
-            align: 'center', valign: 'middle', bold: true });
+        // Footer tip
+        sl.addText('💡  Think carefully before moving to the next slide for the answer!', {
+          x: 0.5, y: 6.9, w: 12.3, h: 0.45,
+          fontSize: 11, fontFace: FONT_B, italic: true,
+          color: C.purple, align: 'center', bold: true });
       }
 
       // ── ANSWER SLIDE ─────────────────────────────────────
       {
         const sl = prs.addSlide();
+        sl.background = { color: C.bg };
 
-        // Background
-        sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%', fill: { color: C.white } });
-        sl.addShape('rect', { x: 0, y: 0, w: '100%', h: 1.25, fill: { color: C.green } });
-
-        // Header
-        sl.addText('✅  ANSWER', { x: 0.35, y: 0.25, w: 6, h: 0.75,
-          fontSize: 24, bold: true, color: C.white, valign: 'middle' });
-        sl.addText(`Question ${qNum} of ${total}`, { x: 9, y: 0.35, w: 4.0, h: 0.55,
-          fontSize: 13, color: C.white, align: 'right', valign: 'middle' });
+        // Top bar (reuse helper but label it "Answer Reveal")
+        sl.addShape('rect', { x: 0, y: 0, w: 13.33, h: 0.55,
+          fill: { color: C.purple }, line: { color: C.purple } });
+        sl.addText('ClassInstruct AI  ·  Answer Reveal', {
+          x: 0.3, y: 0, w: 9, h: 0.55,
+          fontSize: 11, fontFace: FONT_B, color: C.white, valign: 'middle' });
+        sl.addText(`Q ${qNum} of ${total}`, {
+          x: 10, y: 0, w: 3, h: 0.55,
+          fontSize: 11, fontFace: FONT_B, color: 'D1C9F8',
+          valign: 'middle', align: 'right', bold: true });
 
         // Question recap box
-        sl.addShape('roundRect', { x: 0.35, y: 1.4, w: 12.63, h: 1.2,
-          rectRadius: 0.14, fill: { color: C.grayLight }, line: { color: 'CBD5E1', pt: 1 } });
-        sl.addText(q.question, { x: 0.55, y: 1.48, w: 12.23, h: 1.04,
-          fontSize: 14, color: C.slate, valign: 'middle', italic: true, breakLine: true });
+        sl.addShape('rect', { x: 0.5, y: 0.7, w: 12.3, h: 1.3,
+          fill: { color: C.purpleLt }, line: { color: C.border, pt: 1.2 } });
+        sl.addText(q.question, { x: 0.7, y: 0.7, w: 11.9, h: 1.3,
+          fontSize: 18, fontFace: FONT_H, bold: true, color: C.slate,
+          valign: 'middle', breakLine: true });
 
         if (hasMC) {
-          // Show all options, highlight the correct one
-          const grid = [[0,1],[2,3]];
-          grid.forEach((pair, row) => {
-            pair.forEach((idx, col) => {
-              if (idx >= q.options.length) return;
-              const opt      = q.options[idx];
-              const isCorrect = opt.letter === q.answerLetter;
-              const oc       = optionColors[idx];
-              const ox = 0.35 + col * 6.47;
-              const oy = 2.8 + row * 1.58;
+          // Cards: correct = green, others = muted
+          const cardW = 5.8, cardH = 1.45;
+          const cols = [0.5, 7.0];
+          const rows = [2.2, 3.8];
+          q.options.slice(0, 4).forEach((opt, ci) => {
+            const cx = cols[ci % 2];
+            const cy = rows[Math.floor(ci / 2)];
+            const isCorrect = opt.letter === q.answerLetter;
 
-              if (isCorrect) {
-                sl.addShape('roundRect', { x: ox, y: oy, w: 6.25, h: 1.42,
-                  rectRadius: 0.18, fill: { color: C.greenLight }, line: { color: C.green, pt: 3 } });
-                sl.addShape('ellipse', { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                  fill: { color: C.green }, line: { color: 'FFFFFF', transparency: 100 } });
-                sl.addText('✓', { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                  fontSize: 18, bold: true, color: C.white, align: 'center', valign: 'middle' });
-                sl.addText(opt.text, { x: ox + 1.05, y: oy + 0.15, w: 5.0, h: 1.12,
-                  fontSize: 14, bold: true, color: C.green, valign: 'middle', breakLine: true });
-              } else {
-                sl.addShape('roundRect', { x: ox, y: oy, w: 6.25, h: 1.42,
-                  rectRadius: 0.18, fill: { color: 'F8F9FA' }, line: { color: 'E2E8F0', pt: 1 } });
-                sl.addShape('ellipse', { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                  fill: { color: 'E2E8F0' }, line: { color: 'FFFFFF', transparency: 100 } });
-                sl.addText(oc.label, { x: ox + 0.15, y: oy + 0.33, w: 0.76, h: 0.76,
-                  fontSize: 16, bold: true, color: C.gray, align: 'center', valign: 'middle' });
-                sl.addText(opt.text, { x: ox + 1.05, y: oy + 0.15, w: 5.0, h: 1.12,
-                  fontSize: 13, color: 'CBD5E1', valign: 'middle', breakLine: true });
-              }
-            });
+            const cardFill  = isCorrect ? C.greenLt   : 'F8F7FF';
+            const stripFill = isCorrect ? C.green      : 'D1C9F8';
+            const circFill  = isCorrect ? C.green      : C.fadedCirc;
+            const txtColor  = isCorrect ? C.slate      : C.fadedTxt;
+            const bdColor   = isCorrect ? C.greenBdr   : 'E2DDF8';
+            const bdPt      = isCorrect ? 2            : 1;
+
+            sl.addShape('rect', { x: cx, y: cy, w: cardW, h: cardH,
+              fill: { color: cardFill }, line: { color: bdColor, pt: bdPt } });
+            sl.addShape('rect', { x: cx, y: cy, w: 0.07, h: cardH,
+              fill: { color: stripFill }, line: { color: stripFill } });
+            sl.addShape('ellipse', { x: cx + 0.2, y: cy + 0.27, w: 0.9, h: 0.9,
+              fill: { color: circFill }, line: { color: circFill } });
+            sl.addText(isCorrect ? '✓' : LABELS[ci], {
+              x: cx + 0.2, y: cy + 0.27, w: 0.9, h: 0.9,
+              fontSize: 17, fontFace: FONT_H, bold: true, color: C.white,
+              align: 'center', valign: 'middle' });
+            sl.addText(opt.text, { x: cx + 1.3, y: cy, w: cardW - 1.45, h: cardH,
+              fontSize: 16, fontFace: FONT_B, color: txtColor,
+              valign: 'middle', breakLine: true });
           });
         } else {
-          // True/False or short answer — show the answer prominently
           const ansDisplay = q.answer || q.answerLetter || '(See below)';
-          sl.addShape('roundRect', { x: 0.35, y: 2.85, w: 12.63, h: 1.8,
-            rectRadius: 0.2, fill: { color: C.greenLight }, line: { color: C.green, pt: 2.5 } });
-          sl.addText('Correct Answer:', { x: 0.6, y: 2.95, w: 12.13, h: 0.45,
-            fontSize: 11, bold: true, color: C.green });
-          sl.addText(ansDisplay, { x: 0.6, y: 3.38, w: 12.13, h: 1.1,
-            fontSize: 22, bold: true, color: C.dark, valign: 'middle', breakLine: true });
+          sl.addShape('rect', { x: 0.5, y: 2.2, w: 12.3, h: 2.0,
+            fill: { color: C.greenLt }, line: { color: C.greenBdr, pt: 1.5 } });
+          sl.addText(ansDisplay, { x: 0.7, y: 2.3, w: 11.9, h: 1.65,
+            fontSize: 22, fontFace: FONT_H, bold: true, color: C.slate,
+            valign: 'middle', breakLine: true });
         }
 
-        // Discussion prompt
-        sl.addShape('roundRect', { x: 0.35, y: 6.35, w: 12.63, h: 0.72,
-          rectRadius: 0.14, fill: { color: C.amberLight }, line: { color: C.amber, pt: 1 } });
-        sl.addText('💬  Discussion: Why is this the correct answer? Can you explain it in your own words?',
-          { x: 0.55, y: 6.38, w: 12.23, h: 0.66, fontSize: 11, color: C.amber, valign: 'middle', italic: true });
+        // Correct answer summary box
+        sl.addShape('rect', { x: 0.5, y: 5.45, w: 12.3, h: 1.6,
+          fill: { color: C.greenLt }, line: { color: C.greenBdr, pt: 1 } });
+        const correctOpt = hasMC
+          ? q.options.find(o => o.letter === q.answerLetter)
+          : null;
+        const correctDisplay = correctOpt
+          ? `${correctOpt.letter}.  ${correctOpt.text}`
+          : (q.answer || q.answerLetter || '(See above)');
+        sl.addText(correctDisplay, {
+          x: 0.8, y: 5.45, w: 11.8, h: 1.6,
+          fontSize: 19, fontFace: FONT_H, bold: true, color: C.slate,
+          valign: 'middle', breakLine: true });
       }
     });
 
-    // ── Final Slide: Score Tracker ───────────────────────────
+    // ── Final Slide: Quiz Complete ───────────────────────────
     {
       const sl = prs.addSlide();
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%', fill: { color: C.dark } });
-      sl.addShape('rect', { x: 0, y: 0, w: '100%', h: '100%',
-        fill: { color: C.purple, transparency: 40 } });
+      sl.background = { color: C.purple };
 
-      sl.addShape('ellipse', { x: -0.5, y: 5.5, w: 3, h: 3,
-        fill: { color: C.purpleMid, transparency: 80 }, line: { color: 'FFFFFF', transparency: 100 } });
-      sl.addShape('ellipse', { x: 11.5, y: -0.5, w: 3, h: 3,
-        fill: { color: C.teal, transparency: 80 }, line: { color: 'FFFFFF', transparency: 100 } });
+      sl.addShape('ellipse', { x: 10, y: -2, w: 6, h: 6,
+        fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
+      sl.addShape('ellipse', { x: -2, y: 4.5, w: 5, h: 5,
+        fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
 
-      sl.addText('🎉', { x: 4.5, y: 0.6, w: 4.33, h: 1.2,
-        fontSize: 52, align: 'center' });
-      sl.addText('Quiz Complete!', { x: 0.5, y: 1.75, w: 12.3, h: 1.0,
-        fontSize: 36, bold: true, color: C.white, align: 'center' });
-      sl.addText(`${topic}  ·  ${grade}`, { x: 0.5, y: 2.7, w: 12.3, h: 0.5,
-        fontSize: 14, color: C.purpleMid, align: 'center' });
+      sl.addText('🎉', { x: 0, y: 0.8, w: 13.3, h: 1.5,
+        fontSize: 60, align: 'center', valign: 'middle' });
+      sl.addText('Quiz Complete!', { x: 1, y: 2.3, w: 11.3, h: 1.1,
+        fontSize: 46, fontFace: FONT_H, bold: true, color: C.white, align: 'center' });
+      sl.addText(`${topic}  ·  ${grade}`, { x: 2, y: 3.45, w: 9.3, h: 0.7,
+        fontSize: 18, fontFace: FONT_B, color: 'BDB5F7', align: 'center' });
 
       // Score box
-      sl.addShape('roundRect', { x: 2.5, y: 3.4, w: 8.33, h: 1.8,
-        rectRadius: 0.2, fill: { color: C.white, transparency: 15 }, line: { color: 'FFFFFF', transparency: 100 } });
-      sl.addText('Your Score', { x: 2.5, y: 3.5, w: 8.33, h: 0.5,
-        fontSize: 13, color: C.purpleMid, align: 'center', bold: true });
-      sl.addText(`___ / ${questions.length}`, { x: 2.5, y: 3.95, w: 8.33, h: 1.0,
-        fontSize: 36, bold: true, color: C.white, align: 'center', valign: 'middle' });
+      sl.addShape('roundRect', { x: 3.4, y: 4.5, w: 6.5, h: 1.1,
+        rectRadius: 0.1, fill: { color: C.purpleDk }, line: { color: C.purpleDk } });
+      sl.addText(`${questions.length} Questions  ·  Your Score: ___ / ${questions.length}`, {
+        x: 3.4, y: 4.5, w: 6.5, h: 1.1,
+        fontSize: 14, fontFace: FONT_B, bold: true, color: 'D1C9F8',
+        align: 'center', valign: 'middle' });
 
       sl.addText(`Generated by ClassInstruct AI  ·  ${new Date().toLocaleDateString()}`,
-        { x: 0.5, y: 7.0, w: 12.3, h: 0.35, fontSize: 9, color: C.purpleMid, align: 'center' });
+        { x: 0.5, y: 7.05, w: 12.3, h: 0.3, fontSize: 9, fontFace: FONT_B,
+          color: 'BDB5F7', align: 'center' });
     }
 
     const filename = `Quiz_${grade}_${topic}`.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 55) + '.pptx';
@@ -3000,4 +3297,4 @@ async function copyQuizText(btn) {
 const link = document.createElement('link');
 link.rel = 'stylesheet';
 link.href = 'app.css';
-document.head.appendChild(link);
+document.head.appendChild(link);  

@@ -82,7 +82,18 @@ window.addEventListener('message', function (e) {
     const frame = document.getElementById('mainFrame');
     if (frame) {
       frame.src = url;
-      frame.onload = () => applyThemeToFrame(frame);
+      frame.onload = () => {
+        applyThemeToFrame(frame);
+        // If there's a library payload, forward it to the new page
+        if (e.data.libraryPayload) {
+          try {
+            frame.contentWindow.postMessage({
+              type: 'CI_MOVE_TO_LIBRARY',
+              payload: e.data.libraryPayload
+            }, '*');
+          } catch(err) {}
+        }
+      };
     }
   }
 });
