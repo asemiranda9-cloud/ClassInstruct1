@@ -241,31 +241,117 @@
       return;
     }
 
+    // Store entries globally for modal access
+    window._alEntries = entries;
+
     let html = '';
     let lastDay = null;
-    entries.forEach(e => {
+    entries.forEach((e, i) => {
       const day = dayLabel(e.ts);
       if (day !== lastDay) {
         html += `<div class="al-date-group">${esc(day)}</div>`;
         lastDay = day;
       }
-      const hasRoute  = !!ROUTE_MAP[e.type];
-      const clickAttr = hasRoute ? `onclick="navigateTo('${esc(e.type)}')"` : '';
-      const chevron   = hasRoute
-        ? `<svg class="al-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`
-        : '';
       html += `
-        <div class="al-entry${hasRoute ? ' clickable' : ''}" ${clickAttr}>
+        <div class="al-entry clickable" onclick="showAlModal(${i})">
           <div class="al-avatar" style="background:${esc(e.gradient)}">${esc(e.icon)}</div>
           <div class="al-body">
             <div class="al-entry-title">${esc(e.title)}</div>
             <div class="al-entry-detail">${esc(e.detail)}</div>
           </div>
           <span class="al-time">${esc(e.relTime)}</span>
-          ${chevron}
+          <svg class="al-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </div>`;
     });
     listEl.innerHTML = html;
+  }
+
+  // ── Activity detail modal ──
+  function showAlModal(index) {
+    const entry = window._alEntries[index];
+    if (!entry) return;
+
+    const existing = document.getElementById('alDetailModal');
+    if (existing) existing.remove();
+
+    const hasRoute = !!ROUTE_MAP[entry.type];
+    const dateStr  = new Date(entry.ts).toLocaleString('en-PH', {
+      weekday: 'short', year: 'numeric', month: 'short',
+      day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const overlay = document.createElement('div');
+    overlay.id = 'alDetailModal';
+    overlay.style.cssText = [
+      'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999',
+      'display:flex;align-items:center;justify-content:center',
+      'animation:alFadeIn 0.15s ease'
+    ].join(';');
+
+    overlay.innerHTML = `
+      <div style="
+        background:var(--card-bg);
+        border:0.5px solid var(--card-border);
+        border-radius:20px;padding:28px 28px 24px;
+        width:360px;max-width:92vw;
+        box-shadow:0 24px 64px rgba(0,0,0,0.22);
+        animation:alSlideUp 0.18s ease;
+        text-align:center;font-family:inherit;
+      ">
+        <!-- Icon -->
+        <div style="
+          width:58px;height:58px;border-radius:50%;
+          background:${esc(entry.gradient)};
+          display:flex;align-items:center;justify-content:center;
+          font-size:22px;margin:0 auto 16px;
+          box-shadow:0 4px 16px rgba(0,0,0,0.14);
+        ">${esc(entry.icon)}</div>
+
+        <!-- Title -->
+        <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px;line-height:1.3">${esc(entry.title)}</div>
+
+        <!-- Detail -->
+        <div style="font-size:.82rem;color:var(--text-muted);line-height:1.55;margin-bottom:14px">${esc(entry.detail) || 'No additional details.'}</div>
+
+        <!-- Timestamp badge -->
+        <div style="
+          display:inline-block;font-size:.7rem;font-weight:600;
+          color:var(--text-muted);background:var(--input-bg);
+          border:0.5px solid var(--input-border);
+          border-radius:9999px;padding:4px 12px;margin-bottom:22px;
+        ">🕐 ${esc(dateStr)}</div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:10px;">
+          <button id="alDetClose" style="
+            flex:1;padding:11px;background:var(--input-bg);
+            border:0.5px solid var(--input-border);border-radius:10px;
+            font-size:.82rem;font-weight:600;color:var(--text-secondary);
+            cursor:pointer;font-family:inherit;transition:all 0.15s;
+          ">Close</button>
+          ${hasRoute ? `<button id="alDetView" style="
+            flex:1;padding:11px;
+            background:linear-gradient(135deg,#6c63ff,#a78bfa);
+            border:none;border-radius:10px;font-size:.82rem;font-weight:600;
+            color:#fff;cursor:pointer;font-family:inherit;
+            box-shadow:0 4px 14px rgba(108,99,255,0.35);transition:opacity 0.15s;
+          ">View Module</button>` : ''}
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    function closeModal() { overlay.remove(); }
+    document.getElementById('alDetClose').onclick = closeModal;
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    if (hasRoute) {
+      document.getElementById('alDetView').onclick = function() {
+        closeModal();
+        navigateTo(entry.type);
+      };
+    }
   }
 
   // ── Custom clear confirmation modal ──

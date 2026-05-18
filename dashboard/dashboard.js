@@ -202,6 +202,124 @@ document.addEventListener('visibilitychange', function() {
 // ════════════════════════════════════════════════
 //  RECENT ACTIVITY
 // ════════════════════════════════════════════════
+//  ACTIVITY DETAIL POPUP (dashboard)
+// ════════════════════════════════════════════════
+const DASH_ROUTE_MAP = {
+  attendance_saved:   'attendance/attendance.html',
+  attendance_present: 'attendance/attendance.html',
+  attendance_late:    'attendance/attendance.html',
+  attendance_absent:  'attendance/attendance.html',
+  student_added:      'Student/Student.html',
+  student_updated:    'Student/Student.html',
+  student_deleted:    'Student/Student.html',
+  student_imported:   'Student/Student.html',
+  grades_saved:       'Grades/Grades.php',
+  ai_chat:            'ai/classinstruct-ai.html',
+  lesson_plan:        'ai/classinstruct-ai.html',
+  quiz_generated:     'ai/classinstruct-ai.html',
+  calendar_entry:     'Calendar/calendarPAGE.html',
+};
+
+function showActivityModal(entry) {
+  // Remove any existing modal
+  const existing = document.getElementById('ciActModal');
+  if (existing) existing.remove();
+
+  const hasRoute = !!DASH_ROUTE_MAP[entry.type];
+
+  // Format the timestamp into a readable date/time
+  const dateStr = new Date(entry.ts).toLocaleString('en-PH', {
+    weekday: 'short', year: 'numeric', month: 'short',
+    day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ciActModal';
+  overlay.style.cssText = [
+    'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999',
+    'display:flex;align-items:center;justify-content:center',
+    'animation:ciActFadeIn 0.15s ease',
+    'font-family:inherit'
+  ].join(';');
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes ciActFadeIn  { from { opacity:0 } to { opacity:1 } }
+      @keyframes ciActSlideUp { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+    </style>
+    <div style="
+      background:var(--card-bg,#fff);
+      border:0.5px solid var(--card-border,#e5e7eb);
+      border-radius:20px;
+      padding:28px 28px 24px;
+      width:360px;max-width:92vw;
+      box-shadow:0 24px 64px rgba(0,0,0,0.22);
+      animation:ciActSlideUp 0.18s ease;
+      text-align:center;
+    ">
+      <!-- Icon -->
+      <div style="
+        width:58px;height:58px;border-radius:50%;
+        background:${esc(entry.gradient)};
+        display:flex;align-items:center;justify-content:center;
+        font-size:22px;margin:0 auto 16px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.15);
+      ">${esc(entry.icon)}</div>
+
+      <!-- Title -->
+      <div style="font-size:1rem;font-weight:700;color:var(--text-primary,#111);margin-bottom:6px;line-height:1.3">${esc(entry.title)}</div>
+
+      <!-- Detail -->
+      <div style="font-size:.82rem;color:var(--text-muted,#6b7280);line-height:1.5;margin-bottom:14px">${esc(entry.detail) || 'No additional details.'}</div>
+
+      <!-- Timestamp badge -->
+      <div style="
+        display:inline-block;
+        font-size:.7rem;font-weight:600;
+        color:var(--text-muted,#6b7280);
+        background:var(--input-bg,#f3f4f6);
+        border:0.5px solid var(--input-border,#e5e7eb);
+        border-radius:9999px;padding:4px 12px;margin-bottom:22px;
+      ">🕐 ${esc(dateStr)}</div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:10px;">
+        <button id="ciActClose" style="
+          flex:1;padding:11px;
+          background:var(--input-bg,#f3f4f6);
+          border:0.5px solid var(--input-border,#e5e7eb);
+          border-radius:10px;font-size:.82rem;font-weight:600;
+          color:var(--text-secondary,#374151);cursor:pointer;
+          font-family:inherit;transition:all 0.15s;
+        ">Close</button>
+        ${hasRoute ? `<button id="ciActView" style="
+          flex:1;padding:11px;
+          background:linear-gradient(135deg,#6c63ff,#a78bfa);
+          border:none;border-radius:10px;font-size:.82rem;font-weight:600;
+          color:#fff;cursor:pointer;font-family:inherit;
+          box-shadow:0 4px 14px rgba(108,99,255,0.35);transition:opacity 0.15s;
+        ">View Module</button>` : ''}
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Close handlers
+  function closeModal() { overlay.remove(); }
+  document.getElementById('ciActClose').onclick = closeModal;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  overlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // View handler
+  if (hasRoute) {
+    document.getElementById('ciActView').onclick = function() {
+      closeModal();
+      sidebarNav(DASH_ROUTE_MAP[entry.type]);
+    };
+  }
+}
+
+// ════════════════════════════════════════════════
 function renderRecentActivity() {
   const el = document.getElementById('recentActivity');
   if (!el) return;
@@ -221,14 +339,24 @@ function renderRecentActivity() {
     return;
   }
 
-  el.innerHTML = entries.map(e => `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-input);border-radius:var(--r-md)">
+  // Store entries on window so inline onclick can reference them
+  window._ciDashEntries = entries;
+
+  el.innerHTML = entries.map((e, i) => `
+    <div onclick="showActivityModal(window._ciDashEntries[${i}])" style="
+      display:flex;align-items:center;gap:12px;padding:10px;
+      background:var(--bg-input);border-radius:var(--r-md);
+      cursor:pointer;transition:box-shadow 0.15s,transform 0.15s,background 0.15s;
+    "
+    onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.10)';this.style.transform='translateY(-1px)';this.style.background='var(--primary-light,rgba(108,99,255,0.07))'"
+    onmouseout="this.style.boxShadow='';this.style.transform='';this.style.background='var(--bg-input)'">
       <div style="width:36px;height:36px;border-radius:50%;background:${esc(e.gradient)};display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0">${e.icon}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div>
         <div style="font-size:.72rem;color:var(--text-3)">${esc(e.detail)}</div>
       </div>
       <span style="font-size:.68rem;color:var(--text-3);white-space:nowrap">${esc(e.relTime)}</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
   `).join('');
 }
