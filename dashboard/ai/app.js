@@ -1792,6 +1792,271 @@ function loadJsPDF() {
   });
 }
 
+// ── Markdown table helpers (used by renderPdfBody) ──────────
+// The AI sometimes formats rubrics/timelines as "| a | b |" markdown
+// tables. Left as raw text they render as a wall of misaligned pipes and
+// dashes, which is the single worst offender for PDF readability — so we
+// detect them and draw an actual bordered table instead.
+function isTableRow(line) {
+  const t = line.trim();
+  if (!t.includes('|')) return false;
+  return splitTableRow(t).length >= 2;
+}
+function isSeparatorRow(line) {
+  const t = line.trim();
+  return t.length > 0 && /^[\s|:-]+$/.test(t) && t.includes('-');
+}
+function splitTableRow(line) {
+  let l = line.trim();
+  if (l.startsWith('|')) l = l.slice(1);
+  if (l.endsWith('|')) l = l.slice(0, -1);
+  return l.split('|').map(c => stripInlineMarkdown(c.trim()));
+}
+// Draws a simple bordered/striped table starting at (x, y) within `width`,
+// wrapping each cell's text and paginating rows that would run off the page.
+function renderPdfTable(doc, opts) {
+  const { rows, x, y, width, pageH, accentColor, fontSize = 8.5, lineH = 4.5 } = opts;
+  const numCols = Math.max(...rows.map(r => r.length));
+  const colW = width / numCols;
+  let curY = y;
+
+  rows.forEach((row, rowIdx) => {
+    const cells = Array.from({ length: numCols }, (_, i) => row[i] || '');
+    const isHeader = rowIdx === 0;
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
+
+    const wrappedCells = cells.map(cell => doc.splitTextToSize(cell, colW - 4));
+    const cellLines = Math.max(...wrappedCells.map(w => w.length), 1);
+    const rowH = cellLines * lineH + 3;
+
+    if (curY + rowH > pageH - 20) { doc.addPage(); curY = 20; }
+
+    doc.setFillColor(...(isHeader ? accentColor : (rowIdx % 2 === 0 ? [248, 247, 255] : [255, 255, 255])));
+    doc.rect(x, curY, width, rowH, 'F');
+    doc.setDrawColor(222, 218, 245);
+    doc.setLineWidth(0.25);
+    doc.rect(x, curY, width, rowH, 'S');
+    for (let c = 1; c < numCols; c++) doc.line(x + colW * c, curY, x + colW * c, curY + rowH);
+
+    doc.setTextColor(...(isHeader ? [255, 255, 255] : [51, 65, 85]));
+    wrappedCells.forEach((lines, c) => {
+      lines.forEach((l, li) => doc.text(l, x + colW * c + 2, curY + 5 + li * lineH));
+    });
+
+    curY += rowH;
+  });
+
+  return curY + 5;
+}
+
+// Truncate `text` with an ellipsis so its rendered width never exceeds
+// `maxWidth` (mm) at the doc's current font/size. Measures actual glyph
+// width instead of guessing a character count, so it works for any content.
+function fitTextWidth(doc, text, maxWidth) {
+  if (!text) return '';
+  if (doc.getTextWidth(text) <= maxWidth) return text;
+  let truncated = text;
+  while (truncated.length > 1 && doc.getTextWidth(truncated + '…') > maxWidth) {
+    truncated = truncated.slice(0, -1);
+  }
+  return truncated.trimEnd() + '…';
+}
+
+// The AI's response often includes basic markdown (**bold**, `code`) that
+// jsPDF can't render — it would otherwise show up as literal asterisks/
+// backticks in the PDF. Strip it down to plain text. (Deliberately leaves
+// single underscores alone so things like file_name.pdf aren't mangled.)
+function stripInlineMarkdown(line) {
+  return line
+    .replace(/\*\*(.+?)\*\*/g, '$1')  // **bold**
+    .replace(/__(.+?)__/g, '$1')      // __bold__
+    .replace(/\*(.+?)\*/g, '$1')      // *italic*
+    .replace(/`([^`]+?)`/g, '$1')     // `code`
+    .trim();
+}
+
+// The AI's response often opens with a preamble that just restates the
+// Subject/Grade/Topic/Duration already shown in the meta info box (e.g.
+// "Lesson Plan: Introduction to Computer Hardware", "Grade Level: 11",
+// "Subject: TLE...", "Topic: ...", "Time Allotment: 60 minutes"), and
+// sometimes a "---" divider right after it. Strip that leading block from
+// the PDF body so it isn't shown twice.
+function stripRedundantHeader(text) {
+  if (!text) return text;
+  const redundantLine = /^(lesson plan|grade level|grade|subject|topic|time allotment|duration|framework)\s*:/i;
+  const dividerLine = /^[-=_*]{3,}$/;
+  const lines = text.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const raw = lines[i].trim();
+    if (!raw) { i++; continue; }                      // skip blank lines in the preamble
+    const clean = stripInlineMarkdown(raw);
+    if (dividerLine.test(clean)) { i++; continue; }    // skip a "---" style divider
+    if (redundantLine.test(clean)) { i++; continue; }  // skip a redundant "Label: value" line
+    break;                                              // first real content line — stop stripping
+  }
+  return lines.slice(i).join('\n').replace(/^\n+/, '');
+}
+
+// Shared body renderer used by both downloadLessonPlanPDF and
+// downloadHandoutPDF. Detects headings vs. plain body text, wraps
+// everything to the page width, breaks pages automatically, normalizes
+// inline markdown, renders "-"/"•"/"* " bullets with a hanging indent, and
+// — for numbered list items — keeps the number in its own gutter so
+// wrapped continuation lines indent under the text instead of the number.
+// Returns the y position after the last line drawn, so callers can keep
+// laying out content (e.g. a reflection box) below it.
+function renderPdfBody(doc, opts) {
+  const {
+    text, startY, margin, contentW, pageH,
+    accentColor,                       // [r,g,b] heading bar / number color
+    headingTextColor = [30, 41, 59],
+    bodyTextColor    = [51, 65, 85],
+    headingFontSize  = 11,
+    headingLineH     = 6,
+    bodyFontSize     = 9.5,
+    bodyLineH        = 6,
+    shouldSkip       = null,           // (line) => true to start skipping
+    shouldResume     = null,           // (line) => true to stop skipping
+    // Stricter than before: an ordinary sentence that happens to end in a
+    // colon (e.g. "Students will need the following:") no longer gets
+    // misread as a heading — it must also be short and colon-free before
+    // the end, i.e. read like a label, not a sentence.
+    isHeadingTest    = (line) => {
+      if (/^#{1,3}\s/.test(line)) return true;
+      if (/^[A-Z][A-Z\s\d:&\-]{4,}$/.test(line)) return true;
+      if (/^\d+(?:\.\d+)*\.\s+[A-Z]/.test(line)) return true;
+      if (line.endsWith(':') && line.length < 50 && line.split(/\s+/).length <= 7 && !/[.!?]/.test(line.slice(0, -1))) return true;
+      return false;
+    },
+  } = opts;
+
+  let y = startY;
+  let skipping = false;
+  const lines = text.split('\n');
+  let idx = 0;
+
+  while (idx < lines.length) {
+    const rawLine = lines[idx];
+    const rawTrimmed = rawLine.trim();
+
+    if (!rawTrimmed) { y += 4; idx++; continue; }
+
+    if (shouldSkip) {
+      if (shouldSkip(rawTrimmed)) skipping = true;
+      if (shouldResume && shouldResume(rawTrimmed)) skipping = false;
+      if (skipping) { idx++; continue; }
+    }
+
+    // Markdown table block ("| a | b |" + "|---|---|" separator). Drawn as
+    // an actual bordered table instead of raw pipes/dashes.
+    if (isTableRow(rawTrimmed) && idx + 1 < lines.length && isSeparatorRow(lines[idx + 1])) {
+      const tableRows = [splitTableRow(rawTrimmed)];
+      let j = idx + 2;
+      while (j < lines.length && isTableRow(lines[j])) { tableRows.push(splitTableRow(lines[j])); j++; }
+      if (y + 14 > pageH - 20) { doc.addPage(); y = 20; }
+      y = renderPdfTable(doc, { rows: tableRows, x: margin, y, width: contentW, pageH, accentColor });
+      idx = j;
+      continue;
+    }
+
+    // Bullet list item ("- ", "• ", or "* " followed by a space), with
+    // nesting inferred from leading indentation (2 spaces ≈ 1 level, up to
+    // 3 levels). Headings take priority over bullet styling.
+    const bulletMatch = rawTrimmed.match(/^[-•*]\s+(.+)$/);
+    if (bulletMatch && !isHeadingTest(rawTrimmed)) {
+      const leadingSpaces = rawLine.match(/^\s*/)[0].replace(/\t/g, '  ').length;
+      const level = Math.min(2, Math.floor(leadingSpaces / 2));
+      const bulletChars = ['•', '◦', '▪'];
+      const restText = stripInlineMarkdown(bulletMatch[1]);
+      doc.setFontSize(bodyFontSize);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...bodyTextColor);
+
+      const bulletChar = bulletChars[level];
+      const levelIndent = level * 6;
+      const bulletW = doc.getTextWidth(bulletChar) + 2;
+      const bulletX = margin + 2 + levelIndent;
+      const textIndent = bulletX + bulletW;
+      const wrapped = doc.splitTextToSize(restText, contentW - 4 - bulletW - levelIndent);
+
+      wrapped.forEach((wl, wi) => {
+        if (y + 6 > pageH - 20) { doc.addPage(); y = 20; }
+        if (wi === 0) doc.text(bulletChar, bulletX, y);
+        doc.text(wl, textIndent, y);
+        y += bodyLineH;
+      });
+      y += 1.5;
+      idx++;
+      continue;
+    }
+
+    // Normalize markdown so **bold**/`code` don't show up literally, and
+    // so a heading like "**Learning Objectives:**" is still recognized as
+    // a heading (its raw form ends in "**", not ":").
+    const line = stripInlineMarkdown(rawTrimmed);
+    const isHeading = isHeadingTest(line);
+
+    if (isHeading) {
+      doc.setFontSize(headingFontSize);
+      doc.setFont('helvetica', 'bold');
+      const clean = line.replace(/^#{1,3}\s*/, '');
+      // Supports decimal sub-numbering too (e.g. "3.1 Warm-up Activity").
+      const numberedMatch = clean.match(/^(\d+(?:\.\d+)*\.)\s+(.*)$/);
+
+      if (numberedMatch) {
+        // Numbered item — wrap only the text after "N.", and indent
+        // continuation lines so they line up under the text, not the number.
+        const numLabel  = numberedMatch[1] + ' ';
+        const numW      = doc.getTextWidth(numLabel);
+        const textIndent = margin + 6 + numW;
+        const bodyLines  = doc.splitTextToSize(numberedMatch[2], contentW - 8 - numW);
+        const blockH     = bodyLines.length * headingLineH + 4;
+
+        if (y + blockH > pageH - 20) { doc.addPage(); y = 20; }
+        doc.setFillColor(...accentColor);
+        doc.roundedRect(margin, y, 3, blockH - 4, 1, 1, 'F');
+        doc.setTextColor(...headingTextColor);
+
+        bodyLines.forEach((bl, bi) => {
+          const ty = y + 6.5 + bi * headingLineH;
+          if (bi === 0) doc.text(numLabel, margin + 6, ty);
+          doc.text(bl, textIndent, ty);
+        });
+        y += blockH + 3;
+      } else {
+        // Wrap long headings instead of letting them run off the page edge
+        const headLines = doc.splitTextToSize(clean, contentW - 8);
+        const blockH = headLines.length * headingLineH + 4;
+
+        if (y + blockH > pageH - 20) { doc.addPage(); y = 20; }
+        doc.setFillColor(...accentColor);
+        doc.roundedRect(margin, y, 3, blockH - 4, 1, 1, 'F');
+        doc.setTextColor(...headingTextColor);
+        headLines.forEach((hl, hi) => {
+          doc.text(hl, margin + 6, y + 6.5 + hi * headingLineH);
+        });
+        y += blockH + 3;
+      }
+    } else {
+      doc.setFontSize(bodyFontSize);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...bodyTextColor);
+      const wrapped = doc.splitTextToSize(line, contentW - 4);
+      for (const wl of wrapped) {
+        if (y + 6 > pageH - 20) { doc.addPage(); y = 20; }
+        doc.text(wl, margin + 2, y);
+        y += bodyLineH;
+      }
+      y += 2;
+    }
+    idx++;
+  }
+
+  return y;
+}
+
 async function downloadLessonPlanPDF(btn) {
   const text     = btn.dataset.text;
   const subject  = btn.dataset.subject;
@@ -1815,106 +2080,101 @@ async function downloadLessonPlanPDF(btn) {
     let y = 0;
 
     // ── Header Banner ──────────────────────────────────────
+    const bannerH = 36;
     doc.setFillColor(79, 70, 229); // indigo
-    doc.rect(0, 0, pageW, 38, 'F');
+    doc.rect(0, 0, pageW, bannerH, 'F');
+    // Two layered corner triangles fake a bit of gradient depth without
+    // needing a real gradient fill, which jsPDF doesn't support natively.
+    doc.setFillColor(99, 91, 245);
+    doc.triangle(pageW - 60, 0, pageW, 0, pageW, bannerH, 'F');
+    doc.setFillColor(69, 61, 219);
+    doc.triangle(pageW - 34, 0, pageW, 0, pageW, bannerH * 0.5, 'F');
+
+    // Logo mark — small rounded square with a simple book-lines glyph,
+    // so the header reads as a designed mark rather than plain text.
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin, 10, 11, 11, 3, 3, 'F');
+    doc.setDrawColor(79, 70, 229);
+    doc.setLineWidth(0.9);
+    doc.line(margin + 2.7, 14.2, margin + 8.3, 14.2);
+    doc.line(margin + 2.7, 17.2, margin + 6.3, 17.2);
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setFontSize(17);
     doc.setFont('helvetica', 'bold');
-    doc.text('ClassInstruct AI', margin, 14);
+    doc.text('ClassInstruct AI', margin + 16, 16.5);
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Lesson Plan', margin, 22);
-
-    // Framework badge
-    const badgeLabel = fw + ' Framework';
     doc.setFontSize(9);
-    doc.setFillColor(255, 255, 255);
-    const badgeW = doc.getTextWidth(badgeLabel) + 8;
-    doc.roundedRect(pageW - margin - badgeW, 10, badgeW, 8, 2, 2, 'F');
-    doc.setTextColor(79, 70, 229);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(224, 222, 255);
+    doc.text('AI-Generated Lesson Plan', margin + 16, 23);
+
+    // Framework badge — cap its width so it can never push past the page edge
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
-    doc.text(badgeLabel, pageW - margin - badgeW + 4, 15.5);
+    const maxBadgeW = contentW * 0.42;
+    const badgeLabel = fitTextWidth(doc, (fw || 'Standard') + ' Framework', maxBadgeW - 8);
+    doc.setFillColor(255, 255, 255);
+    const badgeW = doc.getTextWidth(badgeLabel) + 9;
+    doc.roundedRect(pageW - margin - badgeW, 12, badgeW, 8, 4, 4, 'F');
+    doc.setTextColor(79, 70, 229);
+    doc.text(badgeLabel, pageW - margin - badgeW + 4.5, 17.3);
 
-    y = 48;
+    y = bannerH + 10;
 
-    // ── Meta Info Box ───────────────────────────────────────
-    doc.setFillColor(245, 243, 255);
-    doc.roundedRect(margin, y, contentW, 30, 3, 3, 'F');
-    doc.setDrawColor(200, 196, 255);
+    // ── Meta Info Card ───────────────────────────────────────
+    const metaH = 26;
+    doc.setFillColor(247, 246, 255);
+    doc.roundedRect(margin, y, contentW, metaH, 3, 3, 'F');
+    doc.setDrawColor(216, 211, 255);
     doc.setLineWidth(0.4);
-    doc.roundedRect(margin, y, contentW, 30, 3, 3, 'S');
+    doc.roundedRect(margin, y, contentW, metaH, 3, 3, 'S');
 
     const colW = contentW / 4;
     const metaItems = [
       { label: 'Subject', value: subject },
       { label: 'Grade',   value: grade },
-      { label: 'Topic',   value: topic.length > 20 ? topic.substring(0, 18) + '…' : topic },
+      { label: 'Topic',   value: topic },
       { label: 'Duration',value: duration },
     ];
     metaItems.forEach((item, i) => {
-      const x = margin + colW * i + 4;
-      doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(120, 110, 180);
-      doc.text(item.label.toUpperCase(), x, y + 10);
+      const x = margin + colW * i + 5;
+      // Thin divider between columns for cleaner separation
+      if (i > 0) {
+        doc.setDrawColor(224, 220, 245);
+        doc.setLineWidth(0.3);
+        doc.line(margin + colW * i, y + 5, margin + colW * i, y + metaH - 5);
+      }
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(124, 114, 190);
+      doc.text(item.label.toUpperCase(), x, y + 9);
 
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(30, 41, 59);
-      doc.text(item.value, x, y + 22);
+      // Measure against the actual column width so nothing spills into
+      // the next column or off the card.
+      doc.text(fitTextWidth(doc, item.value || '—', colW - 10), x, y + 18);
     });
 
-    y += 38;
+    y += metaH + 10;
 
     // ── Body Content ────────────────────────────────────────
-    const lines = text.split('\n');
-
-    for (const rawLine of lines) {
-      const line = rawLine.trim();
-      if (!line) { y += 3; continue; }
-
-      // Detect section headings (ALL CAPS words, numbered headings, or lines ending with :)
-      const isHeading = /^(#{1,3}\s|[A-Z][A-Z\s\d:]{4,}$|\d+\.\s+[A-Z])/.test(line) ||
-                        (line.endsWith(':') && line.length < 60);
-
-      if (isHeading) {
-        // New page check
-        if (y + 14 > pageH - 20) { doc.addPage(); y = 20; }
-
-        // Heading accent bar
-        doc.setFillColor(79, 70, 229);
-        doc.rect(margin, y, 3, 8, 'F');
-
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(30, 41, 59);
-        const clean = line.replace(/^#{1,3}\s*/, '');
-        doc.text(clean, margin + 6, y + 6.5);
-        y += 12;
-      } else {
-        // Body text — wrap long lines
-        doc.setFontSize(9.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 65, 85);
-
-        const wrapped = doc.splitTextToSize(line, contentW - 4);
-        for (const wl of wrapped) {
-          if (y + 6 > pageH - 20) { doc.addPage(); y = 20; }
-          doc.text(wl, margin + 2, y);
-          y += 5.5;
-        }
-        y += 1;
-      }
-    }
+    renderPdfBody(doc, {
+      text: stripRedundantHeader(text), startY: y, margin, contentW, pageH,
+      accentColor: [79, 70, 229],
+    });
 
     // ── Footer on every page ────────────────────────────────
     const totalPages = doc.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
       doc.setPage(p);
-      doc.setFillColor(245, 243, 255);
-      doc.rect(0, pageH - 12, pageW, 12, 'F');
+      doc.setDrawColor(224, 220, 245);
+      doc.setLineWidth(0.3);
+      doc.line(0, pageH - 12, pageW, pageH - 12);
+      doc.setFillColor(247, 246, 255);
+      doc.rect(0, pageH - 11.6, pageW, 11.6, 'F');
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(148, 163, 184);
@@ -2218,10 +2478,10 @@ async function downloadHandoutPDF(btn) {
     doc.text('Student Handout', margin, 13);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${subject}  ·  ${grade}  ·  ${duration}`, margin, 22);
+    doc.text(fitTextWidth(doc, `${subject}  ·  ${grade}  ·  ${duration}`, contentW), margin, 22);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    const topicLabel = topic.length > 60 ? topic.substring(0, 58) + '…' : topic;
+    const topicLabel = fitTextWidth(doc, topic, contentW);
     doc.text(topicLabel, margin, 30);
 
     y = 44;
@@ -2255,44 +2515,21 @@ async function downloadHandoutPDF(btn) {
     // ── Extract student-facing content from lesson plan ──────
     // Strip lines that are clearly teacher instructions
     const teacherOnlyPatterns = /^(materials needed|teacher|instructor|facilitat|time allocation|differentiat|standards alignment|cross-curricular)/i;
-    const lines = text.split('\n');
-    let inTeacherBlock = false;
 
-    for (const rawLine of lines) {
-      const line = rawLine.trim();
-      if (!line) { y += 2.5; continue; }
-
-      // Detect teacher-only block headers and skip them
-      if (teacherOnlyPatterns.test(line)) { inTeacherBlock = true; }
-      // A new major heading resets the teacher block flag
-      if (/^#{1,2}\s/.test(line) && !teacherOnlyPatterns.test(line)) inTeacherBlock = false;
-      if (inTeacherBlock) continue;
-
-      const isHeading = /^(#{1,3}\s|[A-Z][A-Z\s\d:]{4,}$|\d+\.\s+[A-Z])/.test(line) ||
-                        (line.endsWith(':') && line.length < 60 && line === line.toUpperCase());
-
-      if (isHeading) {
-        if (y + 14 > pageH - 20) { doc.addPage(); y = 20; }
-        doc.setFillColor(8, 145, 178);
-        doc.rect(margin, y, 3, 7, 'F');
-        doc.setFontSize(10.5);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(15, 23, 42);
-        doc.text(line.replace(/^#{1,3}\s*/, ''), margin + 6, y + 5.5);
-        y += 11;
-      } else {
-        doc.setFontSize(9.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(51, 65, 85);
-        const wrapped = doc.splitTextToSize(line, contentW - 4);
-        for (const wl of wrapped) {
-          if (y + 6 > pageH - 20) { doc.addPage(); y = 20; }
-          doc.text(wl, margin + 2, y);
-          y += 5.5;
-        }
-        y += 1;
-      }
-    }
+    y = renderPdfBody(doc, {
+      text: stripRedundantHeader(text), startY: y, margin, contentW, pageH,
+      accentColor: [8, 145, 178],
+      headingTextColor: [15, 23, 42],
+      headingFontSize: 10.5,
+      headingLineH: 5,
+      isHeadingTest: (line) =>
+        /^(#{1,3}\s|[A-Z][A-Z\s\d:]{4,}$|\d+\.\s+[A-Z])/.test(line) ||
+        (line.endsWith(':') && line.length < 60 && line === line.toUpperCase()),
+      // Skip teacher-only blocks; a new major heading (that isn't itself
+      // a teacher-only header) resumes normal rendering.
+      shouldSkip:   (line) => teacherOnlyPatterns.test(line),
+      shouldResume: (line) => /^#{1,2}\s/.test(line) && !teacherOnlyPatterns.test(line),
+    });
 
     // ── Reflection box ───────────────────────────────────────
     if (y + 40 > pageH - 20) { doc.addPage(); y = 20; }
@@ -3297,4 +3534,4 @@ async function copyQuizText(btn) {
 const link = document.createElement('link');
 link.rel = 'stylesheet';
 link.href = 'app.css';
-document.head.appendChild(link);  
+document.head.appendChild(link);
