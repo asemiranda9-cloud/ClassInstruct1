@@ -32,6 +32,142 @@ async function apiDelete(id) {
   return json;
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  ARCHIVE TO LIBRARY — moves students out of the active roster and
+//  drops each one into the Library (shared localStorage) with their
+//  grade history attached as a downloadable .xlsx file.
+// ═══════════════════════════════════════════════════════════════════════
+const ARCHIVE_API = '/dashboard/api/archive_db.php';
+const LIB_KEY = 'ci_library_items';
+
+function defaultSchoolYear() {
+  const y = new Date().getFullYear();
+  return y + '-' + (y + 1);
+}
+
+function openArchiveModal() {
+  try {
+    const sel = document.getElementById('archiveSection');
+    const studentSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
+    const allSections = [...new Set([...(localSections||[]), ...studentSections])].sort();
+    const current = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    allSections.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+    if (allSections.includes(current)) sel.value = current;
+    document.getElementById('archiveSchoolYear').value = defaultSchoolYear();
+    document.getElementById('archiveOverlay').classList.add('open');
+  } catch (e) {
+    console.error('openArchiveModal failed:', e);
+    alert('Could not open the Archive modal (' + e.message + '). Please hard-refresh the page (Ctrl/Cmd+Shift+R) — Student.html and Student.js may be out of sync.');
+  }
+}
+function closeArchiveModal() {
+  document.getElementById('archiveOverlay').classList.remove('open');
+}
+
+async function confirmArchive() {
+  const section        = document.getElementById('archiveSection').value;
+  const schoolYearLabel = document.getElementById('archiveSchoolYear').value.trim() || defaultSchoolYear();
+  const who = section ? `all students in "${section}"` : 'ALL current students (every section)';
+  if (!confirm(`Move ${who} into the archive under "${schoolYearLabel}"? Their grades will be attached to a Library entry as an Excel file. This can't be undone in bulk.`)) return;
+
+  try {
+    const res = await fetch(`${ARCHIVE_API}?action=archive_now`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schoolYearLabel, section }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Archive failed');
+
+    const archivedIds = new Set((result.students || []).map(s => s.id));
+    students = students.filter(s => !archivedIds.has(s.id));
+    applyFilters();
+    populateSections();
+
+    const libCount = pushArchivedStudentsToLibrary(result.students, result.schoolYear);
+    toast(`${result.archivedCount} student(s) archived under ${result.schoolYear}` +
+      (libCount ? ' and added to the Library with grade sheets.' : '.'), 'success');
+    closeArchiveModal();
+  } catch (e) {
+    toast('Archive failed: ' + e.message, 'danger');
+  }
+}
+
+function buildStudentGradesWorkbook(student) {
+  const rows = (student.grades || []).map(g => ({
+    'Subject': g.subject || '',
+    'Quarter': g.quarter || '',
+    'Written Works': g.written_works ?? '',
+    'Performance Tasks': g.performance_tasks ?? '',
+    'Quarterly Assessment': g.quarterly_assessment ?? '',
+    'Attendance': g.attendance ?? '',
+    'Final Grade': g.final_grade ?? '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Note': 'No grades were on file for this student.' }]);
+  ws['!cols'] = [{ wch: 18 }, { wch: 9 }, { wch: 14 }, { wch: 18 }, { wch: 20 }, { wch: 12 }, { wch: 12 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Grades');
+  return wb;
+}
+
+// Adds one Library card per archived student, with a grades .xlsx attached.
+// Returns how many were added (0 if XLSX isn't loaded or nothing to add).
+function pushArchivedStudentsToLibrary(archivedStudents, schoolYear) {
+  if (!archivedStudents || !archivedStudents.length) return 0;
+  if (typeof XLSX === 'undefined') {
+    toast('Archived, but the grade-sheet exporter did not load — Library entries were skipped.', 'warning');
+    return 0;
+  }
+  let items;
+  try { items = JSON.parse(localStorage.getItem(LIB_KEY)) || []; } catch { items = []; }
+  let added = 0;
+  archivedStudents.forEach(s => {
+    try {
+      const wb = buildStudentGradesWorkbook(s);
+      const base64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      const dataUrl = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + base64;
+      const safeName = (s.fullName || 'Student').replace(/[^\w\- ]+/g, '').trim() || 'Student';
+      const fileName = `${safeName} - ${schoolYear} Grades.xlsx`;
+      const gradeSection = [s.grade, s.section].filter(Boolean).join(' - ');
+
+      items.unshift({
+        id: 'lib_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        type: 'student_archive',
+        subject: 'General',
+        grade: s.grade || '',
+        title: `${s.fullName || 'Unnamed Student'} — ${schoolYear}`,
+        content: [
+          `Student ID / LRN: ${s.studentId || '—'}`,
+          `Grade & Section: ${gradeSection || '—'}`,
+          `School Year: ${schoolYear}`,
+          `Archived on: ${new Date().toLocaleDateString()}`,
+          '',
+          (s.grades && s.grades.length)
+            ? `${s.grades.length} grade record(s) attached below as an Excel file.`
+            : 'No grades were on file for this student at the time of archiving.',
+        ].join('\n'),
+        tags: [schoolYear, s.grade, s.section].filter(Boolean),
+        files: [{
+          name: fileName,
+          size: Math.round(base64.length * 0.75),
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          dataUrl,
+        }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      added++;
+    } catch (e) { /* skip this one student, keep going */ }
+  });
+  if (added) { try { localStorage.setItem(LIB_KEY, JSON.stringify(items)); } catch {} }
+  return added;
+}
+
 // ═══════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════

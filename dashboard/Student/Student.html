@@ -106,6 +106,10 @@ html[data-theme="dark"] #pinGate button[onclick="closePinGate()"]{border-color:#
         <div class="panel-header">
           <span class="panel-title">Student Records</span>
           <div style="display:flex;gap:10px;align-items:center">
+            <button class="btn btn-secondary" onclick="try{openArchiveModal()}catch(e){alert('ARCHIVE BUTTON ERROR: ' + e.message); console.error(e);}" title="Move students out of the active roster into the Library, with their grades as an Excel file">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              Archive to Library
+            </button>
             <button class="btn btn-secondary" onclick="openImportModal()" title="Import students from a master list image">
               <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
               Import from Image
@@ -649,6 +653,34 @@ html[data-theme="dark"] #pinGate button[onclick="closePinGate()"]{border-color:#
 </div>
 
 <!-- Add Section Modal -->
+<div class="overlay" id="archiveOverlay">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h2 class="modal-title">Archive to Library</h2>
+      <button class="close-btn" onclick="closeArchiveModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:18px;line-height:1.6">
+        Moves the chosen students out of the active roster and adds each one to the Library, with their full grade history attached as a downloadable Excel file.
+      </p>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Which students?</label>
+        <select class="form-input" id="archiveSection">
+          <option value="">All Sections</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">School Year Label</label>
+        <input type="text" class="form-input" id="archiveSchoolYear" placeholder="e.g. SY 2025-2026">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeArchiveModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmArchive()">Archive Now</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="addSectionOverlay">
   <div class="section-modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">

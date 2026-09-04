@@ -79,7 +79,7 @@ function setFilter(type, btn) {
   document.querySelectorAll('.lib-filter-panel .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSubjectFilters();
-  const titles = { all: 'All Resources', lesson_plan: 'Lesson Plans', quiz: 'Quizzes', ai_chat: 'From AI Chat' };
+  const titles = { all: 'All Resources', lesson_plan: 'Lesson Plans', quiz: 'Quizzes', ai_chat: 'From AI Chat', student_archive: 'Archived Students' };
   document.getElementById('sectionTitle').textContent = titles[type] || 'Resources';
   renderGrid();
 }
@@ -119,6 +119,8 @@ function renderGrid() {
   document.getElementById('count-lesson_plan').textContent = all.filter(i=>i.type==='lesson_plan').length;
   document.getElementById('count-quiz').textContent = all.filter(i=>i.type==='quiz').length;
   document.getElementById('count-ai_chat').textContent = all.filter(i=>i.type==='ai_chat').length;
+  const countArchiveEl = document.getElementById('count-student_archive');
+  if (countArchiveEl) countArchiveEl.textContent = all.filter(i=>i.type==='student_archive').length;
 
   document.getElementById('stat-total').textContent = all.length;
   document.getElementById('stat-quizzes').textContent = all.filter(i=>i.type==='quiz').length;
@@ -137,9 +139,10 @@ function renderGrid() {
 }
 
 const TYPE_META = {
-  lesson_plan: { label: '📋 Lesson Plan', color: '#f59e0b', bg: 'var(--amber-lt)', accent: '#f59e0b' },
-  quiz:        { label: '✅ Quiz',         color: '#10b981', bg: 'var(--green-lt)', accent: '#10b981' },
-  ai_chat:     { label: '🤖 AI Chat',      color: '#0ea5e9', bg: 'var(--sky-lt)',   accent: '#0ea5e9' },
+  lesson_plan:    { label: '📋 Lesson Plan',      color: '#f59e0b', bg: 'var(--amber-lt)', accent: '#f59e0b' },
+  quiz:           { label: '✅ Quiz',              color: '#10b981', bg: 'var(--green-lt)', accent: '#10b981' },
+  ai_chat:        { label: '🤖 AI Chat',           color: '#0ea5e9', bg: 'var(--sky-lt)',   accent: '#0ea5e9' },
+  student_archive:{ label: '🎓 Archived Student',  color: '#a78bfa', bg: 'rgba(167,139,250,0.14)', accent: '#a78bfa' },
 };
 
 function makeCard(item) {
